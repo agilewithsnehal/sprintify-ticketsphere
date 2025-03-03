@@ -27,7 +27,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
-  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [assigneeId, setAssigneeId] = useState<string>('unassigned');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,7 +48,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       description: description.trim(),
       status: column,
       priority,
-      assignee: assigneeId ? project.members.find(member => member.id === assigneeId) : undefined,
+      assignee: assigneeId !== 'unassigned' ? project.members.find(member => member.id === assigneeId) : undefined,
       reporter: users[0], // Set current user as reporter
       project,
       createdAt: new Date(),
@@ -70,7 +70,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     setSummary('');
     setDescription('');
     setPriority('medium');
-    setAssigneeId('');
+    setAssigneeId('unassigned');
   };
 
   return (
@@ -122,10 +122,10 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
               <label htmlFor="assignee" className="text-sm font-medium">Assignee</label>
               <Select value={assigneeId} onValueChange={setAssigneeId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Unassigned" />
+                  <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {project.members.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
                       {member.name}
