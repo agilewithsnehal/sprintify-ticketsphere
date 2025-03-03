@@ -53,8 +53,18 @@ export function useKanbanBoard(
       // Make sure we get the latest ticket data
       const updatedTicket = findTicketInColumns(ticket.id);
       console.log('Updated ticket found:', updatedTicket ? 'yes' : 'no');
-      setSelectedTicket(updatedTicket || ticket);
-      setIsTicketModalOpen(true);
+      
+      if (updatedTicket) {
+        setSelectedTicket(updatedTicket);
+      } else {
+        setSelectedTicket(ticket);
+      }
+      
+      // Force this to run after the state update
+      setTimeout(() => {
+        setIsTicketModalOpen(true);
+        console.log('Modal opened for ticket:', ticket.id);
+      }, 0);
     } catch (error) {
       console.error('Error opening ticket:', error);
       toast.error('Failed to open ticket details');
@@ -62,6 +72,7 @@ export function useKanbanBoard(
   }, [findTicketInColumns]);
 
   const handleCloseTicketModal = useCallback(() => {
+    console.log('Closing ticket modal');
     setIsTicketModalOpen(false);
     // Small delay to avoid visual glitches during closing animation
     setTimeout(() => {

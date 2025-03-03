@@ -24,6 +24,14 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
     day: 'numeric',
   }).format(new Date(ticket.updatedAt));
 
+  // Explicit click handler to ensure the event is properly captured
+  const handleTicketClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Ticket clicked in component:', ticket.id);
+    onClick();
+  };
+
   return (
     <motion.div
       layout
@@ -35,7 +43,7 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
         transition: { duration: 0.2 }
       }}
-      onClick={onClick}
+      onClick={handleTicketClick}
       className="cursor-pointer"
       data-testid={`ticket-${ticket.id}`}
       aria-label={`Ticket ${ticket.key}: ${ticket.summary}`}

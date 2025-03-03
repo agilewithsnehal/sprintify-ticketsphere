@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useKanbanBoard } from '@/hooks/useKanbanBoard';
@@ -32,6 +32,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     scrollLeft,
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
+
+  // Debug output to verify data flow
+  useEffect(() => {
+    console.log("KanbanBoard: selectedTicket:", selectedTicket?.id, "isTicketModalOpen:", isTicketModalOpen);
+  }, [selectedTicket, isTicketModalOpen]);
 
   return (
     <>

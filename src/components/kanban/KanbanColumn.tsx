@@ -71,7 +71,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     <Ticket 
                       ticket={ticket} 
                       onClick={() => {
-                        console.log('Ticket clicked:', ticket.id);
+                        console.log('Ticket click triggered from column:', ticket.id);
                         onOpenTicket(ticket);
                       }} 
                     />
