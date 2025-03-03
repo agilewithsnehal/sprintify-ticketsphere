@@ -42,7 +42,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
 
     // Create a new ticket object
     const newTicket: Ticket = {
-      id: `temp-${Date.now()}`, // In a real app, the server would assign an ID
+      id: `ticket-${Date.now()}`, // In a real app, the server would assign an ID
       key: `${project.key}-${Math.floor(Math.random() * 1000)}`, // Simplified key generation
       summary: summary.trim(),
       description: description.trim(),
