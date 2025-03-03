@@ -24,11 +24,11 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
     day: 'numeric',
   }).format(new Date(ticket.updatedAt));
 
-  // Explicit click handler to ensure the event is properly captured
+  // Explicit click handler with debug information
   const handleTicketClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Ticket clicked in component:', ticket.id);
+    console.log('Ticket clicked in component:', ticket.id, ticket.summary);
     onClick();
   };
 

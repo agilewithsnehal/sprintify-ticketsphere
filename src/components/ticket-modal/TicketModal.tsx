@@ -36,10 +36,10 @@ const TicketModal: React.FC<TicketModalProps> = ({
 
   // Update local state when ticket prop changes
   useEffect(() => {
-    console.log("TicketModal received ticket:", ticket.id);
+    console.log("TicketModal received ticket:", ticket.id, "isOpen:", isOpen);
     setActiveTicket(ticket);
     setEditedTicket(ticket);
-  }, [ticket]);
+  }, [ticket, isOpen]);
 
   const handleChange = (updates: Partial<Ticket>) => {
     setActiveTicket(prev => ({ ...prev, ...updates }));

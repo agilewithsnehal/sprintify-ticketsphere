@@ -54,17 +54,18 @@ export function useKanbanBoard(
       const updatedTicket = findTicketInColumns(ticket.id);
       console.log('Updated ticket found:', updatedTicket ? 'yes' : 'no');
       
+      // Set the selected ticket first
       if (updatedTicket) {
         setSelectedTicket(updatedTicket);
       } else {
         setSelectedTicket(ticket);
       }
       
-      // Force this to run after the state update
+      // Important: Use setTimeout to ensure state has updated before opening modal
       setTimeout(() => {
+        console.log('Opening modal for ticket:', ticket.id);
         setIsTicketModalOpen(true);
-        console.log('Modal opened for ticket:', ticket.id);
-      }, 0);
+      }, 50);
     } catch (error) {
       console.error('Error opening ticket:', error);
       toast.error('Failed to open ticket details');
