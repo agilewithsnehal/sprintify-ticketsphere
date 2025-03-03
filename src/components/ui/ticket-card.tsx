@@ -5,20 +5,18 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 
 interface TicketCardProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
-  onClick?: () => void;
 }
 
 const TicketCard = React.forwardRef<
   HTMLDivElement,
   TicketCardProps
->(({ className, onClick, children, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <Card
     ref={ref}
     className={cn(
-      "border bg-card rounded-md shadow-sm cursor-pointer hover:shadow-md transition-all duration-200",
+      "border bg-card rounded-md shadow-sm hover:shadow-md transition-all duration-200",
       className
     )}
-    onClick={onClick}
     {...props}
   >
     {children}

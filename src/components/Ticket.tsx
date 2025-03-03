@@ -35,8 +35,10 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
         transition: { duration: 0.2 }
       }}
+      onClick={onClick}
+      className="cursor-pointer"
     >
-      <TicketCard onClick={onClick}>
+      <TicketCard>
         <TicketCardHeader>
           <div className="flex justify-between items-start">
             <div className="flex space-x-2 items-center">

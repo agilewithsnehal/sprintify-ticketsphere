@@ -61,6 +61,10 @@ const Board = () => {
     setIsConfigModalOpen(true);
   };
 
+  const handleConfigClose = () => {
+    setIsConfigModalOpen(false);
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -133,7 +137,7 @@ const Board = () => {
       </div>
       
       <div className="relative overflow-hidden h-[calc(100vh-240px)]">
-        <KanbanBoard board={board} onTicketMove={handleTicketMove} />
+        {board && <KanbanBoard board={board} onTicketMove={handleTicketMove} />}
       </div>
       
       {isCreateModalOpen && (
