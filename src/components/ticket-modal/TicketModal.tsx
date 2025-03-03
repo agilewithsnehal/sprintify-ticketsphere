@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Ticket, User } from '@/lib/types';
 import TicketHeader from './TicketHeader';
@@ -34,7 +35,8 @@ const TicketModal: React.FC<TicketModalProps> = ({
   const [editedTicket, setEditedTicket] = useState<Ticket>(ticket);
 
   // Update local state when ticket prop changes
-  React.useEffect(() => {
+  useEffect(() => {
+    console.log("TicketModal received ticket:", ticket.id);
     setActiveTicket(ticket);
     setEditedTicket(ticket);
   }, [ticket]);
@@ -125,7 +127,11 @@ const TicketModal: React.FC<TicketModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={`${modalWidth} max-h-[90vh] overflow-hidden flex flex-col p-0`}>
+      <DialogContent className={`${modalWidth} max-h-[90vh] overflow-hidden flex flex-col p-0`} aria-describedby="ticket-description">
+        <DialogDescription id="ticket-description" className="sr-only">
+          Ticket details for {activeTicket.key}: {activeTicket.summary}
+        </DialogDescription>
+        
         <TicketHeader 
           ticket={activeTicket}
           isEditing={isEditing}
