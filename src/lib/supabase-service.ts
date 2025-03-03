@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Board, Comment, Priority, Project, Status, Ticket, User } from "@/lib/types";
 
@@ -242,7 +241,42 @@ export const supabaseService = {
     }
   },
 
-  // Tickets
+  async createProject(newProject: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project | null> {
+    try {
+      // Insert the project
+      const { data: project, error } = await supabase
+        .from('projects')
+        .insert({
+          name: newProject.name,
+          description: newProject.description,
+          key: newProject.key
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!project) return null;
+      
+      // Add members
+      const memberPromises = newProject.members.map(async (member) => {
+        return supabase
+          .from('project_members')
+          .insert({
+            project_id: project.id,
+            user_id: member.id
+          });
+      });
+      
+      await Promise.all(memberPromises);
+      
+      // Return the full project
+      return this.getProjectById(project.id);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      return null;
+    }
+  },
+
   async getTicketsByProjectId(projectId: string): Promise<Ticket[]> {
     try {
       const { data: dbTickets, error } = await supabase
@@ -336,7 +370,6 @@ export const supabaseService = {
     }
   },
 
-  // Comments
   async addComment(ticketId: string, content: string, authorId: string): Promise<Comment | null> {
     try {
       const { data: comment, error } = await supabase
@@ -384,7 +417,6 @@ export const supabaseService = {
     }
   },
 
-  // Board
   async createBoard(projectId: string): Promise<Board | null> {
     try {
       const project = await this.getProjectById(projectId);
@@ -417,7 +449,26 @@ export const supabaseService = {
     }
   },
 
-  // Users
+  async searchTickets(query: string): Promise<Ticket[]> {
+    try {
+      const { data: dbTickets, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .or(`summary.ilike.%${query}%,description.ilike.%${query}%,key.ilike.%${query}%`);
+
+      if (error) throw error;
+      
+      const tickets = await Promise.all(
+        dbTickets.map(ticket => mapDbTicketToTicket(ticket))
+      );
+      
+      return tickets;
+    } catch (error) {
+      console.error('Error searching tickets:', error);
+      return [];
+    }
+  },
+
   async getCurrentUser(): Promise<User> {
     // In a real app with auth, we would get the current user from the session
     // For now, we'll return the first user as the "current user"

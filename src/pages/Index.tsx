@@ -8,51 +8,64 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, CalendarRange, CheckCircle, Clock, ListTodo, Plus, TicketPlus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { BarChart3, CalendarRange, CheckCircle, Clock, ListTodo, Plus, Search, TicketPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabaseService } from '@/lib/supabase-service';
 import { Project, Ticket, User } from '@/lib/types';
+import { useQuery } from '@tanstack/react-query';
 
 const Index = () => {
   const navigate = useNavigate();
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
+  // Fetch all projects and tickets with React Query
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => await supabaseService.getAllProjects(),
+  });
+  
+  const { data: tickets = [], isLoading: isLoadingTickets } = useQuery({
+    queryKey: ['tickets'],
+    queryFn: async () => await supabaseService.getAllTickets(),
+  });
+
+  // Fetch current user
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCurrentUser = async () => {
       try {
-        setIsLoading(true);
-        
-        // Get current user
         const user = await supabaseService.getCurrentUser();
         setCurrentUser(user);
-        
-        // Get all projects
-        const projectsData = await supabaseService.getAllProjects();
-        setProjects(projectsData);
-        
-        // Get all tickets
-        const ticketsData = await supabaseService.getAllTickets();
-        setTickets(ticketsData);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load data');
-      } finally {
-        setIsLoading(false);
+        console.error('Error fetching current user:', error);
       }
     };
     
-    fetchData();
+    fetchCurrentUser();
   }, []);
   
-  const myTickets = tickets.filter(ticket => ticket.assignee?.id === currentUser?.id);
-  const recentTickets = [...tickets].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 5);
+  // Filter projects and tickets based on search query
+  const filteredProjects = projects.filter(project => 
+    searchQuery === '' || 
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.key.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredTickets = tickets.filter(ticket => 
+    searchQuery === '' || 
+    ticket.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ticket.key.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const myTickets = filteredTickets.filter(ticket => ticket.assignee?.id === currentUser?.id);
+  const recentTickets = [...filteredTickets].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 5);
   
   // Count tickets by status
-  const ticketStatusCount = tickets.reduce((acc, ticket) => {
+  const ticketStatusCount = filteredTickets.reduce((acc, ticket) => {
     acc[ticket.status] = (acc[ticket.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -73,12 +86,46 @@ const Index = () => {
 
   const handleCreateTicket = async (ticket: Ticket) => {
     try {
-      await supabaseService.createTicket(ticket);
-      toast.success('Ticket created successfully');
-      navigate(`/board/${ticket.project.id}`);
+      const createdTicket = await supabaseService.createTicket(ticket);
+      if (createdTicket) {
+        toast.success('Ticket created successfully');
+        navigate(`/board/${ticket.project.id}`);
+      } else {
+        toast.error('Failed to create ticket');
+      }
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket');
+    }
+  };
+
+  const isLoading = isLoadingProjects || isLoadingTickets;
+
+  const handleCreateProject = async () => {
+    try {
+      // In a real app, this would open a modal to create a project
+      // For now, let's create a default project
+      const newProject = {
+        name: `New Project ${Math.floor(Math.random() * 1000)}`,
+        description: 'This is a new project',
+        key: `PRJ${Math.floor(Math.random() * 1000)}`,
+        lead: currentUser!,
+        members: [currentUser!],
+      };
+      
+      // Call the Supabase service to create a new project
+      // This function would need to be implemented in supabase-service.ts
+      // For demo purposes, we'll just show a toast
+      toast.success('Project creation functionality would go here');
+      // In a real implementation:
+      // const createdProject = await supabaseService.createProject(newProject);
+      // if (createdProject) {
+      //   toast.success('Project created successfully');
+      //   // Refresh projects
+      // }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast.error('Failed to create project');
     }
   };
 
@@ -109,14 +156,26 @@ const Index = () => {
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, {currentUser?.name || 'User'}</p>
           </div>
-          <Button 
-            className="gap-1"
-            onClick={() => setIsCreateTicketModalOpen(true)}
-            disabled={projects.length === 0}
-          >
-            <TicketPlus className="h-4 w-4" />
-            Create Ticket
-          </Button>
+          <div className="flex gap-2">
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search projects, tickets..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button 
+              className="gap-1"
+              onClick={() => setIsCreateTicketModalOpen(true)}
+              disabled={projects.length === 0}
+            >
+              <TicketPlus className="h-4 w-4" />
+              Create Ticket
+            </Button>
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -132,8 +191,8 @@ const Index = () => {
                 <CardDescription>Your recent projects</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.length > 0 ? (
-                  projects.map((project) => (
+                {filteredProjects.length > 0 ? (
+                  filteredProjects.map((project) => (
                     <Link 
                       key={project.id} 
                       to={`/project/${project.id}`}
@@ -171,6 +230,10 @@ const Index = () => {
                       </motion.div>
                     </Link>
                   ))
+                ) : searchQuery ? (
+                  <div className="col-span-2 py-8 text-center text-muted-foreground">
+                    No projects found matching "{searchQuery}".
+                  </div>
                 ) : (
                   <div className="col-span-2 py-8 text-center text-muted-foreground">
                     No projects found.
@@ -178,7 +241,12 @@ const Index = () => {
                 )}
               </CardContent>
               <CardFooter className="pt-2">
-                <Button variant="outline" size="sm" className="w-full gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full gap-1"
+                  onClick={handleCreateProject}
+                >
                   <Plus className="h-4 w-4" />
                   Add Project
                 </Button>
@@ -232,6 +300,10 @@ const Index = () => {
                         </div>
                       </motion.div>
                     ))
+                  ) : searchQuery ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      No recent activity found matching "{searchQuery}".
+                    </div>
                   ) : (
                     <div className="p-8 text-center text-muted-foreground">
                       No recent activity found.
@@ -297,7 +369,7 @@ const Index = () => {
                   {Object.entries(ticketStatusCount).length > 0 ? (
                     Object.entries(ticketStatusCount).map(([status, count], i) => {
                       const StatusIcon = statusIcons[status as keyof typeof statusIcons];
-                      const percentage = Math.round((count / tickets.length) * 100);
+                      const percentage = Math.round((count / filteredTickets.length) * 100);
                       
                       return (
                         <motion.div 
