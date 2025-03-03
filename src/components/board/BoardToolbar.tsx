@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus } from 'lucide-react';
+import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface BoardToolbarProps {
   boardName: string;
@@ -57,6 +58,18 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
           <ListFilter className="h-4 w-4" />
           <span>Group</span>
           <ChevronDown className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1"
+          asChild
+        >
+          <Link to="/reports">
+            <BarChart3 className="h-4 w-4" />
+            <span>Reports</span>
+          </Link>
         </Button>
       </div>
     </div>
