@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Ticket as TicketType, Board as BoardType, Status } from '@/lib/types';
 import Ticket from './Ticket';
-import TicketModal from './TicketModal';
+import TicketModal from './ticket-modal';
 import CreateTicketModal from './CreateTicketModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
