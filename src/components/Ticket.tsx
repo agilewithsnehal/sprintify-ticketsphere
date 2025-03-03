@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Ticket as TicketType } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Eye } from 'lucide-react';
 import { TicketCard, TicketCardHeader, TicketCardContent, TicketCardFooter } from '@/components/ui/ticket-card';
 
 interface TicketProps {
@@ -22,7 +22,13 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
-  }).format(ticket.updatedAt);
+  }).format(new Date(ticket.updatedAt));
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  };
 
   return (
     <motion.div
@@ -35,7 +41,7 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
         transition: { duration: 0.2 }
       }}
-      onClick={onClick}
+      onClick={handleClick}
       className="cursor-pointer"
       data-testid={`ticket-${ticket.id}`}
       aria-label={`Ticket ${ticket.key}: ${ticket.summary}`}
@@ -67,7 +73,10 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
             <MessageSquare className="h-3 w-3" />
             <span className="text-xs text-muted-foreground">{ticket.comments.length}</span>
           </div>
-          <span className="text-xs text-muted-foreground">{formattedDate}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{formattedDate}</span>
+            <Eye className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" />
+          </div>
         </TicketCardFooter>
       </TicketCard>
     </motion.div>

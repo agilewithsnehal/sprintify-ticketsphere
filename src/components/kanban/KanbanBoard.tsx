@@ -33,6 +33,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
 
+  console.log("KanbanBoard rendering with selectedTicket:", selectedTicket?.id, "isTicketModalOpen:", isTicketModalOpen);
+
   return (
     <>
       <div className="relative">
@@ -61,7 +63,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
         </DragDropContext>
       </div>
       
-      {selectedTicket && (
+      {selectedTicket && isTicketModalOpen && (
         <TicketModal 
           isOpen={isTicketModalOpen} 
           onClose={handleCloseTicketModal} 

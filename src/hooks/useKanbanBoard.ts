@@ -38,9 +38,22 @@ export function useKanbanBoard(
 
   const handleOpenTicket = useCallback((ticket: TicketType) => {
     console.log('Opening ticket:', ticket.id, ticket.summary);
-    setSelectedTicket(ticket);
+    // Make sure we get the latest ticket data
+    const updatedTicket = findTicketInColumns(ticket.id);
+    setSelectedTicket(updatedTicket || ticket);
     setIsTicketModalOpen(true);
   }, []);
+
+  // Helper function to find the latest ticket data in the columns
+  const findTicketInColumns = useCallback((ticketId: string): TicketType | null => {
+    for (const column of columns) {
+      const ticket = column.tickets.find(t => t.id === ticketId);
+      if (ticket) {
+        return ticket;
+      }
+    }
+    return null;
+  }, [columns]);
 
   const handleCloseTicketModal = useCallback(() => {
     setIsTicketModalOpen(false);

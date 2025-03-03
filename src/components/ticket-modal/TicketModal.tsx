@@ -61,6 +61,7 @@ const TicketModal: React.FC<TicketModalProps> = ({
       await onTicketUpdate(editedTicket);
       setActiveTicket(editedTicket);
       setIsEditing(false);
+      toast.success('Ticket updated successfully');
     } catch (error) {
       console.error('Error saving ticket:', error);
       toast.error('Failed to save changes');
@@ -111,6 +112,8 @@ const TicketModal: React.FC<TicketModalProps> = ({
           comments: [...activeTicket.comments, comment],
           updatedAt: new Date()
         });
+        
+        toast.success('Comment added');
       }
     } catch (error) {
       console.error('Error adding comment:', error);
