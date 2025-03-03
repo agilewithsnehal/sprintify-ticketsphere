@@ -485,5 +485,20 @@ export const supabaseService = {
       avatar: data.avatar,
       role: data.role as 'admin' | 'manager' | 'developer' | 'viewer'
     };
-  }
+  },
+  async deleteTicket(ticketId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      return false;
+    }
+  },
 };

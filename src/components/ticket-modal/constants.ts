@@ -1,14 +1,28 @@
 
 export const priorityColors = {
-  low: 'bg-green-100 text-green-800',
-  medium: 'bg-amber-100 text-amber-800',
-  high: 'bg-red-100 text-red-800',
+  low: 'text-green-600',
+  medium: 'text-amber-600',
+  high: 'text-red-600'
 };
 
 export const statusColors = {
-  'backlog': 'bg-gray-100 text-gray-800',
-  'todo': 'bg-blue-100 text-blue-800',
-  'in-progress': 'bg-purple-100 text-purple-800',
-  'review': 'bg-yellow-100 text-yellow-800',
-  'done': 'bg-green-100 text-green-800',
+  'backlog': 'text-zinc-600',
+  'todo': 'text-blue-600',
+  'in-progress': 'text-amber-600',
+  'review': 'text-purple-600',
+  'done': 'text-green-600'
 };
+
+export const priorityOptions = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' }
+];
+
+export const statusOptions = [
+  { value: 'backlog', label: 'Backlog' },
+  { value: 'todo', label: 'To Do' },
+  { value: 'in-progress', label: 'In Progress' },
+  { value: 'review', label: 'Review' },
+  { value: 'done', label: 'Done' }
+];

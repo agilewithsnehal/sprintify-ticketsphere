@@ -22,22 +22,32 @@ export function useTicketManagement(
     try {
       // In a real implementation, this would be handled by the parent component
       // which calls the service directly, but we're keeping this for UI updates
+      
+      // Create the ticket in the database first
+      const createdTicket = await supabaseService.createTicket(newTicket);
+      
+      if (!createdTicket) {
+        toast.error('Failed to create ticket');
+        return;
+      }
+      
+      // Update the UI with the created ticket (from the database)
       setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === newTicket.status) {
+        if (col.id === createdTicket.status) {
           return {
             ...col,
-            tickets: [...col.tickets, newTicket]
+            tickets: [...col.tickets, createdTicket]
           };
         }
         return col;
       }));
       
-      toast.success(`Ticket created successfully in ${newTicket.status.replace(/-/g, ' ')}`);
+      toast.success(`Ticket created successfully in ${createdTicket.status.replace(/-/g, ' ')}`);
     } catch (error) {
       console.error('Error handling ticket create:', error);
       toast.error('Failed to update board with new ticket');
     }
-  }, []);
+  }, [setColumns]);
 
   const handleTicketUpdate = useCallback(async (updatedTicket: TicketType) => {
     try {
@@ -93,7 +103,7 @@ export function useTicketManagement(
       console.error('Error updating ticket:', error);
       toast.error('Failed to update ticket');
     }
-  }, [columns]);
+  }, [columns, setColumns]);
 
   return {
     findTicketInColumns,

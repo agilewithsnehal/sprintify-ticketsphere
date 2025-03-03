@@ -54,7 +54,7 @@ const TicketHeader: React.FC<TicketHeaderProps> = ({
           />
         </div>
       ) : (
-        <DialogTitle className="text-xl font-medium mt-2 text-left">{ticket.summary}</DialogTitle>
+        <h2 className="text-xl font-medium mt-2">{ticket.summary}</h2>
       )}
     </DialogHeader>
   );

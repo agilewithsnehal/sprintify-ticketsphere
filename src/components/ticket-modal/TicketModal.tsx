@@ -16,6 +16,7 @@ interface TicketModalProps {
   onTicketUpdate: (ticket: Ticket) => void;
   currentUser: User | null;
   isStandalone?: boolean;
+  onTicketDelete?: (ticketId: string) => void;
 }
 
 const TicketModal: React.FC<TicketModalProps> = ({ 
@@ -24,7 +25,8 @@ const TicketModal: React.FC<TicketModalProps> = ({
   ticket, 
   onTicketUpdate,
   currentUser,
-  isStandalone = false
+  isStandalone = false,
+  onTicketDelete
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTicket, setEditedTicket] = useState<Ticket>(ticket);
@@ -102,6 +104,12 @@ const TicketModal: React.FC<TicketModalProps> = ({
     await onTicketUpdate(updatedTicket);
   };
 
+  const handleDeleteTicket = () => {
+    if (onTicketDelete) {
+      onTicketDelete(ticket.id);
+    }
+  };
+
   const renderContent = () => (
     <>
       <TicketHeader 
@@ -143,6 +151,7 @@ const TicketModal: React.FC<TicketModalProps> = ({
           handleStatusChange={handleStatusChange}
           handlePriorityChange={handlePriorityChange}
           handleAssigneeChange={handleAssigneeChange}
+          onTicketDelete={handleDeleteTicket}
         />
       </div>
     </>

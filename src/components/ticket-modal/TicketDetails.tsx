@@ -1,12 +1,11 @@
 
 import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Ticket, Priority, Status } from '@/lib/types';
-import { priorityColors, statusColors } from './constants';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Pencil, Save, Trash2 } from 'lucide-react';
+import { Ticket, Status, Priority } from '@/lib/types';
+import { priorityOptions, statusOptions } from './constants';
 
 interface TicketDetailsProps {
   ticket: Ticket;
@@ -16,6 +15,7 @@ interface TicketDetailsProps {
   handleStatusChange: (status: Status) => void;
   handlePriorityChange: (priority: Priority) => void;
   handleAssigneeChange: (userId: string) => void;
+  onTicketDelete?: () => void;
 }
 
 const TicketDetails: React.FC<TicketDetailsProps> = ({
@@ -26,163 +26,128 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   handleStatusChange,
   handlePriorityChange,
   handleAssigneeChange,
+  onTicketDelete
 }) => {
   return (
     <div className="col-span-1 space-y-6">
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">Details</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Assignee</span>
-            <div className="w-32">
-              <Select 
-                value={ticket.assignee?.id || ''} 
-                onValueChange={handleAssigneeChange}
+      <div className="bg-muted/50 rounded-lg p-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-medium text-muted-foreground">Ticket Details</h3>
+          <div className="flex space-x-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7"
+              onClick={handleEditToggle}
+            >
+              {isEditing ? <Save className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+            </Button>
+            
+            {onTicketDelete && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={onTicketDelete}
               >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="Unassigned">
-                    {ticket.assignee ? (
-                      <div className="flex items-center space-x-1">
-                        <Avatar className="h-4 w-4">
-                          <AvatarImage src={ticket.assignee.avatar} alt={ticket.assignee.name} />
-                          <AvatarFallback>{ticket.assignee.name.substring(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <span>{ticket.assignee.name}</span>
-                      </div>
-                    ) : 'Unassigned'}
-                  </SelectValue>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        <div className="space-y-4 mt-4">
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Status</div>
+            {isEditing ? (
+              <Select 
+                value={ticket.status} 
+                onValueChange={(value) => handleStatusChange(value as Status)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
-                  {ticket.project.members.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      <div className="flex items-center space-x-1">
-                        <Avatar className="h-4 w-4">
-                          <AvatarImage src={member.avatar} alt={member.name} />
-                          <AvatarFallback>{member.name.substring(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <span>{member.name}</span>
-                      </div>
-                    </SelectItem>
+                  {statusOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            ) : (
+              <div className="text-sm capitalize">{ticket.status.replace(/-/g, ' ')}</div>
+            )}
           </div>
           
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Reporter</span>
-            <div className="flex items-center space-x-1">
-              <Avatar className="h-5 w-5">
-                <AvatarImage src={ticket.reporter.avatar} alt={ticket.reporter.name} />
-                <AvatarFallback>{ticket.reporter.name.substring(0, 2)}</AvatarFallback>
-              </Avatar>
-              <span>{ticket.reporter.name}</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Priority</span>
-            <div className="w-32">
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Priority</div>
+            {isEditing ? (
               <Select 
                 value={ticket.priority} 
-                onValueChange={(value: Priority) => handlePriorityChange(value)}
+                onValueChange={(value) => handlePriorityChange(value as Priority)}
               >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue>
-                    <Badge variant="outline" className={`text-xs ${priorityColors[ticket.priority]}`}>
-                      {ticket.priority}
-                    </Badge>
-                  </SelectValue>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">
-                    <Badge variant="outline" className={`text-xs ${priorityColors.low}`}>
-                      low
-                    </Badge>
-                  </SelectItem>
-                  <SelectItem value="medium">
-                    <Badge variant="outline" className={`text-xs ${priorityColors.medium}`}>
-                      medium
-                    </Badge>
-                  </SelectItem>
-                  <SelectItem value="high">
-                    <Badge variant="outline" className={`text-xs ${priorityColors.high}`}>
-                      high
-                    </Badge>
-                  </SelectItem>
+                  {priorityOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
+            ) : (
+              <div className="text-sm capitalize">{ticket.priority}</div>
+            )}
           </div>
           
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Status</span>
-            <div className="w-32">
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Assignee</div>
+            {isEditing ? (
               <Select 
-                value={ticket.status} 
-                onValueChange={(value: Status) => handleStatusChange(value)}
+                value={ticket.assignee?.id || 'unassigned'} 
+                onValueChange={handleAssigneeChange}
               >
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue>
-                    <Badge variant="outline" className={`text-xs ${statusColors[ticket.status]}`}>
-                      {ticket.status.replace(/-/g, ' ')}
-                    </Badge>
-                  </SelectValue>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="backlog">
-                    <Badge variant="outline" className={`text-xs ${statusColors.backlog}`}>
-                      backlog
-                    </Badge>
-                  </SelectItem>
-                  <SelectItem value="todo">
-                    <Badge variant="outline" className={`text-xs ${statusColors.todo}`}>
-                      to do
-                    </Badge>
-                  </SelectItem>
-                  <SelectItem value="in-progress">
-                    <Badge variant="outline" className={`text-xs ${statusColors["in-progress"]}`}>
-                      in progress
-                    </Badge>
-                  </SelectItem>
-                  <SelectItem value="review">
-                    <Badge variant="outline" className={`text-xs ${statusColors.review}`}>
-                      review
-                    </Badge>
-                  </SelectItem>
-                  <SelectItem value="done">
-                    <Badge variant="outline" className={`text-xs ${statusColors.done}`}>
-                      done
-                    </Badge>
-                  </SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {ticket.project.members.map(member => (
+                    <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            ) : (
+              <div className="flex items-center">
+                {ticket.assignee ? (
+                  <>
+                    <Avatar className="h-5 w-5 mr-2">
+                      <AvatarImage src={ticket.assignee.avatar} alt={ticket.assignee.name} />
+                      <AvatarFallback>{ticket.assignee.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{ticket.assignee.name}</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Unassigned</span>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Reporter</div>
+            <div className="flex items-center">
+              <Avatar className="h-5 w-5 mr-2">
+                <AvatarImage src={ticket.reporter.avatar} alt={ticket.reporter.name} />
+                <AvatarFallback>{ticket.reporter.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm">{ticket.reporter.name}</span>
             </div>
           </div>
           
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Created</span>
-            <div className="flex items-center space-x-1">
-              <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>{formattedDate}</span>
-            </div>
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Created</div>
+            <div className="text-sm">{formattedDate}</div>
           </div>
-        </div>
-      </div>
-      
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">Actions</h3>
-        <div className="space-y-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full justify-start"
-            onClick={handleEditToggle}
-          >
-            <Edit className="h-3.5 w-3.5 mr-2" />
-            {isEditing ? 'Cancel edit' : 'Edit'}
-          </Button>
         </div>
       </div>
     </div>
