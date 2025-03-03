@@ -6,9 +6,16 @@ import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus } from 'lucide-re
 interface BoardToolbarProps {
   boardName: string;
   onCreateTicket: () => void;
+  onFilterClick: () => void;
+  onGroupClick: () => void;
 }
 
-const BoardToolbar: React.FC<BoardToolbarProps> = ({ boardName, onCreateTicket }) => {
+const BoardToolbar: React.FC<BoardToolbarProps> = ({ 
+  boardName, 
+  onCreateTicket,
+  onFilterClick,
+  onGroupClick
+}) => {
   return (
     <div className="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -31,12 +38,22 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({ boardName, onCreateTicket }
           <span>Create Ticket</span>
         </Button>
         
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-1"
+          onClick={onFilterClick}
+        >
           <Filter className="h-4 w-4" />
           <span>Filter</span>
         </Button>
         
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-1"
+          onClick={onGroupClick}
+        >
           <ListFilter className="h-4 w-4" />
           <span>Group</span>
           <ChevronDown className="h-4 w-4" />

@@ -8,7 +8,6 @@ import TicketModal from '@/components/ticket-modal';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const TicketPage = () => {
   const { projectId, ticketId } = useParams<{ projectId: string; ticketId: string }>();
@@ -75,20 +74,19 @@ const TicketPage = () => {
     
     try {
       setIsDeleting(true);
-      // Here we would call the delete function from the supabase service
-      // For now, let's just simulate deletion with a timeout
-      setTimeout(() => {
+      // Call the actual delete method from the supabase service
+      const success = await supabaseService.deleteTicket(ticket.id);
+      
+      if (success) {
         toast.success('Ticket deleted successfully');
         handleBack();
-      }, 500);
-      
-      // In a real implementation, it would look like:
-      // await supabaseService.deleteTicket(ticket.id);
-      
+      } else {
+        toast.error('Failed to delete ticket');
+        setIsDeleting(false);
+      }
     } catch (error) {
       console.error('Error deleting ticket:', error);
       toast.error('Failed to delete ticket');
-    } finally {
       setIsDeleting(false);
     }
   };
@@ -149,9 +147,9 @@ const TicketPage = () => {
             onClose={handleBack}
             ticket={ticket}
             onTicketUpdate={handleTicketUpdate}
+            onTicketDelete={handleTicketDelete}
             currentUser={currentUser}
             isStandalone={true}
-            onTicketDelete={handleTicketDelete}
           />
         </div>
       </div>

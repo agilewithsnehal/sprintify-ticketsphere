@@ -38,7 +38,8 @@ export function useKanbanBoard(
   const { 
     findTicketInColumns,
     handleTicketCreate, 
-    handleTicketUpdate 
+    handleTicketUpdate,
+    handleTicketDelete 
   } = useTicketManagement(columns, setColumns);
 
   const { 
@@ -70,6 +71,7 @@ export function useKanbanBoard(
     handleCloseCreateModal,
     handleTicketCreate,
     handleTicketUpdate,
+    handleTicketDelete,
     onDragEnd,
     scrollLeft,
     scrollRight

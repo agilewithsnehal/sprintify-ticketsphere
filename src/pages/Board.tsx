@@ -16,6 +16,8 @@ const Board = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
   
   const { 
     data: board, 
@@ -110,10 +112,26 @@ const Board = () => {
     setIsCreateModalOpen(true);
   };
 
+  // Add new handlers for filter and group buttons
+  const handleFilterClick = () => {
+    setIsFilterMenuOpen(!isFilterMenuOpen);
+    toast.info('Filter functionality coming soon');
+  };
+
+  const handleGroupClick = () => {
+    setIsGroupMenuOpen(!isGroupMenuOpen);
+    toast.info('Group functionality coming soon');
+  };
+
   return (
     <Layout>
       <div className="container mx-auto p-4">
-        <BoardToolbar boardName={board.name} onCreateTicket={handleOpenCreateModal} />
+        <BoardToolbar 
+          boardName={board.name} 
+          onCreateTicket={handleOpenCreateModal}
+          onFilterClick={handleFilterClick}
+          onGroupClick={handleGroupClick}
+        />
         <BoardContainer board={board} onTicketMove={handleTicketMove} />
         
         {isCreateModalOpen && (

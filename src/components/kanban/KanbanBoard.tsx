@@ -28,6 +28,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     handleCloseCreateModal,
     handleTicketCreate,
     handleTicketUpdate,
+    handleTicketDelete,
     onDragEnd,
     scrollLeft,
     scrollRight
@@ -72,6 +73,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
           onClose={handleCloseTicketModal} 
           ticket={selectedTicket}
           onTicketUpdate={handleTicketUpdate}
+          onTicketDelete={handleTicketDelete}
           currentUser={currentUser}
         />
       )}

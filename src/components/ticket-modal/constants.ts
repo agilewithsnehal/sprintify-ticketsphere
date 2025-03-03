@@ -26,3 +26,19 @@ export const statusOptions = [
   { value: 'review', label: 'Review' },
   { value: 'done', label: 'Done' }
 ];
+
+// Background colors for status badges
+export const statusBgColors = {
+  'backlog': 'bg-zinc-100',
+  'todo': 'bg-blue-100',
+  'in-progress': 'bg-amber-100',
+  'review': 'bg-purple-100',
+  'done': 'bg-green-100'
+};
+
+// Background colors for priority badges
+export const priorityBgColors = {
+  'low': 'bg-green-100',
+  'medium': 'bg-amber-100',
+  'high': 'bg-red-100'
+};
