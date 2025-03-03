@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { supabaseService } from '@/lib/supabase-service';
-import { Ticket as TicketType } from '@/lib/types';
+import { Ticket as TicketType, Comment } from '@/lib/types';
 import TicketModal from '@/components/ticket-modal';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -56,6 +56,21 @@ const TicketPage = () => {
 
   const handleTicketUpdate = async (updatedTicket: TicketType) => {
     try {
+      // If adding a comment, we don't need to update the entire ticket
+      if (ticket && 
+          updatedTicket.comments.length > ticket.comments.length && 
+          updatedTicket.status === ticket.status && 
+          updatedTicket.priority === ticket.priority && 
+          updatedTicket.assignee?.id === ticket.assignee?.id) {
+        // The last comment is the new one
+        const newComment = updatedTicket.comments[updatedTicket.comments.length - 1];
+        // No need to call updateTicket, as the comment is already added to the database in the TicketModal
+        setTicket(updatedTicket);
+        toast.success('Comment added successfully');
+        return;
+      }
+
+      // For other updates, proceed with updating the ticket
       const result = await supabaseService.updateTicket(updatedTicket.id, updatedTicket);
       if (result) {
         toast.success('Ticket updated successfully');

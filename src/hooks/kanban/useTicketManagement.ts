@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { Ticket as TicketType, Status } from '@/lib/types';
+import { Ticket as TicketType, Status, Comment } from '@/lib/types';
 import { toast } from 'sonner';
 import { supabaseService } from '@/lib/supabase-service';
 
@@ -49,13 +49,39 @@ export function useTicketManagement(
 
   const handleTicketUpdate = useCallback(async (updatedTicket: TicketType) => {
     try {
-      const oldStatus = columns.find(col => 
-        col.tickets.some((t: TicketType) => t.id === updatedTicket.id)
-      )?.id;
+      const oldTicket = findTicketInColumns(updatedTicket.id);
+      if (!oldTicket) {
+        toast.error('Ticket not found in board');
+        return;
+      }
       
+      const oldStatus = oldTicket.status;
       const newStatus = updatedTicket.status;
       
-      // Update the ticket in the database
+      // Check if this is just a comment addition (not needing a full ticket update)
+      if (updatedTicket.comments.length > oldTicket.comments.length && 
+          updatedTicket.status === oldTicket.status && 
+          updatedTicket.priority === oldTicket.priority && 
+          updatedTicket.assignee?.id === oldTicket.assignee?.id) {
+        
+        // The comment has already been added to the database in TicketModal
+        // Just update the UI
+        setColumns(prevColumns => prevColumns.map(col => {
+          if (col.id === oldStatus) {
+            return {
+              ...col,
+              tickets: col.tickets.map((t: TicketType) => 
+                t.id === updatedTicket.id ? updatedTicket : t
+              )
+            };
+          }
+          return col;
+        }));
+        
+        return;
+      }
+      
+      // For other updates, proceed with updating the ticket in the database
       const result = await supabaseService.updateTicket(updatedTicket.id, updatedTicket);
       
       if (!result) {
@@ -101,7 +127,7 @@ export function useTicketManagement(
       console.error('Error updating ticket:', error);
       toast.error('Failed to update ticket');
     }
-  }, [columns, setColumns]);
+  }, [columns, setColumns, findTicketInColumns]);
 
   const handleTicketDelete = useCallback(async (ticketId: string) => {
     try {

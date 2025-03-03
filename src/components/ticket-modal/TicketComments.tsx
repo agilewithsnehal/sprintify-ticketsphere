@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface TicketCommentsProps {
   comments: Comment[];
@@ -28,6 +29,9 @@ const TicketComments: React.FC<TicketCommentsProps> = ({
     try {
       await onAddComment(newComment);
       setNewComment('');
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+      toast.error('Failed to add comment');
     } finally {
       setIsSubmitting(false);
     }

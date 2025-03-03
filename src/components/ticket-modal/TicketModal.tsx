@@ -8,6 +8,8 @@ import TicketHeader from './TicketHeader';
 import TicketDescription from './TicketDescription';
 import TicketDetails from './TicketDetails';
 import TicketComments from './TicketComments';
+import { supabaseService } from '@/lib/supabase-service';
+import { toast } from 'sonner';
 
 interface TicketModalProps {
   isOpen: boolean;
@@ -84,24 +86,33 @@ const TicketModal: React.FC<TicketModalProps> = ({
   };
 
   const handleAddComment = async (content: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      toast.error('You need to be logged in to add comments');
+      return;
+    }
     
-    // Create a new comment
-    const newComment = {
-      id: `comment-${Date.now()}`, // Temporary ID, would be replaced by the backend
-      author: currentUser,
-      content,
-      createdAt: new Date(),
-    };
-    
-    // Add to ticket
-    const updatedTicket = {
-      ...ticket,
-      comments: [...ticket.comments, newComment]
-    };
-    
-    // Update the ticket
-    await onTicketUpdate(updatedTicket);
+    try {
+      // Add comment to the database using supabaseService
+      const newComment = await supabaseService.addComment(ticket.id, content, currentUser.id);
+      
+      if (!newComment) {
+        toast.error('Failed to add comment');
+        return;
+      }
+      
+      // Update local state with the new comment
+      const updatedTicket = {
+        ...ticket,
+        comments: [...ticket.comments, newComment]
+      };
+      
+      // Call onTicketUpdate to update the ticket in the parent component
+      onTicketUpdate(updatedTicket);
+      toast.success('Comment added successfully');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
+    }
   };
 
   const handleDeleteTicket = () => {
