@@ -26,7 +26,7 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
         name: assigneeData.name,
         email: assigneeData.email,
         avatar: assigneeData.avatar,
-        role: assigneeData.role
+        role: assigneeData.role as 'admin' | 'manager' | 'developer' | 'viewer'
       };
     }
   }
@@ -56,7 +56,7 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
       name: data.name,
       email: data.email,
       avatar: data.avatar,
-      role: data.role
+      role: data.role as 'admin' | 'manager' | 'developer' | 'viewer'
     } : null;
   }) || [];
 
@@ -85,8 +85,14 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
         name: authorData.name,
         email: authorData.email,
         avatar: authorData.avatar,
-        role: authorData.role
-      } : reporterData // Fallback to reporter if author is not found
+        role: authorData.role as 'admin' | 'manager' | 'developer' | 'viewer'
+      } : {
+        id: reporterData.id,
+        name: reporterData.name,
+        email: reporterData.email,
+        avatar: reporterData.avatar,
+        role: reporterData.role as 'admin' | 'manager' | 'developer' | 'viewer'
+      }
     };
   }) || [];
 
@@ -96,10 +102,12 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
   const project: Project = {
     id: projectData.id,
     name: projectData.name,
-    description: projectData.description,
+    description: projectData.description || '',
     key: projectData.key,
     members: members,
-    lead: members.find(m => m.role === 'admin') || members[0] // Assuming admin is the lead
+    lead: members.find(m => m.role === 'admin') || members[0], // Assuming admin is the lead
+    createdAt: new Date(projectData.created_at),
+    updatedAt: new Date(projectData.updated_at)
   };
 
   // Construct and return the ticket
@@ -116,7 +124,7 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
       name: reporterData.name,
       email: reporterData.email,
       avatar: reporterData.avatar,
-      role: reporterData.role
+      role: reporterData.role as 'admin' | 'manager' | 'developer' | 'viewer'
     },
     project: project,
     createdAt: new Date(dbTicket.created_at),
@@ -157,7 +165,7 @@ export const supabaseService = {
               name: data.name,
               email: data.email,
               avatar: data.avatar,
-              role: data.role
+              role: data.role as 'admin' | 'manager' | 'developer' | 'viewer'
             } : null;
           }) || [];
 
@@ -169,7 +177,9 @@ export const supabaseService = {
             description: project.description || '',
             key: project.key,
             members,
-            lead: members.find(m => m.role === 'admin') || members[0]
+            lead: members.find(m => m.role === 'admin') || members[0],
+            createdAt: new Date(project.created_at),
+            updatedAt: new Date(project.updated_at)
           };
         })
       );
@@ -210,7 +220,7 @@ export const supabaseService = {
           name: data.name,
           email: data.email,
           avatar: data.avatar,
-          role: data.role
+          role: data.role as 'admin' | 'manager' | 'developer' | 'viewer'
         } : null;
       }) || [];
 
@@ -222,7 +232,9 @@ export const supabaseService = {
         description: project.description || '',
         key: project.key,
         members,
-        lead: members.find(m => m.role === 'admin') || members[0]
+        lead: members.find(m => m.role === 'admin') || members[0],
+        createdAt: new Date(project.created_at),
+        updatedAt: new Date(project.updated_at)
       };
     } catch (error) {
       console.error('Error fetching project:', error);
@@ -363,7 +375,7 @@ export const supabaseService = {
           name: author.name,
           email: author.email,
           avatar: author.avatar,
-          role: author.role
+          role: author.role as 'admin' | 'manager' | 'developer' | 'viewer'
         }
       };
     } catch (error) {
@@ -420,7 +432,7 @@ export const supabaseService = {
       name: data.name,
       email: data.email,
       avatar: data.avatar,
-      role: data.role
+      role: data.role as 'admin' | 'manager' | 'developer' | 'viewer'
     };
   }
 };
