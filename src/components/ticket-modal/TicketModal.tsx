@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -80,6 +81,27 @@ const TicketModal: React.FC<TicketModalProps> = ({
     onTicketUpdate(updated);
   };
 
+  const handleAddComment = async (content: string) => {
+    if (!currentUser) return;
+    
+    // Create a new comment
+    const newComment = {
+      id: `comment-${Date.now()}`, // Temporary ID, would be replaced by the backend
+      author: currentUser,
+      content,
+      createdAt: new Date(),
+    };
+    
+    // Add to ticket
+    const updatedTicket = {
+      ...ticket,
+      comments: [...ticket.comments, newComment]
+    };
+    
+    // Update the ticket
+    await onTicketUpdate(updatedTicket);
+  };
+
   const renderContent = () => (
     <>
       <TicketHeader 
@@ -106,9 +128,9 @@ const TicketModal: React.FC<TicketModalProps> = ({
           
           {currentUser && (
             <TicketComments 
-              ticket={ticket}
+              comments={ticket.comments}
+              onAddComment={handleAddComment}
               currentUser={currentUser}
-              onTicketUpdate={onTicketUpdate}
             />
           )}
         </div>
