@@ -19,6 +19,11 @@ const Board = () => {
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
   
+  // Check if projectId is a valid UUID
+  const isValidUuid = (id) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
+  
   const { 
     data: board, 
     isLoading, 
@@ -28,16 +33,44 @@ const Board = () => {
     queryKey: ['board', projectId],
     queryFn: async () => {
       if (!projectId) throw new Error('Project ID is required');
+      
+      if (!isValidUuid(projectId)) {
+        toast.error('Invalid project ID format');
+        throw new Error('Invalid project ID format');
+      }
+      
       const boardData = await supabaseService.createBoard(projectId);
       console.log('Board data loaded:', boardData);
       return boardData;
     },
-    enabled: !!projectId,
+    enabled: !!projectId && isValidUuid(projectId),
   });
 
   useEffect(() => {
     console.log('Board component mounted with projectId:', projectId);
-  }, [projectId]);
+    
+    if (projectId && !isValidUuid(projectId)) {
+      toast.error('Invalid project ID format');
+      navigate('/');
+    }
+  }, [projectId, navigate]);
+
+  if (!projectId || !isValidUuid(projectId)) {
+    return (
+      <Layout>
+        <div className="px-4 py-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">Invalid Project ID</h2>
+          <p className="text-muted-foreground mb-4">The project ID format is not valid. Please check the URL and try again.</p>
+          <button 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded"
+            onClick={() => navigate('/')}
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </Layout>
+    );
+  }
 
   if (isLoading) {
     return (

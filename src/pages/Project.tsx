@@ -14,11 +14,17 @@ import { supabaseService } from '@/lib/supabase-service';
 import { Project, Ticket } from '@/lib/types';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Check if projectId is a valid UUID
+  const isValidUuid = (id) => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
 
   // Fetch project data
   const { 
@@ -29,7 +35,20 @@ const ProjectPage = () => {
     queryKey: ['project', projectId],
     queryFn: async () => {
       if (!projectId) return null;
-      return await supabaseService.getProjectById(projectId);
+      
+      try {
+        // If projectId is not a valid UUID, show an error toast
+        if (!isValidUuid(projectId)) {
+          toast.error('Invalid project ID format');
+          return null;
+        }
+        
+        return await supabaseService.getProjectById(projectId);
+      } catch (error) {
+        console.error('Error fetching project:', error);
+        toast.error('Could not load project details');
+        return null;
+      }
     },
   });
   
@@ -40,10 +59,16 @@ const ProjectPage = () => {
   } = useQuery({
     queryKey: ['tickets', projectId],
     queryFn: async () => {
-      if (!projectId) return [];
-      return await supabaseService.getTicketsByProjectId(projectId);
+      if (!projectId || !isValidUuid(projectId)) return [];
+      
+      try {
+        return await supabaseService.getTicketsByProjectId(projectId);
+      } catch (error) {
+        console.error('Error fetching tickets:', error);
+        return [];
+      }
     },
-    enabled: !!projectId
+    enabled: !!projectId && isValidUuid(projectId)
   });
 
   // Fetch all projects if on the projects tab
@@ -52,7 +77,14 @@ const ProjectPage = () => {
     isLoading: isLoadingAllProjects 
   } = useQuery({
     queryKey: ['projects'],
-    queryFn: async () => await supabaseService.getAllProjects(),
+    queryFn: async () => {
+      try {
+        return await supabaseService.getAllProjects();
+      } catch (error) {
+        console.error('Error fetching all projects:', error);
+        return [];
+      }
+    },
     enabled: activeTab === 'projects'
   });
 
@@ -67,7 +99,19 @@ const ProjectPage = () => {
     return null;
   }
 
-  if (isProjectError) {
+  if (!isValidUuid(projectId)) {
+    return (
+      <Layout>
+        <div className="px-4 py-8 text-center">
+          <h2 className="text-2xl font-bold mb-2">Invalid Project ID</h2>
+          <p className="text-muted-foreground mb-4">The project ID format is not valid. Please check the URL and try again.</p>
+          <Button onClick={() => navigate('/')}>Back to Dashboard</Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isProjectError || (project === null && !isLoadingProject)) {
     return (
       <Layout>
         <div className="px-4 py-8 text-center">
@@ -294,7 +338,9 @@ const ProjectPage = () => {
         </TabsContent>
         
         <TabsContent value="board">
-          <div className="text-center">
+          <div className="text-center py-10">
+            <h3 className="text-xl font-medium mb-4">Project Board</h3>
+            <p className="text-muted-foreground mb-6">View and manage all tickets for this project in a Kanban board view.</p>
             <Button variant="default" onClick={() => navigate(`/board/${projectId}`)} className="px-8">
               Go to Board View
             </Button>

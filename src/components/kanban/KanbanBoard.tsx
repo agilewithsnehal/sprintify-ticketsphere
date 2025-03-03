@@ -7,6 +7,7 @@ import KanbanColumn from './KanbanColumn';
 import KanbanScrollButtons from './KanbanScrollButtons';
 import TicketModal from '../ticket-modal';
 import CreateTicketModal from '../CreateTicketModal';
+import { toast } from 'sonner';
 
 interface KanbanBoardProps {
   board: BoardType;
@@ -35,8 +36,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
   } = useKanbanBoard(board, onTicketMove);
 
   useEffect(() => {
+    if (!board || !board.project) {
+      toast.error('Invalid board data');
+      console.error('Invalid board data:', board);
+      return;
+    }
+    
+    console.log("KanbanBoard: Board loaded:", board.name);
     console.log("KanbanBoard: selectedTicket:", selectedTicket?.id, "isTicketModalOpen:", isTicketModalOpen);
-  }, [selectedTicket, isTicketModalOpen]);
+  }, [board, selectedTicket, isTicketModalOpen]);
+
+  if (!board || !board.project || !board.columns) {
+    return (
+      <div className="p-4 text-center bg-background border rounded-md">
+        <h3 className="font-medium mb-2">Unable to load board</h3>
+        <p className="text-muted-foreground text-sm">The board data is invalid or incomplete.</p>
+      </div>
+    );
+  }
 
   return (
     <>
