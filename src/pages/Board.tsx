@@ -5,9 +5,9 @@ import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import ProjectHeader from '@/components/ProjectHeader';
 import CreateTicketModal from '@/components/CreateTicketModal';
-import { createBoard, getProjectById } from '@/lib/data';
 import { Board as BoardType, Project, Status, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
+import { supabaseService } from '@/lib/supabase-service';
 
 // Import our components
 import BoardSkeleton from '@/components/board/BoardSkeleton';
@@ -17,25 +17,31 @@ import ProjectConfiguration from '@/components/board/ProjectConfiguration';
 import BoardContainer from '@/components/board/BoardContainer';
 
 const Board = () => {
-  const { projectId = '1' } = useParams();
+  const { projectId = '00000000-0000-0000-0000-000000000001' } = useParams();
   const [project, setProject] = useState<Project | null>(null);
   const [board, setBoard] = useState<BoardType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Get current user
+        const user = await supabaseService.getCurrentUser();
+        setCurrentUser(user);
         
-        const projectData = getProjectById(projectId);
+        // Get project data
+        const projectData = await supabaseService.getProjectById(projectId);
         if (projectData) {
           setProject(projectData);
-          setBoard(createBoard(projectId));
+          
+          // Create board from project data
+          const boardData = await supabaseService.createBoard(projectId);
+          setBoard(boardData);
         } else {
           toast.error('Project not found');
         }
@@ -50,24 +56,38 @@ const Board = () => {
     fetchData();
   }, [projectId]);
 
-  const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
-    console.log(`Moved ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
-    // In a real app, you would call an API to update the ticket status
+  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
+    try {
+      await supabaseService.updateTicket(ticketId, { status: destinationColumn });
+      // Board will be updated via useKanbanBoard which manages the UI state
+      toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
+    } catch (error) {
+      console.error('Error moving ticket:', error);
+      toast.error('Failed to move ticket');
+    }
   };
 
-  const handleTicketCreate = (newTicket: Ticket) => {
-    if (board) {
-      const updatedBoard = { ...board };
-      const column = updatedBoard.columns.find(col => col.id === newTicket.status);
+  const handleTicketCreate = async (newTicket: Ticket) => {
+    try {
+      const createdTicket = await supabaseService.createTicket(newTicket);
       
-      if (column) {
-        column.tickets.push(newTicket);
-        setBoard(updatedBoard);
-        toast.success('Ticket created successfully');
+      if (createdTicket && board) {
+        // Update the board with the new ticket
+        const updatedBoard = { ...board };
+        const column = updatedBoard.columns.find(col => col.id === createdTicket.status);
+        
+        if (column) {
+          column.tickets.push(createdTicket);
+          setBoard(updatedBoard);
+          toast.success('Ticket created successfully');
+        }
       }
+      
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast.error('Failed to create ticket');
     }
-    
-    setIsCreateModalOpen(false);
   };
 
   if (isLoading) {

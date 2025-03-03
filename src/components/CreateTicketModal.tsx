@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Ticket, Project, Status, Priority, User } from '@/lib/types';
-import { users } from '@/lib/data';
+import { supabaseService } from '@/lib/supabase-service';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -29,41 +29,68 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   const [priority, setPriority] = useState<Priority>('medium');
   const [assigneeId, setAssigneeId] = useState<string>('unassigned');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await supabaseService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!summary.trim()) {
       toast.error('Please provide a summary for the ticket');
       return;
     }
+    
+    if (!currentUser) {
+      toast.error('Unable to determine current user');
+      return;
+    }
 
     setIsSubmitting(true);
 
-    // Create a new ticket object
-    const newTicket: Ticket = {
-      id: `ticket-${Date.now()}`, // In a real app, the server would assign an ID
-      key: `${project.key}-${Math.floor(Math.random() * 1000)}`, // Simplified key generation
-      summary: summary.trim(),
-      description: description.trim(),
-      status: column,
-      priority,
-      assignee: assigneeId !== 'unassigned' ? project.members.find(member => member.id === assigneeId) : undefined,
-      reporter: users[0], // Set current user as reporter
-      project,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      comments: [],
-    };
+    try {
+      // Generate a key for the ticket
+      const ticketKey = `${project.key}-${Math.floor(Math.random() * 1000)}`;
+      
+      // Create a new ticket object
+      const newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'> = {
+        key: ticketKey,
+        summary: summary.trim(),
+        description: description.trim(),
+        status: column,
+        priority,
+        assignee: assigneeId !== 'unassigned' ? project.members.find(member => member.id === assigneeId) : undefined,
+        reporter: currentUser,
+        project,
+      };
 
-    // In a real app, you would make an API call here
-    setTimeout(() => {
-      onTicketCreate(newTicket);
-      toast.success('Ticket created successfully');
-      resetForm();
-      onClose();
+      // Create the ticket and get the result with all fields populated
+      const createdTicket = await supabaseService.createTicket(newTicket);
+      
+      if (createdTicket) {
+        onTicketCreate(createdTicket);
+        resetForm();
+        onClose();
+      } else {
+        toast.error('Failed to create ticket');
+      }
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast.error('An error occurred while creating the ticket');
+    } finally {
       setIsSubmitting(false);
-    }, 500); // Simulate API delay
+    }
   };
 
   const resetForm = () => {

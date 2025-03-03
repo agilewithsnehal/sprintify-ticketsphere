@@ -1,8 +1,8 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Ticket as TicketType, Board as BoardType, Status } from '@/lib/types';
 import { DropResult } from 'react-beautiful-dnd';
 import { toast } from 'sonner';
+import { supabaseService } from '@/lib/supabase-service';
 
 export function useKanbanBoard(
   board: BoardType,
@@ -14,6 +14,21 @@ export function useKanbanBoard(
   const [createModalStatus, setCreateModalStatus] = useState<Status | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Load current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await supabaseService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
 
   // Update columns when board changes
   useEffect(() => {
@@ -43,58 +58,81 @@ export function useKanbanBoard(
     setCreateModalStatus(null);
   }, []);
 
-  const handleTicketCreate = useCallback((newTicket: TicketType) => {
-    setColumns(prevColumns => prevColumns.map(col => {
-      if (col.id === newTicket.status) {
-        return {
-          ...col,
-          tickets: [...col.tickets, newTicket]
-        };
-      }
-      return col;
-    }));
-    
-    toast.success(`Ticket created successfully in ${newTicket.status.replace(/-/g, ' ')}`);
+  const handleTicketCreate = useCallback(async (newTicket: TicketType) => {
+    try {
+      // In a real implementation, this would be handled by the parent component
+      // which calls the service directly, but we're keeping this for UI updates
+      setColumns(prevColumns => prevColumns.map(col => {
+        if (col.id === newTicket.status) {
+          return {
+            ...col,
+            tickets: [...col.tickets, newTicket]
+          };
+        }
+        return col;
+      }));
+      
+      toast.success(`Ticket created successfully in ${newTicket.status.replace(/-/g, ' ')}`);
+    } catch (error) {
+      console.error('Error handling ticket create:', error);
+      toast.error('Failed to update board with new ticket');
+    }
   }, []);
 
-  const handleTicketUpdate = useCallback((updatedTicket: TicketType) => {
-    const oldStatus = selectedTicket?.status;
-    const newStatus = updatedTicket.status;
-    
-    if (oldStatus !== newStatus) {
-      setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === oldStatus) {
-          return {
-            ...col,
-            tickets: col.tickets.filter(t => t.id !== updatedTicket.id)
-          };
-        }
-        if (col.id === newStatus) {
-          return {
-            ...col,
-            tickets: [...col.tickets, updatedTicket]
-          };
-        }
-        return col;
-      }));
-    } else {
-      setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === updatedTicket.status) {
-          return {
-            ...col,
-            tickets: col.tickets.map(t => 
-              t.id === updatedTicket.id ? updatedTicket : t
-            )
-          };
-        }
-        return col;
-      }));
+  const handleTicketUpdate = useCallback(async (updatedTicket: TicketType) => {
+    try {
+      const oldStatus = selectedTicket?.status;
+      const newStatus = updatedTicket.status;
+      
+      // Update the ticket in the database
+      const result = await supabaseService.updateTicket(updatedTicket.id, updatedTicket);
+      
+      if (!result) {
+        toast.error('Failed to update ticket');
+        return;
+      }
+      
+      // Update the local state
+      if (oldStatus !== newStatus) {
+        // If status changed, move the ticket to a different column
+        setColumns(prevColumns => prevColumns.map(col => {
+          if (col.id === oldStatus) {
+            return {
+              ...col,
+              tickets: col.tickets.filter(t => t.id !== updatedTicket.id)
+            };
+          }
+          if (col.id === newStatus) {
+            return {
+              ...col,
+              tickets: [...col.tickets, updatedTicket]
+            };
+          }
+          return col;
+        }));
+      } else {
+        // Just update the ticket in the current column
+        setColumns(prevColumns => prevColumns.map(col => {
+          if (col.id === updatedTicket.status) {
+            return {
+              ...col,
+              tickets: col.tickets.map(t => 
+                t.id === updatedTicket.id ? updatedTicket : t
+              )
+            };
+          }
+          return col;
+        }));
+      }
+      
+      setSelectedTicket(updatedTicket);
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      toast.error('Failed to update ticket');
     }
-    
-    setSelectedTicket(updatedTicket);
   }, [selectedTicket]);
 
-  const onDragEnd = useCallback((result: DropResult) => {
+  const onDragEnd = useCallback(async (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
     if (!destination) {
@@ -122,6 +160,7 @@ export function useKanbanBoard(
 
     const [movedTicket] = sourceTickets.splice(source.index, 1);
     
+    // Create the updated ticket with new status
     const updatedTicket = { 
       ...movedTicket,
       status: destination.droppableId as Status,
@@ -130,6 +169,7 @@ export function useKanbanBoard(
 
     destTickets.splice(destination.index, 0, updatedTicket);
 
+    // Update local state first for immediate UI response
     setColumns(prevColumns => prevColumns.map(col => {
       if (col.id === source.droppableId) {
         return { ...col, tickets: sourceTickets };
@@ -141,16 +181,14 @@ export function useKanbanBoard(
     }));
 
     if (source.droppableId !== destination.droppableId) {
-      toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
-      console.log(`Moved ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
-    }
-
-    if (onTicketMove) {
-      onTicketMove(
-        draggableId,
-        source.droppableId as Status,
-        destination.droppableId as Status
-      );
+      // If the status changed, call the onTicketMove callback
+      if (onTicketMove) {
+        onTicketMove(
+          draggableId,
+          source.droppableId as Status,
+          destination.droppableId as Status
+        );
+      }
     }
   }, [columns, onTicketMove]);
 
@@ -179,6 +217,7 @@ export function useKanbanBoard(
     createModalStatus,
     isCreateModalOpen,
     scrollContainerRef,
+    currentUser,
     handleOpenTicket,
     handleCloseTicketModal,
     handleOpenCreateModal,

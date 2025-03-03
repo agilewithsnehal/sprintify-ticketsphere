@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
-import { Ticket, Priority, Status } from '@/lib/types';
+import { Ticket, Priority, Status, User } from '@/lib/types';
 import { toast } from 'sonner';
 import TicketHeader from './TicketHeader';
 import TicketDescription from './TicketDescription';
 import TicketComments from './TicketComments';
 import TicketDetails from './TicketDetails';
+import { supabaseService } from '@/lib/supabase-service';
 
 interface TicketModalProps {
   isOpen: boolean;
@@ -20,6 +21,25 @@ const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, ticket, onTi
   const [editedTicket, setEditedTicket] = useState<Ticket>(ticket);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await supabaseService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
+
+  // Update local state when ticket prop changes
+  useEffect(() => {
+    setEditedTicket(ticket);
+  }, [ticket]);
 
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     month: 'long',
@@ -35,7 +55,7 @@ const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, ticket, onTi
     setIsEditing(!isEditing);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!editedTicket.summary.trim()) {
       toast.error('Ticket summary cannot be empty');
       return;
@@ -43,19 +63,23 @@ const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, ticket, onTi
     
     setIsSubmitting(true);
 
-    // Update the ticket with a fresh timestamp
-    const updatedTicket = {
-      ...editedTicket,
-      updatedAt: new Date()
-    };
-
-    // In a real app, you would make an API call here
-    setTimeout(() => {
-      onTicketUpdate(updatedTicket);
-      setIsEditing(false);
+    try {
+      // Update the ticket in the database
+      const result = await supabaseService.updateTicket(ticket.id, editedTicket);
+      
+      if (result) {
+        onTicketUpdate(result);
+        setIsEditing(false);
+        toast.success('Ticket updated successfully');
+      } else {
+        toast.error('Failed to update ticket');
+      }
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      toast.error('An error occurred while updating the ticket');
+    } finally {
       setIsSubmitting(false);
-      toast.success('Ticket updated successfully');
-    }, 500); // Simulate API delay
+    }
   };
 
   const handleInputChange = (field: keyof Ticket, value: any) => {
@@ -65,62 +89,99 @@ const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, ticket, onTi
     }));
   };
 
-  const handleCommentSubmit = () => {
-    if (!newComment.trim()) return;
+  const handleCommentSubmit = async () => {
+    if (!newComment.trim() || !currentUser) return;
     
-    const comment = {
-      id: `comment-${Date.now()}`,
-      author: ticket.project.members[0], // Current user
-      content: newComment.trim(),
-      createdAt: new Date()
-    };
-
-    const updatedTicket = {
-      ...ticket,
-      comments: [...ticket.comments, comment],
-      updatedAt: new Date()
-    };
-
-    onTicketUpdate(updatedTicket);
-    setNewComment('');
-    toast.success('Comment added');
-  };
-
-  const handleStatusChange = (status: Status) => {
-    const updatedTicket = {
-      ...ticket,
-      status,
-      updatedAt: new Date()
-    };
-    
-    onTicketUpdate(updatedTicket);
-    toast.success(`Ticket moved to ${status.replace(/-/g, ' ')}`);
-  };
-
-  const handlePriorityChange = (priority: Priority) => {
-    const updatedTicket = {
-      ...ticket,
-      priority,
-      updatedAt: new Date()
-    };
-    
-    onTicketUpdate(updatedTicket);
-    toast.success(`Priority changed to ${priority}`);
-  };
-
-  const handleAssigneeChange = (userId: string) => {
-    const assignee = userId 
-      ? ticket.project.members.find(member => member.id === userId) 
-      : undefined;
+    try {
+      const comment = await supabaseService.addComment(ticket.id, newComment.trim(), currentUser.id);
       
-    const updatedTicket = {
-      ...ticket,
-      assignee,
-      updatedAt: new Date()
-    };
-    
-    onTicketUpdate(updatedTicket);
-    toast.success(assignee ? `Assigned to ${assignee.name}` : 'Unassigned');
+      if (comment) {
+        const updatedTicket = {
+          ...ticket,
+          comments: [...ticket.comments, comment],
+          updatedAt: new Date()
+        };
+
+        onTicketUpdate(updatedTicket);
+        setNewComment('');
+        toast.success('Comment added');
+      } else {
+        toast.error('Failed to add comment');
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('An error occurred while adding the comment');
+    }
+  };
+
+  const handleStatusChange = async (status: Status) => {
+    try {
+      const updatedTicket = {
+        ...ticket,
+        status,
+        updatedAt: new Date()
+      };
+      
+      const result = await supabaseService.updateTicket(ticket.id, { status });
+      
+      if (result) {
+        onTicketUpdate(updatedTicket);
+        toast.success(`Ticket moved to ${status.replace(/-/g, ' ')}`);
+      } else {
+        toast.error('Failed to update ticket status');
+      }
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+      toast.error('An error occurred while updating the ticket');
+    }
+  };
+
+  const handlePriorityChange = async (priority: Priority) => {
+    try {
+      const updatedTicket = {
+        ...ticket,
+        priority,
+        updatedAt: new Date()
+      };
+      
+      const result = await supabaseService.updateTicket(ticket.id, { priority });
+      
+      if (result) {
+        onTicketUpdate(updatedTicket);
+        toast.success(`Priority changed to ${priority}`);
+      } else {
+        toast.error('Failed to update ticket priority');
+      }
+    } catch (error) {
+      console.error('Error updating ticket priority:', error);
+      toast.error('An error occurred while updating the ticket');
+    }
+  };
+
+  const handleAssigneeChange = async (userId: string) => {
+    try {
+      const assignee = userId 
+        ? ticket.project.members.find(member => member.id === userId) 
+        : undefined;
+        
+      const updatedTicket = {
+        ...ticket,
+        assignee,
+        updatedAt: new Date()
+      };
+      
+      const result = await supabaseService.updateTicket(ticket.id, { assignee });
+      
+      if (result) {
+        onTicketUpdate(updatedTicket);
+        toast.success(assignee ? `Assigned to ${assignee.name}` : 'Unassigned');
+      } else {
+        toast.error('Failed to update ticket assignee');
+      }
+    } catch (error) {
+      console.error('Error updating ticket assignee:', error);
+      toast.error('An error occurred while updating the ticket');
+    }
   };
 
   return (
