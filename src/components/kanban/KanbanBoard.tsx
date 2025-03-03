@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
@@ -58,6 +59,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
                 tickets={column.tickets}
                 onOpenTicket={handleOpenTicket}
                 onAddTicket={handleOpenCreateModal}
+                projectId={board.project.id}
               />
             ))}
           </div>

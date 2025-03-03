@@ -6,6 +6,7 @@ import { Ticket as TicketType, Status } from '@/lib/types';
 import Ticket from '../Ticket';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface KanbanColumnProps {
   id: Status;
@@ -13,6 +14,7 @@ interface KanbanColumnProps {
   tickets: TicketType[];
   onOpenTicket: (ticket: TicketType) => void;
   onAddTicket: (status: Status) => void;
+  projectId?: string;
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -20,8 +22,16 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   title,
   tickets,
   onOpenTicket,
-  onAddTicket
+  onAddTicket,
+  projectId
 }) => {
+  const navigate = useNavigate();
+
+  const handleTicketClick = (ticket: TicketType) => {
+    const ticketProjectId = projectId || ticket.project.id;
+    navigate(`/board/${ticketProjectId}/ticket/${ticket.id}`);
+  };
+
   return (
     <div className="flex-shrink-0 w-72">
       <div className="mb-2 flex items-center justify-between">
@@ -70,10 +80,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   >
                     <Ticket 
                       ticket={ticket} 
-                      onClick={() => {
-                        console.log('Ticket click triggered from column:', ticket.id, ticket.summary);
-                        onOpenTicket(ticket);
-                      }} 
+                      onClick={() => handleTicketClick(ticket)} 
                     />
                   </div>
                 )}
