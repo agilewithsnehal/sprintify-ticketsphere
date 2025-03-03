@@ -1,16 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
-import KanbanBoard from '@/components/KanbanBoard';
 import ProjectHeader from '@/components/ProjectHeader';
 import CreateTicketModal from '@/components/CreateTicketModal';
 import { createBoard, getProjectById } from '@/lib/data';
 import { Board as BoardType, Project, Status, Ticket } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, Settings } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+// Import our new components
+import BoardSkeleton from '@/components/board/BoardSkeleton';
+import BoardNotFound from '@/components/board/BoardNotFound';
+import BoardToolbar from '@/components/board/BoardToolbar';
+import ProjectConfiguration from '@/components/board/ProjectConfiguration';
+import BoardContainer from '@/components/board/BoardContainer';
 
 const Board = () => {
   const { projectId = '1' } = useParams();
@@ -57,29 +61,10 @@ const Board = () => {
     setIsCreateModalOpen(false);
   };
 
-  const handleConfigOpen = () => {
-    setIsConfigModalOpen(true);
-  };
-
-  const handleConfigClose = () => {
-    setIsConfigModalOpen(false);
-  };
-
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-pulse space-y-4 w-full max-w-3xl">
-            <div className="h-8 bg-secondary rounded-md w-1/3"></div>
-            <div className="h-4 bg-secondary rounded-md w-2/3"></div>
-            <div className="flex space-x-4">
-              <div className="h-24 bg-secondary rounded-md w-1/4"></div>
-              <div className="h-24 bg-secondary rounded-md w-1/4"></div>
-              <div className="h-24 bg-secondary rounded-md w-1/4"></div>
-              <div className="h-24 bg-secondary rounded-md w-1/4"></div>
-            </div>
-          </div>
-        </div>
+        <BoardSkeleton />
       </Layout>
     );
   }
@@ -87,10 +72,7 @@ const Board = () => {
   if (!project || !board) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center h-96">
-          <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-          <p className="text-muted-foreground">The requested project does not exist or you don't have access to it.</p>
-        </div>
+        <BoardNotFound />
       </Layout>
     );
   }
@@ -99,46 +81,18 @@ const Board = () => {
     <Layout>
       <ProjectHeader 
         project={project} 
-        onConfigureClick={handleConfigOpen}
+        onConfigureClick={() => setIsConfigModalOpen(true)}
       />
       
-      <div className="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-xl font-semibold flex items-center">
-            {board.name}
-            <Button variant="ghost" size="icon" className="ml-1 h-7 w-7">
-              <StarIcon className="h-4 w-4" />
-            </Button>
-          </h2>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="default" 
-            size="sm" 
-            className="gap-1"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <TicketPlus className="h-4 w-4" />
-            <span>Create Ticket</span>
-          </Button>
-          
-          <Button variant="outline" size="sm" className="gap-1">
-            <Filter className="h-4 w-4" />
-            <span>Filter</span>
-          </Button>
-          
-          <Button variant="outline" size="sm" className="gap-1">
-            <ListFilter className="h-4 w-4" />
-            <span>Group</span>
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <BoardToolbar 
+        boardName={board.name}
+        onCreateTicket={() => setIsCreateModalOpen(true)}
+      />
       
-      <div className="relative overflow-hidden h-[calc(100vh-240px)]">
-        {board && <KanbanBoard board={board} onTicketMove={handleTicketMove} />}
-      </div>
+      <BoardContainer 
+        board={board}
+        onTicketMove={handleTicketMove}
+      />
       
       {isCreateModalOpen && (
         <CreateTicketModal 
@@ -150,54 +104,10 @@ const Board = () => {
         />
       )}
 
-      <Dialog open={isConfigModalOpen} onOpenChange={setIsConfigModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Project Configuration</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Board Settings</h3>
-              <div className="flex flex-col gap-2 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Column Layout</span>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Customize
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Workflow</span>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Manage
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Project Details</h3>
-              <div className="flex flex-col gap-2 pl-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Members</span>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Manage
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Permissions</span>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Configure
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ProjectConfiguration 
+        isOpen={isConfigModalOpen}
+        onOpenChange={setIsConfigModalOpen}
+      />
     </Layout>
   );
 };
