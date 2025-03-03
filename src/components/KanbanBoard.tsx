@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
@@ -274,7 +275,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
         </DragDropContext>
       </div>
       
-      {isTicketModalOpen && selectedTicket && (
+      {selectedTicket && (
         <TicketModal 
           isOpen={isTicketModalOpen} 
           onClose={handleCloseTicketModal} 
