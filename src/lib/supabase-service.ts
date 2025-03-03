@@ -1,6 +1,38 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Board, Comment, Priority, Project, Status, Ticket, User } from "@/lib/types";
 
+// Helper function to determine if a string is a valid UUID
+const isValidUUID = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
+// Helper function to translate numeric IDs to actual UUIDs
+const getActualProjectId = async (inputId: string): Promise<string | null> => {
+  // If it's already a valid UUID, return it
+  if (isValidUUID(inputId)) {
+    return inputId;
+  }
+  
+  // If it's numeric, try to find the project by index position
+  if (/^\d+$/.test(inputId)) {
+    const index = parseInt(inputId) - 1; // Convert to zero-based index
+    if (index >= 0) {
+      const { data } = await supabase
+        .from('projects')
+        .select('id')
+        .order('created_at', { ascending: true })
+        .limit(index + 1);
+      
+      if (data && data.length > index) {
+        return data[index].id;
+      }
+    }
+  }
+  
+  return null; // Not found or invalid format
+};
+
 // Helper function to transform database data into our app types
 const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
   // Fetch project
@@ -192,13 +224,25 @@ export const supabaseService = {
 
   async getProjectById(projectId: string): Promise<Project | null> {
     try {
+      // Try to get the actual UUID if a numeric ID was provided
+      const actualId = await getActualProjectId(projectId);
+      
+      if (!actualId) {
+        console.error(`No project found with ID or index: ${projectId}`);
+        return null;
+      }
+      
       const { data: project, error } = await supabase
         .from('projects')
         .select('*')
-        .eq('id', projectId)
+        .eq('id', actualId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching project:', error);
+        return null;
+      }
+      
       if (!project) return null;
 
       // Get members
@@ -279,10 +323,18 @@ export const supabaseService = {
 
   async getTicketsByProjectId(projectId: string): Promise<Ticket[]> {
     try {
+      // Try to get the actual UUID if a numeric ID was provided
+      const actualId = await getActualProjectId(projectId);
+      
+      if (!actualId) {
+        console.error(`No project found with ID or index: ${projectId}`);
+        return [];
+      }
+      
       const { data: dbTickets, error } = await supabase
         .from('tickets')
         .select('*')
-        .eq('project_id', projectId)
+        .eq('project_id', actualId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -419,10 +471,18 @@ export const supabaseService = {
 
   async createBoard(projectId: string): Promise<Board | null> {
     try {
-      const project = await this.getProjectById(projectId);
+      // Try to get the actual UUID if a numeric ID was provided
+      const actualId = await getActualProjectId(projectId);
+      
+      if (!actualId) {
+        console.error(`No project found with ID or index: ${projectId}`);
+        return null;
+      }
+      
+      const project = await this.getProjectById(actualId);
       if (!project) return null;
       
-      const tickets = await this.getTicketsByProjectId(projectId);
+      const tickets = await this.getTicketsByProjectId(actualId);
       
       // Organize tickets by status
       const backlog = tickets.filter(ticket => ticket.status === 'backlog');
@@ -432,7 +492,7 @@ export const supabaseService = {
       const done = tickets.filter(ticket => ticket.status === 'done');
       
       return {
-        id: `board-${projectId}`,
+        id: `board-${project.id}`,
         name: `${project.name} Board`,
         project,
         columns: [

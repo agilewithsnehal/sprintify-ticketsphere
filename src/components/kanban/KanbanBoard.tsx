@@ -8,6 +8,8 @@ import KanbanScrollButtons from './KanbanScrollButtons';
 import TicketModal from '../ticket-modal';
 import CreateTicketModal from '../CreateTicketModal';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface KanbanBoardProps {
   board: BoardType;
@@ -48,9 +50,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
 
   if (!board || !board.project || !board.columns) {
     return (
-      <div className="p-4 text-center bg-background border rounded-md">
-        <h3 className="font-medium mb-2">Unable to load board</h3>
-        <p className="text-muted-foreground text-sm">The board data is invalid or incomplete.</p>
+      <div className="p-8 text-center bg-background border rounded-md flex flex-col items-center gap-4">
+        <h3 className="text-2xl font-semibold mb-2">Invalid Board Data</h3>
+        <p className="text-muted-foreground">The board data is invalid or incomplete. This might be because the project ID is not in the correct format.</p>
+        <Button asChild>
+          <Link to="/">Back to Dashboard</Link>
+        </Button>
       </div>
     );
   }
