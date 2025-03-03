@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import CreateTicketModal from '@/components/CreateTicketModal';
+import ProjectModal from '@/components/ProjectModal';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,11 +18,12 @@ import { useQuery } from '@tanstack/react-query';
 const Index = () => {
   const navigate = useNavigate();
   const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Fetch all projects and tickets with React Query
-  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+  const { data: projects = [], isLoading: isLoadingProjects, refetch: refetchProjects } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => await supabaseService.getAllProjects(),
   });
@@ -101,32 +102,8 @@ const Index = () => {
 
   const isLoading = isLoadingProjects || isLoadingTickets;
 
-  const handleCreateProject = async () => {
-    try {
-      // In a real app, this would open a modal to create a project
-      // For now, let's create a default project
-      const newProject = {
-        name: `New Project ${Math.floor(Math.random() * 1000)}`,
-        description: 'This is a new project',
-        key: `PRJ${Math.floor(Math.random() * 1000)}`,
-        lead: currentUser!,
-        members: [currentUser!],
-      };
-      
-      // Call the Supabase service to create a new project
-      // This function would need to be implemented in supabase-service.ts
-      // For demo purposes, we'll just show a toast
-      toast.success('Project creation functionality would go here');
-      // In a real implementation:
-      // const createdProject = await supabaseService.createProject(newProject);
-      // if (createdProject) {
-      //   toast.success('Project created successfully');
-      //   // Refresh projects
-      // }
-    } catch (error) {
-      console.error('Error creating project:', error);
-      toast.error('Failed to create project');
-    }
+  const handleCreateProject = () => {
+    setIsCreateProjectModalOpen(true);
   };
 
   if (isLoading) {
@@ -416,6 +393,13 @@ const Index = () => {
           project={projects[0]} // Default to first project
           column="todo" // Default to "todo" status
           onTicketCreate={handleCreateTicket}
+        />
+      )}
+
+      {isCreateProjectModalOpen && (
+        <ProjectModal
+          isOpen={isCreateProjectModalOpen}
+          onClose={() => setIsCreateProjectModalOpen(false)}
         />
       )}
     </Layout>
