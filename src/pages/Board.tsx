@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -22,11 +21,9 @@ const Board = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   useEffect(() => {
-    // Simulate API call to get project and board data
     const fetchData = async () => {
       setIsLoading(true);
       
-      // Add a small delay to simulate loading
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const projectData = getProjectById(projectId);
@@ -43,13 +40,10 @@ const Board = () => {
 
   const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
     console.log(`Moved ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
-    // In a real app, this would make an API call to update the ticket
   };
 
   const handleTicketCreate = (newTicket: Ticket) => {
     if (board) {
-      // In a real app, we would update the board data from the server
-      // For this demo, we'll just add the ticket to the current board
       const updatedBoard = { ...board };
       const column = updatedBoard.columns.find(col => col.id === newTicket.status);
       
@@ -138,14 +132,9 @@ const Board = () => {
         </div>
       </div>
       
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="overflow-auto max-h-[calc(100vh-240px)]"
-      >
+      <div className="relative overflow-hidden h-[calc(100vh-240px)]">
         <KanbanBoard board={board} onTicketMove={handleTicketMove} />
-      </motion.div>
+      </div>
       
       {isCreateModalOpen && (
         <CreateTicketModal 
