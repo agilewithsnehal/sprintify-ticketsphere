@@ -5,8 +5,10 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { Ticket as TicketType, Board as BoardType, Status } from '@/lib/types';
 import Ticket from './Ticket';
 import TicketModal from './TicketModal';
+import CreateTicketModal from './CreateTicketModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface KanbanBoardProps {
   board: BoardType;
@@ -16,17 +18,90 @@ interface KanbanBoardProps {
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
   const [columns, setColumns] = useState(board.columns);
   const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [createModalStatus, setCreateModalStatus] = useState<Status | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleOpenTicket = useCallback((ticket: TicketType) => {
     setSelectedTicket(ticket);
-    setIsModalOpen(true);
+    setIsTicketModalOpen(true);
   }, []);
 
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
+  const handleCloseTicketModal = useCallback(() => {
+    setIsTicketModalOpen(false);
     setSelectedTicket(null);
   }, []);
+
+  const handleOpenCreateModal = (status: Status) => {
+    setCreateModalStatus(status);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+    setCreateModalStatus(null);
+  };
+
+  const handleTicketCreate = (newTicket: TicketType) => {
+    const newColumns = columns.map(col => {
+      if (col.id === newTicket.status) {
+        return {
+          ...col,
+          tickets: [...col.tickets, newTicket]
+        };
+      }
+      return col;
+    });
+    
+    setColumns(newColumns);
+  };
+
+  const handleTicketUpdate = (updatedTicket: TicketType) => {
+    // Check if status has changed
+    const oldStatus = selectedTicket?.status;
+    const newStatus = updatedTicket.status;
+    
+    if (oldStatus !== newStatus) {
+      // Status changed - need to move ticket between columns
+      const newColumns = columns.map(col => {
+        if (col.id === oldStatus) {
+          // Remove from old column
+          return {
+            ...col,
+            tickets: col.tickets.filter(t => t.id !== updatedTicket.id)
+          };
+        }
+        if (col.id === newStatus) {
+          // Add to new column
+          return {
+            ...col,
+            tickets: [...col.tickets, updatedTicket]
+          };
+        }
+        return col;
+      });
+      
+      setColumns(newColumns);
+    } else {
+      // Just update the ticket in its current column
+      const newColumns = columns.map(col => {
+        if (col.id === updatedTicket.status) {
+          return {
+            ...col,
+            tickets: col.tickets.map(t => 
+              t.id === updatedTicket.id ? updatedTicket : t
+            )
+          };
+        }
+        return col;
+      });
+      
+      setColumns(newColumns);
+    }
+    
+    // Update selected ticket
+    setSelectedTicket(updatedTicket);
+  };
 
   const onDragEnd = useCallback((result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -64,7 +139,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     // Update ticket status if column changed
     const updatedTicket = { 
       ...movedTicket,
-      status: destination.droppableId as Status
+      status: destination.droppableId as Status,
+      updatedAt: new Date()
     };
 
     // Add to destination
@@ -82,6 +158,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     });
 
     setColumns(newColumns);
+
+    // If status changed, show a toast notification
+    if (source.droppableId !== destination.droppableId) {
+      toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+    }
 
     // Call external handler if provided
     if (onTicketMove) {
@@ -106,7 +187,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
                     {column.tickets.length}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={() => handleOpenCreateModal(column.id)}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -158,11 +244,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
         </div>
       </DragDropContext>
       
-      {isModalOpen && selectedTicket && (
+      {isTicketModalOpen && selectedTicket && (
         <TicketModal 
-          isOpen={isModalOpen} 
-          onClose={handleCloseModal} 
-          ticket={selectedTicket} 
+          isOpen={isTicketModalOpen} 
+          onClose={handleCloseTicketModal} 
+          ticket={selectedTicket}
+          onTicketUpdate={handleTicketUpdate}
+        />
+      )}
+      
+      {isCreateModalOpen && createModalStatus && (
+        <CreateTicketModal
+          isOpen={isCreateModalOpen}
+          onClose={handleCloseCreateModal}
+          project={board.project}
+          column={createModalStatus}
+          onTicketCreate={handleTicketCreate}
         />
       )}
     </>

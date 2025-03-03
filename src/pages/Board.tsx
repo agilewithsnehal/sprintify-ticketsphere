@@ -5,16 +5,19 @@ import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import KanbanBoard from '@/components/KanbanBoard';
 import ProjectHeader from '@/components/ProjectHeader';
+import CreateTicketModal from '@/components/CreateTicketModal';
 import { createBoard, getProjectById } from '@/lib/data';
-import { Board as BoardType, Project, Status } from '@/lib/types';
+import { Board as BoardType, Project, Status, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Filter, StarIcon, ListFilter, ChevronDown } from 'lucide-react';
+import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Board = () => {
   const { projectId = '1' } = useParams();
   const [project, setProject] = useState<Project | null>(null);
   const [board, setBoard] = useState<BoardType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     // Simulate API call to get project and board data
@@ -39,6 +42,23 @@ const Board = () => {
   const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
     console.log(`Moved ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
     // In a real app, this would make an API call to update the ticket
+  };
+
+  const handleTicketCreate = (newTicket: Ticket) => {
+    if (board) {
+      // In a real app, we would update the board data from the server
+      // For this demo, we'll just add the ticket to the current board
+      const updatedBoard = { ...board };
+      const column = updatedBoard.columns.find(col => col.id === newTicket.status);
+      
+      if (column) {
+        column.tickets.push(newTicket);
+        setBoard(updatedBoard);
+        toast.success('Ticket created successfully');
+      }
+    }
+    
+    setIsCreateModalOpen(false);
   };
 
   if (isLoading) {
@@ -86,6 +106,16 @@ const Board = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="gap-1"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <TicketPlus className="h-4 w-4" />
+            <span>Create Ticket</span>
+          </Button>
+          
           <Button variant="outline" size="sm" className="gap-1">
             <Filter className="h-4 w-4" />
             <span>Filter</span>
@@ -106,6 +136,16 @@ const Board = () => {
       >
         <KanbanBoard board={board} onTicketMove={handleTicketMove} />
       </motion.div>
+      
+      {isCreateModalOpen && (
+        <CreateTicketModal 
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          project={project}
+          column="todo" // Default to "todo" status
+          onTicketCreate={handleTicketCreate}
+        />
+      )}
     </Layout>
   );
 };

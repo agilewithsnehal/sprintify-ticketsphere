@@ -1,16 +1,20 @@
-
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
+import CreateTicketModal from '@/components/CreateTicketModal';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, CalendarRange, CheckCircle, Clock, ListTodo, Plus } from 'lucide-react';
+import { BarChart3, CalendarRange, CheckCircle, Clock, ListTodo, Plus, TicketPlus } from 'lucide-react';
 import { getAllTickets, projects, users } from '@/lib/data';
+import { toast } from 'sonner';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [isCreateTicketModalOpen, setIsCreateTicketModalOpen] = useState(false);
+  
   const tickets = getAllTickets();
   const myTickets = tickets.filter(ticket => ticket.assignee?.id === users[0].id);
   const recentTickets = [...tickets].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 5);
@@ -35,6 +39,11 @@ const Index = () => {
     'done': CheckCircle,
   };
 
+  const handleCreateTicket = (ticket) => {
+    toast.success('Ticket created successfully');
+    navigate(`/board/${ticket.project.id}`);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -48,8 +57,11 @@ const Index = () => {
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, {users[0].name}</p>
           </div>
-          <Button className="gap-1">
-            <Plus className="h-4 w-4" />
+          <Button 
+            className="gap-1"
+            onClick={() => setIsCreateTicketModalOpen(true)}
+          >
+            <TicketPlus className="h-4 w-4" />
             Create Ticket
           </Button>
         </motion.div>
@@ -253,6 +265,16 @@ const Index = () => {
           </motion.div>
         </div>
       </div>
+      
+      {isCreateTicketModalOpen && (
+        <CreateTicketModal 
+          isOpen={isCreateTicketModalOpen}
+          onClose={() => setIsCreateTicketModalOpen(false)}
+          project={projects[0]} // Default to first project
+          column="todo" // Default to "todo" status
+          onTicketCreate={handleCreateTicket}
+        />
+      )}
     </Layout>
   );
 };
