@@ -8,9 +8,10 @@ import { Plus, ChevronDown, Clock, Settings } from 'lucide-react';
 
 interface ProjectHeaderProps {
   project: Project;
+  onConfigureClick?: () => void;
 }
 
-const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project }) => {
+const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project, onConfigureClick }) => {
   return (
     <div className="mb-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
@@ -26,7 +27,12 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project }) => {
             <ChevronDown className="h-4 w-4" />
           </Button>
           
-          <Button size="sm" variant="outline" className="gap-1">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="gap-1"
+            onClick={onConfigureClick}
+          >
             <Settings className="h-4 w-4" />
             <span>Configure</span>
           </Button>

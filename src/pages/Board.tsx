@@ -9,8 +9,9 @@ import CreateTicketModal from '@/components/CreateTicketModal';
 import { createBoard, getProjectById } from '@/lib/data';
 import { Board as BoardType, Project, Status, Ticket } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus } from 'lucide-react';
+import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Board = () => {
   const { projectId = '1' } = useParams();
@@ -18,6 +19,7 @@ const Board = () => {
   const [board, setBoard] = useState<BoardType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   useEffect(() => {
     // Simulate API call to get project and board data
@@ -61,6 +63,10 @@ const Board = () => {
     setIsCreateModalOpen(false);
   };
 
+  const handleConfigOpen = () => {
+    setIsConfigModalOpen(true);
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -93,7 +99,10 @@ const Board = () => {
 
   return (
     <Layout>
-      <ProjectHeader project={project} />
+      <ProjectHeader 
+        project={project} 
+        onConfigureClick={handleConfigOpen}
+      />
       
       <div className="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -133,6 +142,7 @@ const Board = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
+        className="overflow-auto max-h-[calc(100vh-240px)]"
       >
         <KanbanBoard board={board} onTicketMove={handleTicketMove} />
       </motion.div>
@@ -146,6 +156,55 @@ const Board = () => {
           onTicketCreate={handleTicketCreate}
         />
       )}
+
+      <Dialog open={isConfigModalOpen} onOpenChange={setIsConfigModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Project Configuration</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Board Settings</h3>
+              <div className="flex flex-col gap-2 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Column Layout</span>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Customize
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Workflow</span>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Project Details</h3>
+              <div className="flex flex-col gap-2 pl-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Members</span>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Permissions</span>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configure
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
