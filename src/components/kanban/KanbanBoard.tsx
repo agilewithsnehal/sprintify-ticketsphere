@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
-import { Board as BoardType, Status } from '@/lib/types';
+import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useKanbanBoard } from '@/hooks/useKanbanBoard';
 import KanbanColumn from './KanbanColumn';
 import KanbanScrollButtons from './KanbanScrollButtons';
@@ -21,6 +21,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     createModalStatus,
     isCreateModalOpen,
     scrollContainerRef,
+    currentUser,
     handleOpenTicket,
     handleCloseTicketModal,
     handleOpenCreateModal,
@@ -66,6 +67,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
           onClose={handleCloseTicketModal} 
           ticket={selectedTicket}
           onTicketUpdate={handleTicketUpdate}
+          currentUser={currentUser}
         />
       )}
       

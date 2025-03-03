@@ -26,10 +26,16 @@ const Board = () => {
     queryKey: ['board', projectId],
     queryFn: async () => {
       if (!projectId) throw new Error('Project ID is required');
-      return supabaseService.createBoard(projectId);
+      const boardData = await supabaseService.createBoard(projectId);
+      console.log('Board data loaded:', boardData);
+      return boardData;
     },
     enabled: !!projectId,
   });
+
+  useEffect(() => {
+    console.log('Board component mounted with projectId:', projectId);
+  }, [projectId]);
 
   if (isLoading) {
     return (
@@ -49,6 +55,8 @@ const Board = () => {
 
   const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
     try {
+      console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
+      
       // Find the ticket in the board
       let foundTicket = null;
       for (const column of board.columns) {
@@ -82,12 +90,19 @@ const Board = () => {
 
   const handleCreateTicket = async (ticket) => {
     try {
-      await supabaseService.createTicket(ticket);
-      toast.success('Ticket created successfully');
-      refetch();
+      console.log('Creating new ticket:', ticket);
+      const result = await supabaseService.createTicket(ticket);
+      if (result) {
+        toast.success('Ticket created successfully');
+        refetch();
+      } else {
+        toast.error('Failed to create ticket');
+      }
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket');
+    } finally {
+      setIsCreateModalOpen(false);
     }
   };
 

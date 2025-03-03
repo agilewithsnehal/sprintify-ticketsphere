@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Ticket as TicketType, Board as BoardType, Status } from '@/lib/types';
 import { DropResult } from 'react-beautiful-dnd';
@@ -36,6 +37,7 @@ export function useKanbanBoard(
   }, [board]);
 
   const handleOpenTicket = useCallback((ticket: TicketType) => {
+    console.log('Opening ticket:', ticket.id, ticket.summary);
     setSelectedTicket(ticket);
     setIsTicketModalOpen(true);
   }, []);
@@ -126,6 +128,7 @@ export function useKanbanBoard(
       }
       
       setSelectedTicket(updatedTicket);
+      toast.success('Ticket updated successfully');
     } catch (error) {
       console.error('Error updating ticket:', error);
       toast.error('Failed to update ticket');

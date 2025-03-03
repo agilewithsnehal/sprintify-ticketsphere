@@ -37,6 +37,8 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
       }}
       onClick={onClick}
       className="cursor-pointer"
+      data-testid={`ticket-${ticket.id}`}
+      aria-label={`Ticket ${ticket.key}: ${ticket.summary}`}
     >
       <TicketCard>
         <TicketCardHeader>

@@ -1,230 +1,122 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
-import { Ticket, Priority, Status, User } from '@/lib/types';
-import { toast } from 'sonner';
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+} from '@/components/ui/dialog';
+import { Ticket, User } from '@/lib/types';
 import TicketHeader from './TicketHeader';
+import TicketDetails from './TicketDetails';
 import TicketDescription from './TicketDescription';
 import TicketComments from './TicketComments';
-import TicketDetails from './TicketDetails';
 import { supabaseService } from '@/lib/supabase-service';
+import { toast } from 'sonner';
 
 interface TicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   ticket: Ticket;
-  onTicketUpdate: (updatedTicket: Ticket) => void;
+  onTicketUpdate: (ticket: Ticket) => void;
+  currentUser?: User;
 }
 
-const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, ticket, onTicketUpdate }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTicket, setEditedTicket] = useState<Ticket>(ticket);
-  const [newComment, setNewComment] = useState('');
+const TicketModal: React.FC<TicketModalProps> = ({
+  isOpen,
+  onClose,
+  ticket,
+  onTicketUpdate,
+  currentUser
+}) => {
+  const [activeTicket, setActiveTicket] = useState<Ticket>(ticket);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const user = await supabaseService.getCurrentUser();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error('Error fetching current user:', error);
-      }
-    };
-    
-    fetchCurrentUser();
-  }, []);
 
   // Update local state when ticket prop changes
-  useEffect(() => {
-    setEditedTicket(ticket);
+  React.useEffect(() => {
+    setActiveTicket(ticket);
   }, [ticket]);
 
-  const formattedDate = new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(ticket.createdAt);
-
-  const handleEditToggle = () => {
-    if (isEditing) {
-      // Discard changes and exit edit mode
-      setEditedTicket(ticket);
-    }
-    setIsEditing(!isEditing);
+  const handleChange = (updates: Partial<Ticket>) => {
+    setActiveTicket(prev => ({ ...prev, ...updates }));
   };
 
-  const handleSaveChanges = async () => {
-    if (!editedTicket.summary.trim()) {
-      toast.error('Ticket summary cannot be empty');
-      return;
-    }
-    
+  const handleSave = async () => {
     setIsSubmitting(true);
-
     try {
-      // Update the ticket in the database
-      const result = await supabaseService.updateTicket(ticket.id, editedTicket);
-      
-      if (result) {
-        onTicketUpdate(result);
-        setIsEditing(false);
-        toast.success('Ticket updated successfully');
-      } else {
-        toast.error('Failed to update ticket');
-      }
+      await onTicketUpdate(activeTicket);
     } catch (error) {
-      console.error('Error updating ticket:', error);
-      toast.error('An error occurred while updating the ticket');
+      console.error('Error saving ticket:', error);
+      toast.error('Failed to save changes');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleInputChange = (field: keyof Ticket, value: any) => {
-    setEditedTicket(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleCommentSubmit = async () => {
-    if (!newComment.trim() || !currentUser) return;
+  const handleAddComment = async (content: string) => {
+    if (!content.trim() || !currentUser) return;
     
     try {
-      const comment = await supabaseService.addComment(ticket.id, newComment.trim(), currentUser.id);
+      const comment = await supabaseService.addComment(
+        ticket.id,
+        content,
+        currentUser.id
+      );
       
       if (comment) {
-        const updatedTicket = {
-          ...ticket,
-          comments: [...ticket.comments, comment],
+        setActiveTicket(prev => ({
+          ...prev,
+          comments: [...prev.comments, comment],
           updatedAt: new Date()
-        };
-
-        onTicketUpdate(updatedTicket);
-        setNewComment('');
-        toast.success('Comment added');
-      } else {
-        toast.error('Failed to add comment');
+        }));
+        
+        // Also update the parent's state
+        onTicketUpdate({
+          ...activeTicket,
+          comments: [...activeTicket.comments, comment],
+          updatedAt: new Date()
+        });
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast.error('An error occurred while adding the comment');
+      toast.error('Failed to add comment');
     }
   };
 
-  const handleStatusChange = async (status: Status) => {
-    try {
-      const updatedTicket = {
-        ...ticket,
-        status,
-        updatedAt: new Date()
-      };
-      
-      const result = await supabaseService.updateTicket(ticket.id, { status });
-      
-      if (result) {
-        onTicketUpdate(updatedTicket);
-        toast.success(`Ticket moved to ${status.replace(/-/g, ' ')}`);
-      } else {
-        toast.error('Failed to update ticket status');
-      }
-    } catch (error) {
-      console.error('Error updating ticket status:', error);
-      toast.error('An error occurred while updating the ticket');
-    }
-  };
-
-  const handlePriorityChange = async (priority: Priority) => {
-    try {
-      const updatedTicket = {
-        ...ticket,
-        priority,
-        updatedAt: new Date()
-      };
-      
-      const result = await supabaseService.updateTicket(ticket.id, { priority });
-      
-      if (result) {
-        onTicketUpdate(updatedTicket);
-        toast.success(`Priority changed to ${priority}`);
-      } else {
-        toast.error('Failed to update ticket priority');
-      }
-    } catch (error) {
-      console.error('Error updating ticket priority:', error);
-      toast.error('An error occurred while updating the ticket');
-    }
-  };
-
-  const handleAssigneeChange = async (userId: string) => {
-    try {
-      const assignee = userId 
-        ? ticket.project.members.find(member => member.id === userId) 
-        : undefined;
-        
-      const updatedTicket = {
-        ...ticket,
-        assignee,
-        updatedAt: new Date()
-      };
-      
-      const result = await supabaseService.updateTicket(ticket.id, { assignee });
-      
-      if (result) {
-        onTicketUpdate(updatedTicket);
-        toast.success(assignee ? `Assigned to ${assignee.name}` : 'Unassigned');
-      } else {
-        toast.error('Failed to update ticket assignee');
-      }
-    } catch (error) {
-      console.error('Error updating ticket assignee:', error);
-      toast.error('An error occurred while updating the ticket');
-    }
-  };
+  const modalWidth = 'max-w-4xl';
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden">
-        <DialogDescription className="sr-only">Ticket details</DialogDescription>
-        <div className="flex flex-col h-full">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className={`${modalWidth} max-h-[90vh] overflow-hidden flex flex-col p-0`}>
+        <DialogHeader className="px-6 py-4 border-b">
           <TicketHeader 
-            ticket={ticket}
-            isEditing={isEditing}
-            editedTicket={editedTicket}
-            onClose={onClose}
-            handleInputChange={handleInputChange}
+            ticket={activeTicket} 
+            onChange={handleChange} 
+            onSave={handleSave}
+            isSubmitting={isSubmitting}
           />
-          
-          <div className="grid grid-cols-4 gap-6 p-6 overflow-y-auto max-h-[70vh]">
-            <div className="col-span-3 space-y-6">
-              <TicketDescription 
-                ticket={ticket}
-                isEditing={isEditing}
-                editedTicket={editedTicket}
-                isSubmitting={isSubmitting}
-                handleEditToggle={handleEditToggle}
-                handleSaveChanges={handleSaveChanges}
-                handleInputChange={handleInputChange}
-              />
-              
+        </DialogHeader>
+        
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          <div className="md:w-2/3 p-6 overflow-y-auto">
+            <TicketDescription 
+              description={activeTicket.description} 
+              onChange={(description) => handleChange({ description })} 
+            />
+            
+            <div className="mt-6">
               <TicketComments 
-                ticket={ticket}
-                newComment={newComment}
-                setNewComment={setNewComment}
-                handleCommentSubmit={handleCommentSubmit}
+                comments={activeTicket.comments} 
+                onAddComment={handleAddComment}
+                currentUser={currentUser}
               />
             </div>
-            
+          </div>
+          
+          <div className="md:w-1/3 p-6 bg-muted/30 border-l overflow-y-auto">
             <TicketDetails 
-              ticket={ticket}
-              formattedDate={formattedDate}
-              isEditing={isEditing}
-              handleEditToggle={handleEditToggle}
-              handleStatusChange={handleStatusChange}
-              handlePriorityChange={handlePriorityChange}
-              handleAssigneeChange={handleAssigneeChange}
+              ticket={activeTicket} 
+              onChange={handleChange} 
+              projectMembers={activeTicket.project.members}
             />
           </div>
         </div>
