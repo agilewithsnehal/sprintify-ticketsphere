@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,7 +8,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, CheckCircle2, Clock, ListChecks, TicketCheck, Users } from 'lucide-react';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Calendar, CheckCircle2, Clock, ListChecks, TicketCheck, Users, Trash2 } from 'lucide-react';
 import { supabaseService } from '@/lib/supabase-service';
 import { Project, Ticket } from '@/lib/types';
 import { Link } from 'react-router-dom';
@@ -20,13 +30,12 @@ const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Check if projectId is a valid UUID
   const isValidUuid = (id) => {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   };
 
-  // Fetch project data
   const { 
     data: project, 
     isLoading: isLoadingProject,
@@ -37,7 +46,6 @@ const ProjectPage = () => {
       if (!projectId) return null;
       
       try {
-        // If projectId is not a valid UUID, show an error toast
         if (!isValidUuid(projectId)) {
           toast.error('Invalid project ID format');
           return null;
@@ -52,7 +60,6 @@ const ProjectPage = () => {
     },
   });
   
-  // Fetch project tickets
   const { 
     data: tickets = [], 
     isLoading: isLoadingTickets 
@@ -71,7 +78,6 @@ const ProjectPage = () => {
     enabled: !!projectId && isValidUuid(projectId)
   });
 
-  // Fetch all projects if on the projects tab
   const { 
     data: allProjects = [], 
     isLoading: isLoadingAllProjects 
@@ -90,6 +96,26 @@ const ProjectPage = () => {
 
   const handleBack = () => {
     navigate('/');
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectId) return;
+    
+    setIsDeleting(true);
+    try {
+      const success = await supabaseService.deleteProject(projectId);
+      if (success) {
+        toast.success('Project deleted successfully');
+        navigate('/');
+      } else {
+        toast.error('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('An error occurred while deleting the project');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const isLoading = isLoadingProject || isLoadingTickets || (activeTab === 'projects' && isLoadingAllProjects);
@@ -156,11 +182,40 @@ const ProjectPage = () => {
 
   return (
     <Layout>
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <ProjectHeader project={project} />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <ProjectHeader project={project} />
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" className="gap-1">
+              <Trash2 className="h-4 w-4" />
+              Delete Project
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the project
+                "{project?.name}" and all associated tickets and data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteProject}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Project'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -350,7 +405,6 @@ const ProjectPage = () => {
         <TabsContent value="projects" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {isLoadingAllProjects ? (
-              // Loading skeleton for projects
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="h-[150px] bg-secondary rounded-md"></div>

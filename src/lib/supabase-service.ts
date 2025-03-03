@@ -486,6 +486,7 @@ export const supabaseService = {
       role: data.role as 'admin' | 'manager' | 'developer' | 'viewer'
     };
   },
+
   async deleteTicket(ticketId: string): Promise<boolean> {
     try {
       const { error } = await supabase
@@ -498,6 +499,39 @@ export const supabaseService = {
       return true;
     } catch (error) {
       console.error('Error deleting ticket:', error);
+      return false;
+    }
+  },
+
+  async deleteProject(projectId: string): Promise<boolean> {
+    try {
+      // First delete all related tickets
+      const { error: ticketsError } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (ticketsError) throw ticketsError;
+
+      // Delete project members
+      const { error: membersError } = await supabase
+        .from('project_members')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (membersError) throw membersError;
+
+      // Finally delete the project
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting project:', error);
       return false;
     }
   },

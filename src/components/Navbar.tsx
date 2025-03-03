@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Bell, Menu, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ import { users } from '@/lib/data';
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const currentUser = users[0]; // For demo purposes
+  const location = useLocation();
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/80 border-b border-border">
@@ -26,14 +27,25 @@ const Navbar: React.FC = () => {
           </Link>
           
           <nav className="hidden md:flex space-x-6">
-            <Link to="/" className="text-foreground/80 hover:text-foreground transition-colors">
+            <Link 
+              to="/" 
+              className={`transition-colors ${
+                location.pathname === '/' 
+                  ? 'text-foreground font-medium' 
+                  : 'text-foreground/80 hover:text-foreground'
+              }`}
+            >
               Dashboard
             </Link>
-            <Link to="/board/1" className="text-foreground/80 hover:text-foreground transition-colors">
-              Board
-            </Link>
-            <Link to="/project/1" className="text-foreground/80 hover:text-foreground transition-colors">
-              Projects
+            <Link 
+              to="/reports" 
+              className={`transition-colors ${
+                location.pathname === '/reports' 
+                  ? 'text-foreground font-medium' 
+                  : 'text-foreground/80 hover:text-foreground'
+              }`}
+            >
+              Reports
             </Link>
           </nav>
         </div>
@@ -106,24 +118,21 @@ const Navbar: React.FC = () => {
           <nav className="flex flex-col space-y-2">
             <Link 
               to="/"
-              className="py-2 px-3 rounded-lg text-foreground hover:bg-secondary/80 transition-colors"
+              className={`py-2 px-3 rounded-lg hover:bg-secondary/80 transition-colors ${
+                location.pathname === '/' ? 'bg-secondary/80 text-foreground' : 'text-foreground/80'
+              }`}
               onClick={() => setIsMenuOpen(false)}
             >
               Dashboard
             </Link>
             <Link 
-              to="/board/1"
-              className="py-2 px-3 rounded-lg text-foreground hover:bg-secondary/80 transition-colors"
+              to="/reports"
+              className={`py-2 px-3 rounded-lg hover:bg-secondary/80 transition-colors ${
+                location.pathname === '/reports' ? 'bg-secondary/80 text-foreground' : 'text-foreground/80'
+              }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Board
-            </Link>
-            <Link 
-              to="/project/1"
-              className="py-2 px-3 rounded-lg text-foreground hover:bg-secondary/80 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Projects
+              Reports
             </Link>
           </nav>
         </motion.div>
