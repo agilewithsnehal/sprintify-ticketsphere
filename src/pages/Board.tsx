@@ -42,7 +42,7 @@ const Board = () => {
   if (isError || !board) {
     return (
       <Layout>
-        <BoardNotFound onBackToProjects={() => navigate('/')} />
+        <BoardNotFound />
       </Layout>
     );
   }

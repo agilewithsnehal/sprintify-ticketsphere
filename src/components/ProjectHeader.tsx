@@ -8,10 +8,17 @@ import { Plus, ChevronDown, Clock, Settings } from 'lucide-react';
 
 interface ProjectHeaderProps {
   project: Project;
+  ticketCount?: number;
+  onCreateTicket?: () => void;
   onConfigureClick?: () => void;
 }
 
-const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project, onConfigureClick }) => {
+const ProjectHeader: React.FC<ProjectHeaderProps> = ({ 
+  project, 
+  ticketCount, 
+  onCreateTicket, 
+  onConfigureClick 
+}) => {
   return (
     <div className="mb-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
@@ -37,7 +44,11 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project, onConfigureClick
             <span>Configure</span>
           </Button>
           
-          <Button size="sm" className="gap-1">
+          <Button 
+            size="sm" 
+            className="gap-1"
+            onClick={onCreateTicket}
+          >
             <Plus className="h-4 w-4" />
             <span>Create</span>
           </Button>
@@ -69,6 +80,9 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({ project, onConfigureClick
         
         <div className="text-sm text-muted-foreground">
           {project.members.length} team members
+          {ticketCount !== undefined && (
+            <span className="ml-2">• {ticketCount} tickets</span>
+          )}
         </div>
       </div>
     </div>
