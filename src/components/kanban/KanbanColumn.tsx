@@ -23,7 +23,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onAddTicket
 }) => {
   return (
-    <div className="flex-shrink-0">
+    <div className="flex-shrink-0 w-72">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center">
           <h3 className="font-medium text-sm">{title}</h3>
@@ -36,6 +36,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           size="icon" 
           className="h-7 w-7"
           onClick={() => onAddTicket(id)}
+          aria-label={`Add ticket to ${title}`}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -46,7 +47,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
           <motion.div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`status-column ${snapshot.isDraggingOver ? 'bg-secondary/80 ring-2 ring-primary/20' : ''}`}
+            className={`bg-secondary/50 rounded-lg p-2 min-h-[12rem] h-full max-h-[calc(100vh-240px)] overflow-y-auto ${
+              snapshot.isDraggingOver ? 'bg-secondary/80 ring-2 ring-primary/20' : ''
+            }`}
             animate={{ 
               backgroundColor: snapshot.isDraggingOver ? 'rgba(237, 242, 247, 0.8)' : 'rgba(237, 242, 247, 0.5)',
             }}

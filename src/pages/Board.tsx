@@ -9,7 +9,7 @@ import { createBoard, getProjectById } from '@/lib/data';
 import { Board as BoardType, Project, Status, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
 
-// Import our new components
+// Import our components
 import BoardSkeleton from '@/components/board/BoardSkeleton';
 import BoardNotFound from '@/components/board/BoardNotFound';
 import BoardToolbar from '@/components/board/BoardToolbar';
@@ -26,17 +26,25 @@ const Board = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const projectData = getProjectById(projectId);
-      if (projectData) {
-        setProject(projectData);
-        setBoard(createBoard(projectId));
+      try {
+        setIsLoading(true);
+        
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const projectData = getProjectById(projectId);
+        if (projectData) {
+          setProject(projectData);
+          setBoard(createBoard(projectId));
+        } else {
+          toast.error('Project not found');
+        }
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+        toast.error('Failed to load project data');
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
     
     fetchData();
@@ -44,6 +52,7 @@ const Board = () => {
 
   const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
     console.log(`Moved ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
+    // In a real app, you would call an API to update the ticket status
   };
 
   const handleTicketCreate = (newTicket: Ticket) => {

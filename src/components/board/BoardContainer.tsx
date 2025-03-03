@@ -11,7 +11,12 @@ interface BoardContainerProps {
 const BoardContainer: React.FC<BoardContainerProps> = ({ board, onTicketMove }) => {
   return (
     <div className="relative overflow-hidden h-[calc(100vh-240px)]">
-      {board && <KanbanBoard board={board} onTicketMove={onTicketMove} />}
+      {board && (
+        <KanbanBoard 
+          board={board} 
+          onTicketMove={onTicketMove} 
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
 import { Ticket, Priority, Status } from '@/lib/types';
 import { toast } from 'sonner';
 import TicketHeader from './TicketHeader';
@@ -126,6 +126,7 @@ const TicketModal: React.FC<TicketModalProps> = ({ isOpen, onClose, ticket, onTi
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden">
+        <DialogDescription className="sr-only">Ticket details</DialogDescription>
         <div className="flex flex-col h-full">
           <TicketHeader 
             ticket={ticket}

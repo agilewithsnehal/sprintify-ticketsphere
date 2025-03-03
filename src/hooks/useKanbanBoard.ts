@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Ticket as TicketType, Board as BoardType, Status } from '@/lib/types';
 import { DropResult } from 'react-beautiful-dnd';
 import { toast } from 'sonner';
@@ -15,6 +15,11 @@ export function useKanbanBoard(
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Update columns when board changes
+  useEffect(() => {
+    setColumns(board.columns);
+  }, [board]);
+
   const handleOpenTicket = useCallback((ticket: TicketType) => {
     setSelectedTicket(ticket);
     setIsTicketModalOpen(true);
@@ -22,7 +27,10 @@ export function useKanbanBoard(
 
   const handleCloseTicketModal = useCallback(() => {
     setIsTicketModalOpen(false);
-    setSelectedTicket(null);
+    // Small delay to avoid visual glitches during closing animation
+    setTimeout(() => {
+      setSelectedTicket(null);
+    }, 300);
   }, []);
 
   const handleOpenCreateModal = useCallback((status: Status) => {
@@ -45,6 +53,8 @@ export function useKanbanBoard(
       }
       return col;
     }));
+    
+    toast.success(`Ticket created successfully in ${newTicket.status.replace(/-/g, ' ')}`);
   }, []);
 
   const handleTicketUpdate = useCallback((updatedTicket: TicketType) => {
@@ -132,6 +142,7 @@ export function useKanbanBoard(
 
     if (source.droppableId !== destination.droppableId) {
       toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+      console.log(`Moved ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
     }
 
     if (onTicketMove) {
