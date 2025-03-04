@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -60,6 +59,24 @@ const Project = () => {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket');
       return false;
+    }
+  };
+
+  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
+    try {
+      console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
+      
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (!ticket) {
+        toast.error('Ticket not found');
+        return;
+      }
+      
+      await supabaseService.updateTicket(ticketId, { ...ticket, status: destinationColumn });
+      toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
+    } catch (error) {
+      console.error('Error moving ticket:', error);
+      toast.error('Failed to move ticket');
     }
   };
 
@@ -143,7 +160,12 @@ const Project = () => {
           </TabsList>
           
           <TabsContent value="board">
-            <BoardContainer projectId={projectId || ''} />
+            <BoardContainer 
+              projectId={projectId || ''} 
+              boardName={project.name}
+              onCreateTicket={() => setIsCreateModalOpen(true)}
+              onTicketMove={handleTicketMove}
+            />
           </TabsContent>
           
           <TabsContent value="members">
