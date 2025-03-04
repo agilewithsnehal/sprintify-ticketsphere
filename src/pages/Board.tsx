@@ -168,7 +168,7 @@ const Board = () => {
           onFilterClick={handleFilterClick}
           onGroupClick={handleGroupClick}
         />
-        <BoardContainer board={board} onTicketMove={handleTicketMove} />
+        <BoardContainer projectId={projectId} />
         
         {isCreateModalOpen && (
           <CreateTicketModal

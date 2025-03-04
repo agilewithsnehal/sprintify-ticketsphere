@@ -10,7 +10,7 @@ import BoardSkeleton from './BoardSkeleton';
 import BoardToolbar from './BoardToolbar';
 
 interface BoardContainerProps {
-  projectId: string; // Added this prop
+  projectId: string;
 }
 
 const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
@@ -20,7 +20,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
     queryKey: ['board', projectId],
     queryFn: async () => {
       console.log('Fetching board for project:', projectId);
-      return await supabaseService.getBoardByProjectId(projectId);
+      return await supabaseService.createBoard(projectId); // Using createBoard instead of getBoardByProjectId
     },
     enabled: !!projectId,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -35,7 +35,8 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
 
   const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
     try {
-      await supabaseService.updateTicketStatus(ticketId, destinationColumn);
+      // Using updateTicket instead of updateTicketStatus
+      await supabaseService.updateTicket(ticketId, { status: destinationColumn });
     } catch (error) {
       console.error('Error moving ticket:', error);
       toast.error('Failed to update ticket status');
