@@ -22,7 +22,6 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
-  // Fetch all projects and tickets with React Query
   const { data: projects = [], isLoading: isLoadingProjects, refetch: refetchProjects } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => await supabaseService.getAllProjects(),
@@ -33,7 +32,6 @@ const Index = () => {
     queryFn: async () => await supabaseService.getAllTickets(),
   });
 
-  // Fetch current user
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -47,7 +45,6 @@ const Index = () => {
     fetchCurrentUser();
   }, []);
   
-  // Filter projects and tickets based on search query
   const filteredProjects = projects.filter(project => 
     searchQuery === '' || 
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -65,7 +62,6 @@ const Index = () => {
   const myTickets = filteredTickets.filter(ticket => ticket.assignee?.id === currentUser?.id);
   const recentTickets = [...filteredTickets].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 5);
   
-  // Count tickets by status
   const ticketStatusCount = filteredTickets.reduce((acc, ticket) => {
     acc[ticket.status] = (acc[ticket.status] || 0) + 1;
     return acc;
@@ -85,18 +81,21 @@ const Index = () => {
     'done': CheckCircle,
   };
 
-  const handleCreateTicket = async (ticket: Ticket) => {
+  const handleCreateTicket = async (ticket: Ticket): Promise<boolean> => {
     try {
       const createdTicket = await supabaseService.createTicket(ticket);
       if (createdTicket) {
         toast.success('Ticket created successfully');
         navigate(`/board/${ticket.project.id}`);
+        return true;
       } else {
         toast.error('Failed to create ticket');
+        return false;
       }
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket');
+      return false;
     }
   };
 

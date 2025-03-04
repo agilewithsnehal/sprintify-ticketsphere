@@ -55,6 +55,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     );
   }
 
+  // Modified function to return Promise<boolean> instead of Promise<void>
+  const handleTicketCreateWrapper = async (newTicket: TicketType): Promise<boolean> => {
+    try {
+      await handleTicketCreate(newTicket);
+      return true; // Return true on success
+    } catch (error) {
+      console.error('Error creating ticket in wrapper:', error);
+      return false; // Return false on failure
+    }
+  };
+
   return (
     <>
       <div className="relative">
@@ -101,7 +112,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
           onClose={handleCloseCreateModal}
           project={board.project}
           column={createModalStatus}
-          onTicketCreate={handleTicketCreate}
+          onTicketCreate={handleTicketCreateWrapper}
         />
       )}
     </>
