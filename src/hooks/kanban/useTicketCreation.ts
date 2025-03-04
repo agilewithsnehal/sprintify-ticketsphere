@@ -71,7 +71,7 @@ export function useTicketCreation({
     };
     
     fetchInitialData();
-  }, []);
+  }, [initialProject]);
 
   // Update available assignees when project changes
   useEffect(() => {
@@ -105,7 +105,7 @@ export function useTicketCreation({
     };
     
     updateAssignees();
-  }, [projectId, currentUser]);
+  }, [projectId, currentUser, projects, assigneeId]);
 
   const handleProjectChange = (newProjectId: string) => {
     setProjectId(newProjectId);

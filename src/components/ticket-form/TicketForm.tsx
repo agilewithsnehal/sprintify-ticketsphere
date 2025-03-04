@@ -63,6 +63,15 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   parentTicketId = '',
   onParentTicketChange = () => {}
 }) => {
+  const handleParentChange = (value: string) => {
+    // Handle "none" value to clear parent
+    if (value === "none") {
+      onParentTicketChange("");
+    } else {
+      onParentTicketChange(value);
+    }
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-4 mt-4">
       {/* Project Selection */}
@@ -84,7 +93,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
       {issueType !== 'epic' && projectId && (
         <ParentTicketSelect
           parentTicketId={parentTicketId}
-          onParentTicketChange={onParentTicketChange}
+          onParentTicketChange={handleParentChange}
           projectId={projectId}
           issueType={issueType}
           disabled={isSubmitting}

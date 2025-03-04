@@ -1,15 +1,14 @@
 
-import React, { useEffect, useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Ticket } from '@/lib/types';
+import React, { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IssueType } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
-import { IssueTypeIcon } from './IssueTypeIcon';
 
 interface ParentTicketSelectProps {
-  parentTicketId?: string;
+  parentTicketId: string;
   onParentTicketChange: (value: string) => void;
   projectId: string;
-  issueType: string;
+  issueType: IssueType;
   disabled?: boolean;
 }
 
@@ -20,79 +19,74 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
   issueType,
   disabled = false
 }) => {
-  const [availableParents, setAvailableParents] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Only epics, features, and stories can be parents
-  // epics -> features -> stories -> tasks
-  const getParentTypes = () => {
-    switch (issueType) {
-      case 'feature':
-        return ['epic'];
-      case 'story':
-        return ['feature'];
-      case 'task':
-        return ['story'];
-      default:
-        return [];
-    }
-  };
-
-  const parentTypes = getParentTypes();
-
+  const [availableParents, setAvailableParents] = useState<{id: string, key: string, summary: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Determine what types of tickets can be parents based on the current issue type
   useEffect(() => {
     const fetchPotentialParents = async () => {
-      if (!projectId || parentTypes.length === 0) {
-        setAvailableParents([]);
-        return;
-      }
-
-      setLoading(true);
+      if (!projectId) return;
+      
+      setIsLoading(true);
       try {
-        // Get all tickets for this project
-        const tickets = await supabaseService.getAllTickets();
+        const allTickets = await supabaseService.getTicketsByProjectId(projectId);
         
-        // Filter for potential parents based on issue type hierarchy
-        const potentialParents = tickets.filter(ticket => 
-          ticket.project.id === projectId && 
-          parentTypes.includes(ticket.issueType)
-        );
+        // Filter based on hierarchy: Epic > Feature > Story > Task
+        let validParentTypes: IssueType[] = [];
         
-        setAvailableParents(potentialParents);
+        switch (issueType) {
+          case 'feature':
+            validParentTypes = ['epic'];
+            break;
+          case 'story':
+            validParentTypes = ['epic', 'feature'];
+            break;
+          case 'task':
+            validParentTypes = ['epic', 'feature', 'story'];
+            break;
+          default:
+            validParentTypes = [];
+        }
+        
+        const filteredParents = allTickets
+          .filter(ticket => validParentTypes.includes(ticket.issueType))
+          .map(ticket => ({
+            id: ticket.id,
+            key: ticket.key,
+            summary: ticket.summary
+          }));
+        
+        setAvailableParents(filteredParents);
       } catch (error) {
-        console.error('Error fetching potential parent tickets:', error);
+        console.error('Error loading potential parent tickets:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
+    
     fetchPotentialParents();
-  }, [projectId, issueType, parentTypes.join(',')]);
-
-  // If the issue is an epic, no parent selection is needed
-  if (issueType === 'epic' || parentTypes.length === 0) {
+  }, [projectId, issueType]);
+  
+  if (issueType === 'epic' || availableParents.length === 0) {
     return null;
   }
-
+  
   return (
     <div className="space-y-2">
-      <label htmlFor="parentTicket" className="text-sm font-medium">Parent {parentTypes[0]}</label>
+      <label htmlFor="parent-ticket" className="text-sm font-medium">Parent Ticket</label>
       <Select 
-        value={parentTicketId || ''} 
+        value={parentTicketId} 
         onValueChange={onParentTicketChange}
-        disabled={disabled || loading || availableParents.length === 0}
+        disabled={disabled || isLoading}
       >
         <SelectTrigger>
-          <SelectValue placeholder={loading ? "Loading..." : `Select parent ${parentTypes[0]}`} />
+          <SelectValue placeholder="Select parent ticket" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">No parent</SelectItem>
-          {availableParents.map(ticket => (
-            <SelectItem key={ticket.id} value={ticket.id}>
-              <div className="flex items-center space-x-2">
-                <IssueTypeIcon issueType={ticket.issueType} size={14} />
-                <span>{ticket.key}: {ticket.summary.substring(0, 30)}{ticket.summary.length > 30 ? '...' : ''}</span>
-              </div>
+          <SelectItem value="none">No Parent</SelectItem>
+          {availableParents.map(parent => (
+            <SelectItem key={parent.id} value={parent.id}>
+              {parent.key} - {parent.summary}
             </SelectItem>
           ))}
         </SelectContent>
