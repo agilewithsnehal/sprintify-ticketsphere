@@ -1,17 +1,31 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Bell, Menu, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { users } from '@/lib/data';
+import { supabaseService } from '@/lib/supabase-service';
+import { User } from '@/lib/types';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const currentUser = users[0]; // For demo purposes
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await supabaseService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/80 border-b border-border">
@@ -69,10 +83,10 @@ const Navbar: React.FC = () => {
           
           <div className="hidden md:flex items-center space-x-2">
             <Avatar className="h-8 w-8 border border-border">
-              <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-              <AvatarFallback>{currentUser.name.substring(0, 2)}</AvatarFallback>
+              <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
+              <AvatarFallback>{currentUser?.name?.substring(0, 2) || 'U'}</AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium">{currentUser.name}</span>
+            <span className="text-sm font-medium">{currentUser?.name || 'Loading...'}</span>
           </div>
           
           <Button 
@@ -97,12 +111,12 @@ const Navbar: React.FC = () => {
         >
           <div className="flex items-center space-x-3 mb-4">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-              <AvatarFallback>{currentUser.name.substring(0, 2)}</AvatarFallback>
+              <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
+              <AvatarFallback>{currentUser?.name?.substring(0, 2) || 'U'}</AvatarFallback>
             </Avatar>
             <div>
-              <div className="text-sm font-medium">{currentUser.name}</div>
-              <div className="text-xs text-muted-foreground">{currentUser.role}</div>
+              <div className="text-sm font-medium">{currentUser?.name || 'Loading...'}</div>
+              <div className="text-xs text-muted-foreground">{currentUser?.role || ''}</div>
             </div>
           </div>
           
