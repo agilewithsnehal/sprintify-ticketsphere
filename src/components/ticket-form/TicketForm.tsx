@@ -9,6 +9,7 @@ import { StatusSelect } from './StatusSelect';
 import { PrioritySelect } from './PrioritySelect';
 import { IssueTypeSelect } from './IssueTypeSelect';
 import { AssigneeSelect } from './AssigneeSelect';
+import { ParentTicketSelect } from './ParentTicketSelect';
 import { Status, Priority, IssueType, User, Project } from '@/lib/types';
 
 interface TicketFormProps {
@@ -33,6 +34,8 @@ interface TicketFormProps {
   selectedProject: Project | null;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  parentTicketId?: string;
+  onParentTicketChange?: (value: string) => void;
 }
 
 export const TicketForm: React.FC<TicketFormProps> = ({
@@ -56,7 +59,9 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   isSubmitting,
   selectedProject,
   onSubmit,
-  onCancel
+  onCancel,
+  parentTicketId = '',
+  onParentTicketChange = () => {}
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4 mt-4">
@@ -67,6 +72,24 @@ export const TicketForm: React.FC<TicketFormProps> = ({
         onProjectChange={onProjectChange} 
         disabled={isSubmitting} 
       />
+      
+      {/* Issue Type */}
+      <IssueTypeSelect 
+        issueType={issueType} 
+        onIssueTypeChange={onIssueTypeChange} 
+        disabled={isSubmitting} 
+      />
+      
+      {/* Parent Ticket Selection - only show for non-epics */}
+      {issueType !== 'epic' && projectId && (
+        <ParentTicketSelect
+          parentTicketId={parentTicketId}
+          onParentTicketChange={onParentTicketChange}
+          projectId={projectId}
+          issueType={issueType}
+          disabled={isSubmitting}
+        />
+      )}
       
       {/* Summary */}
       <SummaryInput 
@@ -96,13 +119,6 @@ export const TicketForm: React.FC<TicketFormProps> = ({
           disabled={isSubmitting} 
         />
       </div>
-      
-      {/* Issue Type */}
-      <IssueTypeSelect 
-        issueType={issueType} 
-        onIssueTypeChange={onIssueTypeChange} 
-        disabled={isSubmitting} 
-      />
       
       {/* Assignee */}
       <AssigneeSelect 

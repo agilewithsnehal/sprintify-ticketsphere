@@ -1,6 +1,6 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { User, Project, Status, Priority, IssueType, Ticket } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
 import { toast } from 'sonner';
 
@@ -13,210 +13,178 @@ interface UseTicketCreationProps {
 
 export function useTicketCreation({
   initialProject,
-  initialColumn,
+  initialColumn = 'todo',
   onTicketCreate,
   onClose
 }: UseTicketCreationProps) {
+  // Form state
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
+  const [status, setStatus] = useState<Status>(initialColumn);
   const [issueType, setIssueType] = useState<IssueType>('task');
-  const [assigneeId, setAssigneeId] = useState<string>('unassigned');
-  const [status, setStatus] = useState<Status>(initialColumn || 'todo');
-  const [projectId, setProjectId] = useState<string>(initialProject?.id || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [assigneeId, setAssigneeId] = useState('');
+  const [parentTicketId, setParentTicketId] = useState('');
+  
+  // Project state
+  const [projectId, setProjectId] = useState(initialProject?.id || '');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(initialProject || null);
+  
+  // User state
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [availableAssignees, setAvailableAssignees] = useState<User[]>([]);
   
-  // Track if a ticket has been successfully submitted
-  const hasSubmittedRef = useRef(false);
-  
-  // Fetch current user and projects on load
+  // UI state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load projects and current user on component mount
   useEffect(() => {
-    // Only fetch when modal is open (handled by parent component)
     const fetchInitialData = async () => {
       try {
-        // Fetch current user
+        // Fetch all projects
+        const allProjects = await supabaseService.getAllProjects();
+        setProjects(allProjects);
+        
+        // Set initial project if provided
+        if (initialProject) {
+          setSelectedProject(initialProject);
+          setProjectId(initialProject.id);
+        } else if (allProjects.length > 0) {
+          // Default to first project if none provided
+          setSelectedProject(allProjects[0]);
+          setProjectId(allProjects[0].id);
+        }
+        
+        // Get current user
         const user = await supabaseService.getCurrentUser();
         setCurrentUser(user);
         
-        // Fetch all projects
-        const allProjects = await supabaseService.getAllProjects();
-        console.log('Fetched all projects:', allProjects);
-        setProjects(allProjects);
-        
-        // If a project was passed as prop, select it
-        if (initialProject) {
-          console.log('Using initial project:', initialProject.name);
-          setSelectedProject(initialProject);
-          setProjectId(initialProject.id);
-          
-          // Set available assignees
-          const projectMembers = [...initialProject.members];
-          const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
-          if (!isCurrentUserInMembers) {
-            projectMembers.push(user);
-          }
-          setAvailableAssignees(projectMembers);
-        } else if (allProjects.length > 0) {
-          // If no initial project, select the first one from the fetched projects
-          console.log('Selecting first project:', allProjects[0].name);
-          setSelectedProject(allProjects[0]);
-          setProjectId(allProjects[0].id);
-          
-          // Set available assignees for the first project
-          const projectMembers = [...allProjects[0].members];
-          const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
-          if (!isCurrentUserInMembers) {
-            projectMembers.push(user);
-          }
-          setAvailableAssignees(projectMembers);
+        // Set initial assignee to current user
+        if (user) {
+          setAssigneeId(user.id);
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
-        toast.error('Failed to load data');
+        toast.error('Failed to load initial data');
       }
     };
     
-    console.log('Fetching initial data for CreateTicketModal');
     fetchInitialData();
-    
-    // Reset submission state when modal opens
-    hasSubmittedRef.current = false;
-  }, [initialProject]);
+  }, []);
 
-  const handleProjectChange = (projectId: string) => {
-    console.log('Changing project to:', projectId);
-    setProjectId(projectId);
-    const project = projects.find(p => p.id === projectId);
-    setSelectedProject(project || null);
-    
-    // Reset assignee when project changes
-    setAssigneeId('unassigned');
-    
-    // Update available assignees
-    if (project && currentUser) {
-      const projectMembers = [...project.members];
-      const isCurrentUserInMembers = projectMembers.some(member => member.id === currentUser.id);
-      if (!isCurrentUserInMembers) {
-        projectMembers.push(currentUser);
-      }
-      setAvailableAssignees(projectMembers);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Submitting form, hasSubmittedRef:', hasSubmittedRef.current);
-    
-    if (!summary.trim()) {
-      toast.error('Please provide a summary for the ticket');
-      return;
-    }
-    
-    if (!projectId) {
-      toast.error('Please select a project');
-      return;
-    }
-    
-    if (!currentUser) {
-      toast.error('Unable to determine current user');
-      return;
-    }
-
-    // Prevent duplicate submissions
-    if (isSubmitting || hasSubmittedRef.current) {
-      console.log('Preventing duplicate submission');
-      return;
-    }
-
-    setIsSubmitting(true);
-    hasSubmittedRef.current = true;
-
-    try {
-      // Find the selected project
-      const project = projects.find(p => p.id === projectId);
-      if (!project) {
-        toast.error('Selected project not found');
-        setIsSubmitting(false);
-        hasSubmittedRef.current = false;
-        return;
-      }
+  // Update available assignees when project changes
+  useEffect(() => {
+    const updateAssignees = async () => {
+      if (!projectId) return;
       
-      console.log('Creating ticket for project:', project.name);
-      
-      // Get existing tickets for this project to generate a unique key
-      const projectTickets = await supabaseService.getTicketsByProjectId(project.id);
-      
-      // Find the highest ticket number for this project
-      let highestNumber = 0;
-      projectTickets.forEach(ticket => {
-        const match = ticket.key.match(new RegExp(`${project.key}-(\\d+)`));
-        if (match && match[1]) {
-          const num = parseInt(match[1], 10);
-          if (num > highestNumber) {
-            highestNumber = num;
+      try {
+        const project = projects.find(p => p.id === projectId);
+        
+        if (project) {
+          setSelectedProject(project);
+          
+          // Start with project members
+          let projectMembers = [...project.members];
+          
+          // Add current user if not already in list
+          if (currentUser && !projectMembers.some(member => member.id === currentUser.id)) {
+            projectMembers.push(currentUser);
+          }
+          
+          setAvailableAssignees(projectMembers);
+          
+          // If current assignee is not in the new project's members, reset to unassigned
+          if (assigneeId && !projectMembers.some(member => member.id === assigneeId)) {
+            setAssigneeId(currentUser?.id || '');
           }
         }
-      });
-      
-      // Generate a unique ticket number
-      const ticketNumber = highestNumber + 1;
-      const ticketKey = `${project.key}-${ticketNumber}`;
-      
-      console.log('Generated unique ticket key:', ticketKey);
-      
-      // Find assignee if not unassigned
-      const assignee = assigneeId !== 'unassigned' 
-        ? availableAssignees.find(member => member.id === assigneeId)
-        : undefined;
-      
-      // Create a new ticket object
-      const newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'> = {
-        key: ticketKey,
-        summary: summary.trim(),
-        description: description.trim(),
-        status: status,
-        priority,
-        issueType,
-        assignee: assignee,
-        reporter: currentUser,
-        project,
-      };
-      
-      console.log('New ticket data:', newTicket);
-      
-      // Create the ticket and get the result with all fields populated
-      const result = await onTicketCreate(newTicket as any);
-      
-      if (result !== false) {
-        console.log('Ticket created successfully');
-        resetForm();
-        onClose();
-        // Toast is handled by the parent component
-      } else {
-        console.log('Ticket creation failed');
-        hasSubmittedRef.current = false;
+      } catch (error) {
+        console.error('Error updating assignees:', error);
       }
-    } catch (error) {
-      console.error('Error creating ticket:', error);
-      toast.error('An error occurred while creating the ticket');
-      hasSubmittedRef.current = false;
-    } finally {
-      setIsSubmitting(false);
-    }
+    };
+    
+    updateAssignees();
+  }, [projectId, currentUser]);
+
+  const handleProjectChange = (newProjectId: string) => {
+    setProjectId(newProjectId);
+    setParentTicketId(''); // Reset parent ticket when project changes
   };
 
   const resetForm = () => {
     setSummary('');
     setDescription('');
     setPriority('medium');
+    setStatus(initialColumn);
     setIssueType('task');
-    setAssigneeId('unassigned');
-    setStatus(initialColumn || 'todo');
-    hasSubmittedRef.current = false;
+    setAssigneeId(currentUser?.id || '');
+    setParentTicketId('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!summary.trim()) {
+      toast.error('Summary is required');
+      return;
+    }
+    
+    if (!projectId) {
+      toast.error('Project is required');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const project = projects.find(p => p.id === projectId);
+      
+      if (!project) {
+        toast.error('Selected project not found');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const reporter = currentUser;
+      
+      if (!reporter) {
+        toast.error('User information not available');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Find assignee
+      const assignee = assigneeId 
+        ? [...project.members, reporter].find(user => user.id === assigneeId)
+        : undefined;
+      
+      // Create new ticket object
+      const newTicket: Partial<Ticket> = {
+        summary,
+        description,
+        status,
+        priority,
+        issueType,
+        project,
+        reporter,
+        assignee,
+        parentId: parentTicketId || undefined
+      };
+      
+      // Call the create function
+      const success = await onTicketCreate(newTicket as Ticket);
+      
+      if (success) {
+        resetForm();
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast.error('Failed to create ticket');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
@@ -235,6 +203,8 @@ export function useTicketCreation({
     projectId,
     projects,
     selectedProject,
+    parentTicketId,
+    setParentTicketId,
     isSubmitting,
     currentUser,
     availableAssignees,

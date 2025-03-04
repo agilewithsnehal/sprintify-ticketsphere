@@ -36,6 +36,8 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     projectId,
     projects,
     selectedProject,
+    parentTicketId,
+    setParentTicketId,
     isSubmitting,
     currentUser,
     availableAssignees,
@@ -93,6 +95,8 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           selectedProject={selectedProject}
           onSubmit={handleSubmit}
           onCancel={handleClose}
+          parentTicketId={parentTicketId}
+          onParentTicketChange={setParentTicketId}
         />
       </DialogContent>
     </Dialog>

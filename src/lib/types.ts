@@ -38,6 +38,8 @@ export type Ticket = {
   createdAt: Date;
   updatedAt: Date;
   comments: Comment[];
+  parentId?: string; // ID of the parent ticket (epic -> feature -> story -> task)
+  children?: Ticket[]; // Child tickets
 };
 
 export type Comment = {

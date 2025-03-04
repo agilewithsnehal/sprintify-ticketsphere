@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Eye } from 'lucide-react';
 import { TicketCard, TicketCardHeader, TicketCardContent, TicketCardFooter } from '@/components/ui/ticket-card';
+import { IssueTypeIcon } from './ticket-form/IssueTypeIcon';
+import { issueTypeBgColors } from './ticket-modal/constants';
 
 interface TicketProps {
   ticket: TicketType;
@@ -52,6 +54,7 @@ const Ticket: React.FC<TicketProps> = ({ ticket, onClick }) => {
         <TicketCardHeader>
           <div className="flex justify-between items-start">
             <div className="flex space-x-2 items-center">
+              <IssueTypeIcon issueType={ticket.issueType} size={14} />
               <span className="text-xs font-medium text-muted-foreground">{ticket.key}</span>
               <Badge variant="outline" className={`text-xs ${priorityColors[ticket.priority]}`}>
                 {ticket.priority}
