@@ -1,234 +1,235 @@
 
-import { User, Project, Ticket, Board, Status } from './types';
+import { Board, Comment, Project, Ticket, User } from './types';
 
-// Mock Users
 export const users: User[] = [
   {
     id: '1',
-    name: 'Alex Johnson',
-    email: 'alex@clarity.com',
-    avatar: 'https://i.pravatar.cc/150?img=1',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    avatar: 'https://ui-avatars.com/api/?name=John+Doe',
     role: 'admin',
   },
   {
     id: '2',
-    name: 'Sam Parker',
-    email: 'sam@clarity.com',
-    avatar: 'https://i.pravatar.cc/150?img=2',
+    name: 'Jane Smith',
+    email: 'jane.smith@example.com',
+    avatar: 'https://ui-avatars.com/api/?name=Jane+Smith',
+    role: 'developer',
+  },
+  {
+    id: '3',
+    name: 'Bob Johnson',
+    email: 'bob.johnson@example.com',
+    avatar: 'https://ui-avatars.com/api/?name=Bob+Johnson',
     role: 'manager',
   },
   {
-    id: '3',
-    name: 'Taylor Chen',
-    email: 'taylor@clarity.com',
-    avatar: 'https://i.pravatar.cc/150?img=3',
+    id: '4',
+    name: 'Alice Brown',
+    email: 'alice.brown@example.com',
+    avatar: 'https://ui-avatars.com/api/?name=Alice+Brown',
     role: 'developer',
   },
   {
-    id: '4',
-    name: 'Morgan Smith',
-    email: 'morgan@clarity.com',
-    avatar: 'https://i.pravatar.cc/150?img=4',
-    role: 'developer',
+    id: '5',
+    name: 'Charlie Wilson',
+    email: 'charlie.wilson@example.com',
+    avatar: 'https://ui-avatars.com/api/?name=Charlie+Wilson',
+    role: 'viewer',
   },
 ];
 
-// Mock Projects
 export const projects: Project[] = [
   {
     id: '1',
-    name: 'Clarity Design System',
-    description: 'A comprehensive design system for all Clarity products',
-    key: 'CDS',
+    name: 'Website Redesign',
+    description: 'Redesign the company website with modern UI/UX',
+    key: 'WEB',
     lead: users[0],
-    members: users,
+    members: [users[0], users[1], users[3]],
     createdAt: new Date('2023-01-15'),
-    updatedAt: new Date('2023-04-10'),
+    updatedAt: new Date('2023-06-20'),
   },
   {
     id: '2',
-    name: 'Mobile App Redesign',
-    description: 'Redesigning the mobile experience with focus on simplicity',
-    key: 'MAR',
-    lead: users[1],
-    members: [users[1], users[2], users[3]],
-    createdAt: new Date('2023-02-28'),
-    updatedAt: new Date('2023-05-01'),
+    name: 'Mobile App Development',
+    description: 'Develop a new mobile app for iOS and Android',
+    key: 'MOB',
+    lead: users[2],
+    members: [users[2], users[1], users[3], users[4]],
+    createdAt: new Date('2023-03-10'),
+    updatedAt: new Date('2023-07-05'),
   },
 ];
 
-// Mock Tickets
-export const createMockTickets = (): Ticket[] => [
+// Sample comments
+const comments: Comment[] = [
   {
     id: '1',
-    key: `${projects[0].key}-1`,
-    summary: 'Create component library documentation',
-    description: 'Develop comprehensive documentation for all UI components',
-    status: 'in-progress',
-    priority: 'high',
-    assignee: users[2],
-    reporter: users[0],
-    project: projects[0],
-    createdAt: new Date('2023-03-01'),
-    updatedAt: new Date('2023-03-05'),
-    comments: [
-      {
-        id: '1',
-        author: users[0],
-        content: 'Make sure to include usage examples for each component',
-        createdAt: new Date('2023-03-02'),
-      },
-      {
-        id: '2',
-        author: users[2],
-        content: 'Working on it. Will include code snippets as well',
-        createdAt: new Date('2023-03-03'),
-      },
-    ],
+    author: users[1],
+    content: 'I\'ve started working on this. Should be done by tomorrow.',
+    createdAt: new Date('2023-05-10T14:30:00'),
   },
   {
     id: '2',
-    key: `${projects[0].key}-2`,
-    summary: 'Implement dark mode',
-    description: 'Add dark mode support to all components in the design system',
+    author: users[0],
+    content: 'Looks great! Let me know if you need any help.',
+    createdAt: new Date('2023-05-10T15:45:00'),
+  },
+];
+
+export const sampleTickets: Ticket[] = [
+  {
+    id: '1',
+    key: 'WEB-1',
+    summary: 'Implement new header design',
+    description: 'Update the header component with the new design from Figma.',
+    status: 'in-progress',
+    priority: 'high',
+    issueType: 'task',
+    assignee: users[1],
+    reporter: users[0],
+    project: projects[0],
+    createdAt: new Date('2023-05-10'),
+    updatedAt: new Date('2023-05-15'),
+    comments: comments,
+  },
+  {
+    id: '2',
+    key: 'WEB-2',
+    summary: 'Add authentication pages',
+    description: 'Create login, signup, and forgot password pages.',
     status: 'todo',
     priority: 'medium',
+    issueType: 'feature',
     assignee: users[3],
-    reporter: users[1],
+    reporter: users[0],
     project: projects[0],
-    createdAt: new Date('2023-03-05'),
-    updatedAt: new Date('2023-03-05'),
+    createdAt: new Date('2023-05-12'),
+    updatedAt: new Date('2023-05-12'),
     comments: [],
   },
   {
     id: '3',
-    key: `${projects[0].key}-3`,
-    summary: 'Accessibility audit',
-    description: 'Conduct a thorough accessibility audit on all components',
+    key: 'WEB-3',
+    summary: 'Optimize image loading',
+    description: 'Implement lazy loading for images to improve performance.',
     status: 'backlog',
     priority: 'high',
+    issueType: 'task',
     assignee: users[1],
     reporter: users[0],
     project: projects[0],
-    createdAt: new Date('2023-03-10'),
-    updatedAt: new Date('2023-03-10'),
+    createdAt: new Date('2023-05-13'),
+    updatedAt: new Date('2023-05-13'),
     comments: [],
   },
   {
     id: '4',
-    key: `${projects[0].key}-4`,
-    summary: 'Design token system',
-    description: 'Create a consistent design token system for colors, spacing, and typography',
+    key: 'WEB-4',
+    summary: 'Fix mobile navigation issues',
+    description: 'Address reported navigation problems on mobile devices.',
     status: 'review',
     priority: 'high',
+    issueType: 'task',
     assignee: users[3],
     reporter: users[0],
     project: projects[0],
-    createdAt: new Date('2023-02-15'),
-    updatedAt: new Date('2023-03-20'),
+    createdAt: new Date('2023-05-14'),
+    updatedAt: new Date('2023-05-16'),
     comments: [],
   },
   {
     id: '5',
-    key: `${projects[0].key}-5`,
-    summary: 'Performance optimization',
-    description: 'Optimize performance of component rendering and animations',
+    key: 'WEB-5',
+    summary: 'Update footer links',
+    description: 'Update the footer links according to the new sitemap.',
     status: 'done',
     priority: 'medium',
-    assignee: users[2],
-    reporter: users[1],
+    issueType: 'task',
+    assignee: users[1],
+    reporter: users[0],
     project: projects[0],
-    createdAt: new Date('2023-02-01'),
-    updatedAt: new Date('2023-02-15'),
+    createdAt: new Date('2023-05-08'),
+    updatedAt: new Date('2023-05-11'),
     comments: [],
   },
   {
     id: '6',
-    key: `${projects[1].key}-1`,
-    summary: 'User research for mobile app',
-    description: 'Conduct user interviews to gather feedback on current mobile experience',
+    key: 'MOB-1',
+    summary: 'Setup project architecture',
+    description: 'Define the app architecture and setup the initial project.',
     status: 'in-progress',
     priority: 'high',
-    assignee: users[1],
-    reporter: users[1],
+    issueType: 'epic',
+    assignee: users[2],
+    reporter: users[2],
     project: projects[1],
-    createdAt: new Date('2023-03-15'),
-    updatedAt: new Date('2023-03-18'),
+    createdAt: new Date('2023-04-10'),
+    updatedAt: new Date('2023-04-12'),
     comments: [],
   },
   {
     id: '7',
-    key: `${projects[1].key}-2`,
-    summary: 'Wireframe new navigation',
-    description: 'Create wireframes for the new navigation system',
+    key: 'MOB-2',
+    summary: 'Implement user profile screen',
+    description: 'Create the user profile screen with edit capabilities.',
     status: 'done',
     priority: 'high',
+    issueType: 'story',
     assignee: users[1],
-    reporter: users[1],
+    reporter: users[2],
     project: projects[1],
-    createdAt: new Date('2023-03-01'),
-    updatedAt: new Date('2023-03-10'),
+    createdAt: new Date('2023-04-15'),
+    updatedAt: new Date('2023-04-22'),
     comments: [],
   },
   {
     id: '8',
-    key: `${projects[1].key}-3`,
-    summary: 'Implement new onboarding flow',
-    description: 'Develop the new user onboarding experience based on designs',
+    key: 'MOB-3',
+    summary: 'Add push notifications',
+    description: 'Integrate push notifications for both iOS and Android.',
     status: 'todo',
     priority: 'medium',
-    assignee: users[2],
-    reporter: users[1],
+    issueType: 'feature',
+    assignee: users[3],
+    reporter: users[2],
     project: projects[1],
-    createdAt: new Date('2023-03-20'),
-    updatedAt: new Date('2023-03-20'),
+    createdAt: new Date('2023-04-18'),
+    updatedAt: new Date('2023-04-18'),
     comments: [],
   },
 ];
 
-// Mock Board
-export const createBoard = (projectId: string): Board => {
-  const project = projects.find(p => p.id === projectId) || projects[0];
-  const tickets = createMockTickets().filter(ticket => ticket.project.id === projectId);
-  
-  const columns: { id: Status; title: string; tickets: Ticket[] }[] = [
-    { id: 'backlog', title: 'Backlog', tickets: [] },
-    { id: 'todo', title: 'To Do', tickets: [] },
-    { id: 'in-progress', title: 'In Progress', tickets: [] },
-    { id: 'review', title: 'Review', tickets: [] },
-    { id: 'done', title: 'Done', tickets: [] },
-  ];
-  
-  // Distribute tickets to their respective columns
-  tickets.forEach(ticket => {
-    const column = columns.find(col => col.id === ticket.status);
-    if (column) {
-      column.tickets.push(ticket);
-    }
-  });
-  
-  return {
-    id: `board-${projectId}`,
-    name: `${project.name} Board`,
-    columns,
-    project,
-  };
-};
-
-// Get all tickets
-export const getAllTickets = (): Ticket[] => createMockTickets();
-
-// Get tickets by project
-export const getTicketsByProject = (projectId: string): Ticket[] => {
-  return createMockTickets().filter(ticket => ticket.project.id === projectId);
-};
-
-// Get ticket by ID
-export const getTicketById = (ticketId: string): Ticket | undefined => {
-  return createMockTickets().find(ticket => ticket.id === ticketId);
-};
-
-// Get project by ID
-export const getProjectById = (projectId: string): Project | undefined => {
-  return projects.find(project => project.id === projectId);
+export const sampleBoard: Board = {
+  id: 'board-1',
+  name: 'Website Redesign Board',
+  project: projects[0],
+  columns: [
+    {
+      id: 'backlog',
+      title: 'Backlog',
+      tickets: sampleTickets.filter(t => t.status === 'backlog' && t.project.id === '1'),
+    },
+    {
+      id: 'todo',
+      title: 'To Do',
+      tickets: sampleTickets.filter(t => t.status === 'todo' && t.project.id === '1'),
+    },
+    {
+      id: 'in-progress',
+      title: 'In Progress',
+      tickets: sampleTickets.filter(t => t.status === 'in-progress' && t.project.id === '1'),
+    },
+    {
+      id: 'review',
+      title: 'Review',
+      tickets: sampleTickets.filter(t => t.status === 'review' && t.project.id === '1'),
+    },
+    {
+      id: 'done',
+      title: 'Done',
+      tickets: sampleTickets.filter(t => t.status === 'done' && t.project.id === '1'),
+    },
+  ],
 };

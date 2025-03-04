@@ -21,13 +21,20 @@ export function useTicketManagement(
 
   // Helper to check if ticket exists by key or id
   const ticketExistsInColumns = useCallback((ticketId: string, ticketKey: string): boolean => {
+    console.log('Checking if ticket exists:', ticketId, ticketKey);
+    console.log('Current columns:', columns);
+    
     for (const column of columns) {
       const existsById = column.tickets.some((t: TicketType) => t.id === ticketId);
       const existsByKey = column.tickets.some((t: TicketType) => t.key === ticketKey);
+      
       if (existsById || existsByKey) {
+        console.log(`Ticket exists: ${existsById ? 'by ID' : 'by Key'}`);
         return true;
       }
     }
+    
+    console.log('Ticket does not exist in columns');
     return false;
   }, [columns]);
 
@@ -190,6 +197,7 @@ export function useTicketManagement(
 
   return {
     findTicketInColumns,
+    ticketExistsInColumns,
     handleTicketCreate,
     handleTicketUpdate,
     handleTicketDelete

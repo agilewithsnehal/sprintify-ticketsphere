@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Ticket, Project, Status, Priority, User, IssueType } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
+import { issueTypeOptions } from './ticket-modal/constants';
 
 interface CreateTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   project?: Project;
   column?: Status;
-  onTicketCreate: (ticket: Ticket) => void;
+  onTicketCreate: (ticket: Ticket) => Promise<boolean> | void;
 }
 
 const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ 
@@ -41,6 +42,8 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   
   // Fetch current user and projects on load
   useEffect(() => {
+    if (!isOpen) return; // Only fetch when modal is open
+    
     const fetchInitialData = async () => {
       try {
         // Fetch current user
@@ -49,13 +52,16 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         
         // Fetch all projects
         const allProjects = await supabaseService.getAllProjects();
+        console.log('Fetched all projects:', allProjects);
         setProjects(allProjects);
         
         // If a project was passed as prop, select it
         if (initialProject) {
+          console.log('Using initial project:', initialProject.name);
           setSelectedProject(initialProject);
           setProjectId(initialProject.id);
         } else if (allProjects.length > 0) {
+          console.log('Selecting first project:', allProjects[0].name);
           setSelectedProject(allProjects[0]);
           setProjectId(allProjects[0].id);
         }
@@ -65,16 +71,17 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       }
     };
     
+    console.log('Fetching initial data for CreateTicketModal');
     fetchInitialData();
     
     // Reset submission state when modal opens
-    return () => {
-      hasSubmittedRef.current = false;
-    };
+    hasSubmittedRef.current = false;
+    
   }, [initialProject, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting form, hasSubmittedRef:', hasSubmittedRef.current);
     
     if (!summary.trim()) {
       toast.error('Please provide a summary for the ticket');
@@ -146,18 +153,18 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         project,
       };
       
-      // Create the ticket and get the result with all fields populated
-      const createdTicket = await supabaseService.createTicket(newTicket);
+      console.log('New ticket data:', newTicket);
       
-      if (createdTicket) {
-        console.log('Ticket created successfully:', createdTicket.id);
-        // Only call onTicketCreate if we successfully created a ticket
-        onTicketCreate(createdTicket);
+      // Create the ticket and get the result with all fields populated
+      const result = await onTicketCreate(newTicket as any);
+      
+      if (result !== false) {
+        console.log('Ticket created successfully');
         resetForm();
         onClose();
-        toast.success(`Ticket ${ticketKey} created successfully`);
+        // Toast is handled by the parent component
       } else {
-        toast.error('Failed to create ticket');
+        console.log('Ticket creation failed');
         hasSubmittedRef.current = false;
       }
     } catch (error) {
@@ -180,6 +187,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   };
 
   const handleProjectChange = (projectId: string) => {
+    console.log('Changing project to:', projectId);
     setProjectId(projectId);
     const project = projects.find(p => p.id === projectId);
     setSelectedProject(project || null);
@@ -187,11 +195,16 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     setAssigneeId('unassigned');
   };
 
+  // When closing the modal, we need to reset everything
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
-        resetForm();
-        onClose();
+        handleClose();
       }
     }}>
       <DialogContent className="sm:max-w-lg">
@@ -296,10 +309,11 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
                 <SelectValue placeholder="Select issue type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="epic">Epic</SelectItem>
-                <SelectItem value="feature">Feature</SelectItem>
-                <SelectItem value="story">Story</SelectItem>
-                <SelectItem value="task">Task</SelectItem>
+                {issueTypeOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -326,10 +340,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           </div>
           
           <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={() => {
-              resetForm();
-              onClose();
-            }} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !projectId || hasSubmittedRef.current}>

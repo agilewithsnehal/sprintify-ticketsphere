@@ -111,6 +111,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          issue_type: string
           key: string
           priority: string
           project_id: string
@@ -124,6 +125,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          issue_type?: string
           key: string
           priority?: string
           project_id: string
@@ -137,6 +139,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          issue_type?: string
           key?: string
           priority?: string
           project_id?: string

@@ -130,12 +130,15 @@ const Board = () => {
       if (result) {
         toast.success('Ticket created successfully');
         refetch();
+        return true; // Indicate success
       } else {
         toast.error('Failed to create ticket');
+        return false; // Indicate failure
       }
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket');
+      return false; // Indicate failure
     } finally {
       setIsCreateModalOpen(false);
     }
