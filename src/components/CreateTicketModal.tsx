@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -229,7 +228,6 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     }
   };
 
-  // When closing the modal, we need to reset everything
   const handleClose = () => {
     resetForm();
     onClose();
@@ -253,7 +251,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
             <Select 
               value={projectId} 
               onValueChange={handleProjectChange}
-              disabled={!!initialProject || isSubmitting}
+              disabled={isSubmitting}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select project" />
@@ -298,7 +296,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
               <Select 
                 value={status} 
                 onValueChange={(value: Status) => setStatus(value)}
-                disabled={!!initialColumn || isSubmitting}
+                disabled={isSubmitting}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
