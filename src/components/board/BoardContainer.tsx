@@ -11,10 +11,19 @@ import KanbanBoardWrapper from './KanbanBoardWrapper';
 
 interface BoardContainerProps {
   projectId: string;
+  boardName: string;
+  onCreateTicket: () => void;
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
 }
 
-const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
-  const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
+const BoardContainer: React.FC<BoardContainerProps> = ({ 
+  projectId, 
+  boardName, 
+  onCreateTicket, 
+  onTicketMove 
+}) => {
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
   
   const { data: board, isLoading, error } = useQuery({
     queryKey: ['board', projectId],
@@ -33,28 +42,14 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
     }
   }, [error]);
 
-  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
-    try {
-      // Using updateTicket instead of updateTicketStatus
-      await supabaseService.updateTicket(ticketId, { status: destinationColumn });
-    } catch (error) {
-      console.error('Error moving ticket:', error);
-      toast.error('Failed to update ticket status');
-    }
-  };
-
-  const handleCreateTicket = () => {
-    setIsCreateTicketOpen(true);
-  };
-
   const handleFilterClick = () => {
-    // To be implemented
-    toast('Filtering will be available soon!');
+    setIsFilterMenuOpen(!isFilterMenuOpen);
+    toast.info('Filtering will be available soon!');
   };
 
   const handleGroupClick = () => {
-    // To be implemented
-    toast('Grouping will be available soon!');
+    setIsGroupMenuOpen(!isGroupMenuOpen);
+    toast.info('Grouping will be available soon!');
   };
 
   if (isLoading) {
@@ -68,8 +63,8 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
   return (
     <div className="relative overflow-hidden h-[calc(100vh-240px)]">
       <BoardToolbar
-        boardName={board.name}
-        onCreateTicket={handleCreateTicket}
+        boardName={boardName}
+        onCreateTicket={onCreateTicket}
         onFilterClick={handleFilterClick}
         onGroupClick={handleGroupClick}
       />
@@ -77,7 +72,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
       {board && (
         <KanbanBoardWrapper
           board={board} 
-          onTicketMove={handleTicketMove} 
+          onTicketMove={onTicketMove} 
         />
       )}
     </div>

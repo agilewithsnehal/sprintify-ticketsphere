@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import BoardContainer from '@/components/board/BoardContainer';
-import BoardToolbar from '@/components/board/BoardToolbar';
 import BoardNotFound from '@/components/board/BoardNotFound';
 import BoardSkeleton from '@/components/board/BoardSkeleton';
 import { Status } from '@/lib/types';
@@ -15,8 +15,6 @@ const Board = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
-  const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
   
   const isValidUuid = (id) => {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -139,30 +137,15 @@ const Board = () => {
     }
   };
 
-  const handleOpenCreateModal = () => {
-    setIsCreateModalOpen(true);
-  };
-
-  const handleFilterClick = () => {
-    setIsFilterMenuOpen(!isFilterMenuOpen);
-    toast.info('Filter functionality coming soon');
-  };
-
-  const handleGroupClick = () => {
-    setIsGroupMenuOpen(!isGroupMenuOpen);
-    toast.info('Group functionality coming soon');
-  };
-
   return (
     <Layout>
       <div className="container mx-auto p-4">
-        <BoardToolbar 
-          boardName={board.name} 
-          onCreateTicket={handleOpenCreateModal}
-          onFilterClick={handleFilterClick}
-          onGroupClick={handleGroupClick}
+        <BoardContainer 
+          projectId={projectId} 
+          boardName={board.name}
+          onCreateTicket={() => setIsCreateModalOpen(true)}
+          onTicketMove={handleTicketMove}
         />
-        <BoardContainer projectId={projectId} />
         
         {isCreateModalOpen && (
           <CreateTicketModal
