@@ -38,20 +38,28 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   onTicketDelete
 }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [availableAssignees, setAvailableAssignees] = useState<User[]>(ticket.project.members);
+  const [availableAssignees, setAvailableAssignees] = useState<User[]>([]);
   
-  // Fetch current user
+  // Fetch current user and update assignees list
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
         const user = await supabaseService.getCurrentUser();
         setCurrentUser(user);
         
-        // If current user is not in the project members, add them to available assignees
-        const isCurrentUserInMembers = ticket.project.members.some(member => member.id === user.id);
+        // Start with project members
+        const projectMembers = [...ticket.project.members];
+        
+        // Check if current user is already in the members list
+        const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
+        
+        // If not, add current user to available assignees
         if (!isCurrentUserInMembers) {
-          setAvailableAssignees(prev => [...prev, user]);
+          projectMembers.push(user);
         }
+        
+        // Set available assignees
+        setAvailableAssignees(projectMembers);
       } catch (error) {
         console.error('Error fetching current user:', error);
       }
@@ -166,7 +174,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {availableAssignees.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
-                    {member.name}
+                    {member.name} {member.id === currentUser?.id ? '(You)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

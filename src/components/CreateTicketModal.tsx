@@ -70,11 +70,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           }
           setAvailableAssignees(projectMembers);
         } else if (allProjects.length > 0) {
+          // If no initial project, select the first one from the fetched projects
           console.log('Selecting first project:', allProjects[0].name);
           setSelectedProject(allProjects[0]);
           setProjectId(allProjects[0].id);
           
-          // Set available assignees
+          // Set available assignees for the first project
           const projectMembers = [...allProjects[0].members];
           const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
           if (!isCurrentUserInMembers) {
