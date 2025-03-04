@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -19,7 +18,6 @@ const Board = () => {
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
   
-  // Check if projectId is a valid UUID
   const isValidUuid = (id) => {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   };
@@ -83,7 +81,7 @@ const Board = () => {
   if (isError || !board) {
     return (
       <Layout>
-        <BoardNotFound />
+        <BoardNotFound projectId={projectId} />
       </Layout>
     );
   }
@@ -92,7 +90,6 @@ const Board = () => {
     try {
       console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
       
-      // Find the ticket in the board
       let foundTicket = null;
       for (const column of board.columns) {
         const ticket = column.tickets.find(t => t.id === ticketId);
@@ -107,7 +104,6 @@ const Board = () => {
         return;
       }
       
-      // Update ticket status in the database
       await supabaseService.updateTicket(ticketId, { 
         ...foundTicket, 
         status: destinationColumn 
@@ -115,7 +111,6 @@ const Board = () => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Refresh the board data
       refetch();
     } catch (error) {
       console.error('Error moving ticket:', error);
@@ -130,15 +125,15 @@ const Board = () => {
       if (result) {
         toast.success('Ticket created successfully');
         refetch();
-        return true; // Indicate success
+        return true;
       } else {
         toast.error('Failed to create ticket');
-        return false; // Indicate failure
+        return false;
       }
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('Failed to create ticket');
-      return false; // Indicate failure
+      return false;
     } finally {
       setIsCreateModalOpen(false);
     }
@@ -148,7 +143,6 @@ const Board = () => {
     setIsCreateModalOpen(true);
   };
 
-  // Add new handlers for filter and group buttons
   const handleFilterClick = () => {
     setIsFilterMenuOpen(!isFilterMenuOpen);
     toast.info('Filter functionality coming soon');
