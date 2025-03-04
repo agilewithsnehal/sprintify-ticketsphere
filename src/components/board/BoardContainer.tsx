@@ -2,12 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/lib/supabase-service';
-import KanbanBoard from '@/components/kanban/KanbanBoard';
 import { Board as BoardType, Status, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
 import BoardNotFound from './BoardNotFound';
 import BoardSkeleton from './BoardSkeleton';
 import BoardToolbar from './BoardToolbar';
+import KanbanBoardWrapper from './KanbanBoardWrapper';
 
 interface BoardContainerProps {
   projectId: string;
@@ -75,7 +75,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
       />
       
       {board && (
-        <KanbanBoard 
+        <KanbanBoardWrapper
           board={board} 
           onTicketMove={handleTicketMove} 
         />
