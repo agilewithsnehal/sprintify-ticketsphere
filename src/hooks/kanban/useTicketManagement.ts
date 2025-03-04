@@ -18,28 +18,31 @@ export function useTicketManagement(
     return null;
   }, [columns]);
 
+  // Helper to check if ticket exists by key or id
+  const ticketExistsInColumns = useCallback((ticketId: string, ticketKey: string): boolean => {
+    for (const column of columns) {
+      const existsById = column.tickets.some((t: TicketType) => t.id === ticketId);
+      const existsByKey = column.tickets.some((t: TicketType) => t.key === ticketKey);
+      if (existsById || existsByKey) {
+        return true;
+      }
+    }
+    return false;
+  }, [columns]);
+
   const handleTicketCreate = useCallback(async (newTicket: TicketType) => {
     try {
-      // Check if the ticket already exists in any column (to prevent duplicates)
-      if (newTicket.id && findTicketInColumns(newTicket.id)) {
+      console.log('Handling ticket create:', newTicket.key);
+      
+      // Check if the ticket already exists in any column by ID or key
+      if (ticketExistsInColumns(newTicket.id, newTicket.key)) {
         console.log('Ticket already exists in board. Skipping duplicate creation.');
         return;
       }
       
-      // If this is a newly created ticket from Supabase, just update the UI
-      // The database creation already happened in the modal component
+      // Update the local state with the new ticket
       setColumns(prevColumns => prevColumns.map(col => {
         if (col.id === newTicket.status) {
-          // Check for duplicates before adding
-          const existingTicket = col.tickets.find((t: TicketType) => 
-            t.id === newTicket.id || t.key === newTicket.key
-          );
-          
-          if (existingTicket) {
-            console.log('Ticket already exists in column. Skipping duplicate creation.');
-            return col;
-          }
-          
           return {
             ...col,
             tickets: [...col.tickets, newTicket]
@@ -52,7 +55,7 @@ export function useTicketManagement(
       console.error('Error handling ticket create:', error);
       toast.error('Failed to update board with new ticket');
     }
-  }, [columns, setColumns, findTicketInColumns]);
+  }, [columns, setColumns, ticketExistsInColumns]);
 
   const handleTicketUpdate = useCallback(async (updatedTicket: TicketType) => {
     try {
