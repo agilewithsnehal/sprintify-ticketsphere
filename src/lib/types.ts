@@ -3,6 +3,8 @@ export type Priority = 'low' | 'medium' | 'high';
 
 export type Status = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
 
+export type IssueType = 'epic' | 'feature' | 'story' | 'task';
+
 export type User = {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ export type Ticket = {
   description: string;
   status: Status;
   priority: Priority;
+  issueType: IssueType;
   assignee?: User;
   reporter: User;
   project: Project;

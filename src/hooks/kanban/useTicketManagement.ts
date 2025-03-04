@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { Ticket as TicketType, Status, Comment } from '@/lib/types';
 import { toast } from 'sonner';
@@ -32,24 +33,32 @@ export function useTicketManagement(
 
   const handleTicketCreate = useCallback(async (newTicket: TicketType) => {
     try {
-      console.log('Handling ticket create:', newTicket.key);
+      console.log('Handling ticket create:', newTicket.key, 'ID:', newTicket.id);
       
       // Check if the ticket already exists in any column by ID or key
       if (ticketExistsInColumns(newTicket.id, newTicket.key)) {
         console.log('Ticket already exists in board. Skipping duplicate creation.');
+        toast.info('Ticket is already on the board');
         return;
       }
       
       // Update the local state with the new ticket
       setColumns(prevColumns => prevColumns.map(col => {
         if (col.id === newTicket.status) {
+          // Ensure there are no duplicates by ID or key
+          const noDuplicates = col.tickets.filter((t: TicketType) => 
+            t.id !== newTicket.id && t.key !== newTicket.key
+          );
+          
           return {
             ...col,
-            tickets: [...col.tickets, newTicket]
+            tickets: [...noDuplicates, newTicket]
           };
         }
         return col;
       }));
+      
+      console.log('Ticket added to board:', newTicket.id);
       
     } catch (error) {
       console.error('Error handling ticket create:', error);

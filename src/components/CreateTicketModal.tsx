@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Ticket, Project, Status, Priority, User } from '@/lib/types';
+import { Ticket, Project, Status, Priority, User, IssueType } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
 
 interface CreateTicketModalProps {
@@ -27,6 +27,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
+  const [issueType, setIssueType] = useState<IssueType>('task');
   const [assigneeId, setAssigneeId] = useState<string>('unassigned');
   const [status, setStatus] = useState<Status>(initialColumn || 'todo');
   const [projectId, setProjectId] = useState<string>(initialProject?.id || '');
@@ -34,6 +35,9 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(initialProject || null);
+  
+  // Track if a ticket has been successfully submitted
+  const hasSubmittedRef = useRef(false);
   
   // Fetch current user and projects on load
   useEffect(() => {
@@ -62,7 +66,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     };
     
     fetchInitialData();
-  }, [initialProject]);
+    
+    // Reset submission state when modal opens
+    return () => {
+      hasSubmittedRef.current = false;
+    };
+  }, [initialProject, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +92,13 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     }
 
     // Prevent duplicate submissions
-    if (isSubmitting) {
+    if (isSubmitting || hasSubmittedRef.current) {
+      console.log('Preventing duplicate submission');
       return;
     }
 
     setIsSubmitting(true);
+    hasSubmittedRef.current = true;
 
     try {
       // Find the selected project
@@ -95,13 +106,32 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       if (!project) {
         toast.error('Selected project not found');
         setIsSubmitting(false);
+        hasSubmittedRef.current = false;
         return;
       }
       
-      // Generate a key for the ticket
+      console.log('Creating ticket for project:', project.name);
+      
+      // Get existing tickets for this project to generate a unique key
       const projectTickets = await supabaseService.getTicketsByProjectId(project.id);
-      const ticketNumber = projectTickets.length + 1;
+      
+      // Find the highest ticket number for this project
+      let highestNumber = 0;
+      projectTickets.forEach(ticket => {
+        const match = ticket.key.match(new RegExp(`${project.key}-(\\d+)`));
+        if (match && match[1]) {
+          const num = parseInt(match[1], 10);
+          if (num > highestNumber) {
+            highestNumber = num;
+          }
+        }
+      });
+      
+      // Generate a unique ticket number
+      const ticketNumber = highestNumber + 1;
       const ticketKey = `${project.key}-${ticketNumber}`;
+      
+      console.log('Generated unique ticket key:', ticketKey);
       
       // Create a new ticket object
       const newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'> = {
@@ -110,12 +140,11 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         description: description.trim(),
         status: status,
         priority,
+        issueType,
         assignee: assigneeId !== 'unassigned' ? project.members.find(member => member.id === assigneeId) : undefined,
         reporter: currentUser,
         project,
       };
-
-      console.log('Creating ticket:', ticketKey);
       
       // Create the ticket and get the result with all fields populated
       const createdTicket = await supabaseService.createTicket(newTicket);
@@ -129,10 +158,12 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         toast.success(`Ticket ${ticketKey} created successfully`);
       } else {
         toast.error('Failed to create ticket');
+        hasSubmittedRef.current = false;
       }
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast.error('An error occurred while creating the ticket');
+      hasSubmittedRef.current = false;
     } finally {
       setIsSubmitting(false);
     }
@@ -142,8 +173,10 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     setSummary('');
     setDescription('');
     setPriority('medium');
+    setIssueType('task');
     setAssigneeId('unassigned');
     setStatus(initialColumn || 'todo');
+    hasSubmittedRef.current = false;
   };
 
   const handleProjectChange = (projectId: string) => {
@@ -156,7 +189,10 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
+      if (!open) {
+        resetForm();
+        onClose();
+      }
     }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -250,6 +286,25 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           </div>
           
           <div className="space-y-2">
+            <label htmlFor="issueType" className="text-sm font-medium">Issue Type</label>
+            <Select 
+              value={issueType} 
+              onValueChange={(value: IssueType) => setIssueType(value)}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select issue type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="epic">Epic</SelectItem>
+                <SelectItem value="feature">Feature</SelectItem>
+                <SelectItem value="story">Story</SelectItem>
+                <SelectItem value="task">Task</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
             <label htmlFor="assignee" className="text-sm font-medium">Assignee</label>
             <Select 
               value={assigneeId} 
@@ -271,10 +326,13 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           </div>
           
           <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={() => {
+              resetForm();
+              onClose();
+            }} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !projectId}>
+            <Button type="submit" disabled={isSubmitting || !projectId || hasSubmittedRef.current}>
               {isSubmitting ? 'Creating...' : 'Create Ticket'}
             </Button>
           </DialogFooter>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Ticket, Priority, Status, User } from '@/lib/types';
+import { Ticket, Priority, Status, User, IssueType } from '@/lib/types';
 import { format } from 'date-fns';
 import TicketHeader from './TicketHeader';
 import TicketDescription from './TicketDescription';
@@ -71,6 +71,12 @@ const TicketModal: React.FC<TicketModalProps> = ({
 
   const handlePriorityChange = (priority: Priority) => {
     const updated = { ...editedTicket, priority };
+    setEditedTicket(updated);
+    onTicketUpdate(updated);
+  };
+
+  const handleIssueTypeChange = (issueType: IssueType) => {
+    const updated = { ...editedTicket, issueType };
     setEditedTicket(updated);
     onTicketUpdate(updated);
   };
@@ -161,6 +167,7 @@ const TicketModal: React.FC<TicketModalProps> = ({
           handleEditToggle={handleEditToggle}
           handleStatusChange={handleStatusChange}
           handlePriorityChange={handlePriorityChange}
+          handleIssueTypeChange={handleIssueTypeChange}
           handleAssigneeChange={handleAssigneeChange}
           onTicketDelete={handleDeleteTicket}
         />

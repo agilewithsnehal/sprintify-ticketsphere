@@ -1,5 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { Board, Comment, Priority, Project, Status, Ticket, User } from "@/lib/types";
+import { Board, Comment, Priority, Project, Status, Ticket, User, IssueType } from "@/lib/types";
 
 // Helper function to transform database data into our app types
 const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
@@ -117,6 +118,7 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
     description: dbTicket.description || '',
     status: dbTicket.status as Status,
     priority: dbTicket.priority as Priority,
+    issueType: dbTicket.issue_type as IssueType || 'task', // Default to 'task' if not set
     assignee: assignee,
     reporter: {
       id: reporterData.id,
@@ -320,6 +322,19 @@ export const supabaseService = {
 
   async createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'>): Promise<Ticket | null> {
     try {
+      console.log('Creating new ticket in database:', newTicket.key);
+      
+      // First check if a ticket with this key already exists
+      const { data: existingTickets } = await supabase
+        .from('tickets')
+        .select('id, key')
+        .eq('key', newTicket.key);
+      
+      if (existingTickets && existingTickets.length > 0) {
+        console.error('A ticket with this key already exists:', newTicket.key);
+        return null;
+      }
+      
       const { data: ticket, error } = await supabase
         .from('tickets')
         .insert({
@@ -328,6 +343,7 @@ export const supabaseService = {
           description: newTicket.description,
           status: newTicket.status,
           priority: newTicket.priority,
+          issue_type: newTicket.issueType || 'task',
           assignee_id: newTicket.assignee?.id,
           reporter_id: newTicket.reporter.id,
           project_id: newTicket.project.id
@@ -335,7 +351,10 @@ export const supabaseService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting ticket:', error);
+        throw error;
+      }
       
       return ticket ? await mapDbTicketToTicket(ticket) : null;
     } catch (error) {
@@ -352,6 +371,7 @@ export const supabaseService = {
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.status !== undefined) updateData.status = updates.status;
       if (updates.priority !== undefined) updateData.priority = updates.priority;
+      if (updates.issueType !== undefined) updateData.issue_type = updates.issueType;
       if (updates.assignee !== undefined) updateData.assignee_id = updates.assignee?.id || null;
       
       const { data: ticket, error } = await supabase

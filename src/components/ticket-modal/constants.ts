@@ -42,3 +42,27 @@ export const priorityBgColors = {
   'medium': 'bg-amber-100',
   'high': 'bg-red-100'
 };
+
+// Issue type options
+export const issueTypeOptions = [
+  { value: 'epic', label: 'Epic' },
+  { value: 'feature', label: 'Feature' },
+  { value: 'story', label: 'Story' },
+  { value: 'task', label: 'Task' }
+];
+
+// Issue type colors
+export const issueTypeColors = {
+  'epic': 'text-purple-600',
+  'feature': 'text-blue-600',
+  'story': 'text-green-600',
+  'task': 'text-gray-600'
+};
+
+// Issue type background colors
+export const issueTypeBgColors = {
+  'epic': 'bg-purple-100',
+  'feature': 'bg-blue-100',
+  'story': 'bg-green-100',
+  'task': 'bg-gray-100'
+};
