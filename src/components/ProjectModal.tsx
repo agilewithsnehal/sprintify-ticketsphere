@@ -39,7 +39,7 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   // Fetch current user for the project creation
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, isLoading: isLoadingCurrentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => await supabaseService.getCurrentUser(),
   });
@@ -48,8 +48,6 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // In a real application, you would have an API endpoint to fetch all users
-        // For now, we'll simulate this by using a few hardcoded users
         const users = await getAllUsers();
         setAvailableUsers(users);
       } catch (error) {
@@ -58,13 +56,14 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
       }
     };
 
-    fetchUsers();
-  }, []);
+    if (!isLoadingCurrentUser) {
+      fetchUsers();
+    }
+  }, [isLoadingCurrentUser]);
 
   // Helper function to get all users (simulated for now)
   const getAllUsers = async (): Promise<User[]> => {
-    // In a real application, this would fetch from your database
-    // For now we'll add some dummy users and the current user
+    // Filter out the current user so we don't add them twice
     const dummyUsers: User[] = [
       {
         id: '00000000-0000-0000-0000-000000000002',
@@ -83,18 +82,34 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
         name: 'Sarah Lee',
         email: 'sarah@example.com',
         role: 'developer'
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000005',
+        name: 'Sam Parker',
+        email: 'sam@clarity.com',
+        role: 'manager',
+        avatar: '/lovable-uploads/3b7d4019-3c88-4844-90ce-254bd96fcd58.png'
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000006',
+        name: 'Taylor Chen',
+        email: 'taylor@clarity.com',
+        role: 'developer',
+        avatar: '/lovable-uploads/3b7d4019-3c88-4844-90ce-254bd96fcd58.png'
       }
     ];
+    
+    let allUsers = [...dummyUsers];
     
     // Add current user if available
     if (currentUser) {
       // Make sure we don't add duplicates
-      if (!dummyUsers.some(u => u.id === currentUser.id)) {
-        dummyUsers.push(currentUser);
+      if (!allUsers.some(u => u.id === currentUser.id)) {
+        allUsers = [currentUser, ...allUsers];
       }
     }
     
-    return dummyUsers;
+    return allUsers;
   };
 
   // Initialize form
@@ -149,18 +164,29 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
     setIsSubmitting(true);
     
     try {
+      // Ensure current user is in the selected members
+      let finalSelectedIds = [...selectedUserIds];
+      if (!finalSelectedIds.includes(currentUser.id)) {
+        finalSelectedIds.push(currentUser.id);
+      }
+
       // Get the selected users
       const selectedMembers = availableUsers.filter(user => 
-        selectedUserIds.includes(user.id)
+        finalSelectedIds.includes(user.id)
       );
       
+      // Add the current user if not in selected members
+      if (!selectedMembers.some(member => member.id === currentUser.id)) {
+        selectedMembers.push(currentUser);
+      }
+
       // Prepare project data
       const newProject = {
         name: values.name,
         description: values.description || '',
         key: values.key,
         lead: currentUser,
-        members: selectedMembers, // Use selected members
+        members: selectedMembers, // Use selected members with current user guaranteed
       };
       
       // Create the project
