@@ -110,7 +110,13 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
   // Set the current user as initially selected
   useEffect(() => {
     if (currentUser) {
-      setSelectedUserIds([currentUser.id]);
+      setSelectedUserIds(prev => {
+        // If current user is not in the selection yet, add them
+        if (!prev.includes(currentUser.id)) {
+          return [...prev, currentUser.id];
+        }
+        return prev;
+      });
     }
   }, [currentUser]);
 
@@ -253,15 +259,20 @@ const ProjectModal = ({ isOpen, onClose }: ProjectModalProps) => {
                       />
                       <label 
                         htmlFor={`user-${user.id}`}
-                        className="text-sm cursor-pointer flex-1 flex justify-between"
+                        className={`text-sm cursor-pointer flex-1 flex justify-between ${
+                          user.id === currentUser?.id ? 'font-semibold' : ''
+                        }`}
                       >
-                        <span>{user.name}</span>
+                        <span>{user.name}{user.id === currentUser?.id ? ' (You)' : ''}</span>
                         <span className="text-muted-foreground">{user.role}</span>
                       </label>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
+              {currentUser && (
+                <p className="text-xs text-muted-foreground">You are automatically added to this project.</p>
+              )}
             </div>
             
             <DialogFooter className="pt-4">
