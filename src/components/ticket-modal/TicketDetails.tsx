@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Ticket, Status, Priority, IssueType } from '@/lib/types';
+import { Ticket, Status, Priority, IssueType, User } from '@/lib/types';
 import { 
   priorityOptions, 
   statusOptions, 
@@ -12,6 +12,7 @@ import {
   issueTypeColors 
 } from './constants';
 import { Trash2 } from 'lucide-react';
+import { supabaseService } from '@/lib/supabase-service';
 
 interface TicketDetailsProps {
   ticket: Ticket;
@@ -36,6 +37,29 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   handleAssigneeChange,
   onTicketDelete
 }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [availableAssignees, setAvailableAssignees] = useState<User[]>(ticket.project.members);
+  
+  // Fetch current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await supabaseService.getCurrentUser();
+        setCurrentUser(user);
+        
+        // If current user is not in the project members, add them to available assignees
+        const isCurrentUserInMembers = ticket.project.members.some(member => member.id === user.id);
+        if (!isCurrentUserInMembers) {
+          setAvailableAssignees(prev => [...prev, user]);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
+  }, [ticket.project.members]);
+
   return (
     <div className="space-y-5 border-l pl-5">
       <div className="flex justify-between items-center">
@@ -140,7 +164,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {ticket.project.members.map((member) => (
+                {availableAssignees.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     {member.name}
                   </SelectItem>

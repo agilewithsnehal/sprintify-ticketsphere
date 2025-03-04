@@ -36,6 +36,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(initialProject || null);
+  const [availableAssignees, setAvailableAssignees] = useState<User[]>([]);
   
   // Track if a ticket has been successfully submitted
   const hasSubmittedRef = useRef(false);
@@ -60,10 +61,26 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           console.log('Using initial project:', initialProject.name);
           setSelectedProject(initialProject);
           setProjectId(initialProject.id);
+          
+          // Set available assignees
+          const projectMembers = [...initialProject.members];
+          const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
+          if (!isCurrentUserInMembers) {
+            projectMembers.push(user);
+          }
+          setAvailableAssignees(projectMembers);
         } else if (allProjects.length > 0) {
           console.log('Selecting first project:', allProjects[0].name);
           setSelectedProject(allProjects[0]);
           setProjectId(allProjects[0].id);
+          
+          // Set available assignees
+          const projectMembers = [...allProjects[0].members];
+          const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
+          if (!isCurrentUserInMembers) {
+            projectMembers.push(user);
+          }
+          setAvailableAssignees(projectMembers);
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
@@ -140,6 +157,11 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       
       console.log('Generated unique ticket key:', ticketKey);
       
+      // Find assignee if not unassigned
+      const assignee = assigneeId !== 'unassigned' 
+        ? availableAssignees.find(member => member.id === assigneeId)
+        : undefined;
+      
       // Create a new ticket object
       const newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'> = {
         key: ticketKey,
@@ -148,7 +170,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         status: status,
         priority,
         issueType,
-        assignee: assigneeId !== 'unassigned' ? project.members.find(member => member.id === assigneeId) : undefined,
+        assignee: assignee,
         reporter: currentUser,
         project,
       };
@@ -191,8 +213,19 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     setProjectId(projectId);
     const project = projects.find(p => p.id === projectId);
     setSelectedProject(project || null);
+    
     // Reset assignee when project changes
     setAssigneeId('unassigned');
+    
+    // Update available assignees
+    if (project && currentUser) {
+      const projectMembers = [...project.members];
+      const isCurrentUserInMembers = projectMembers.some(member => member.id === currentUser.id);
+      if (!isCurrentUserInMembers) {
+        projectMembers.push(currentUser);
+      }
+      setAvailableAssignees(projectMembers);
+    }
   };
 
   // When closing the modal, we need to reset everything
@@ -330,9 +363,9 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {selectedProject?.members.map((member) => (
+                {availableAssignees.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
-                    {member.name}
+                    {member.name} {member.id === currentUser?.id ? '(You)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
