@@ -122,6 +122,42 @@ export function useTicketCreation({
     setParentTicketId('');
   };
 
+  // Function to generate a ticket key
+  const generateTicketKey = async (project: Project): Promise<string> => {
+    try {
+      // Get all tickets for the project to determine next ticket number
+      const projectTickets = await supabaseService.getTicketsByProjectId(project.id);
+      
+      // Default ticket number starts at 1
+      let ticketNumber = 1;
+      
+      // If there are existing tickets, find the highest number and increment
+      if (projectTickets.length > 0) {
+        const ticketNumbers = projectTickets
+          .map(ticket => {
+            const parts = ticket.key.split('-');
+            if (parts.length === 2) {
+              const num = parseInt(parts[1], 10);
+              return isNaN(num) ? 0 : num;
+            }
+            return 0;
+          })
+          .filter(num => !isNaN(num));
+        
+        if (ticketNumbers.length > 0) {
+          ticketNumber = Math.max(...ticketNumbers) + 1;
+        }
+      }
+      
+      // Generate key in format "PRJ-123"
+      return `${project.key}-${ticketNumber}`;
+    } catch (error) {
+      console.error('Error generating ticket key:', error);
+      // Fallback to a timestamp-based key
+      return `${project.key}-${Date.now().toString().substring(7)}`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -159,8 +195,13 @@ export function useTicketCreation({
         ? [...project.members, reporter].find(user => user.id === assigneeId)
         : undefined;
       
+      // Generate ticket key
+      const ticketKey = await generateTicketKey(project);
+      console.log(`Generated ticket key: ${ticketKey}`);
+      
       // Create new ticket object
       const newTicket: Partial<Ticket> = {
+        key: ticketKey,
         summary,
         description,
         status,
@@ -171,6 +212,8 @@ export function useTicketCreation({
         assignee,
         parentId: parentTicketId || undefined
       };
+      
+      console.log('Creating new ticket:', newTicket);
       
       // Call the create function
       const success = await onTicketCreate(newTicket as Ticket);

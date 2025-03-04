@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Board, Comment, Priority, Project, Status, Ticket, User, IssueType } from "@/lib/types";
 
@@ -134,7 +133,6 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
   };
 };
 
-// Service functions
 export const supabaseService = {
   // Projects
   async getAllProjects(): Promise<Project[]> {

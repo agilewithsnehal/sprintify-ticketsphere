@@ -20,7 +20,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({ projectId }) => {
     queryKey: ['board', projectId],
     queryFn: async () => {
       console.log('Fetching board for project:', projectId);
-      return await supabaseService.createBoard(projectId); // Using createBoard instead of getBoardByProjectId
+      return await supabaseService.createBoard(projectId);
     },
     enabled: !!projectId,
     staleTime: 1000 * 60 * 5, // 5 minutes

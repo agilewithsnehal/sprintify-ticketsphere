@@ -42,6 +42,7 @@ const Project = () => {
 
   const handleTicketCreate = async (newTicket: Ticket): Promise<boolean> => {
     try {
+      console.log(`Creating ticket with key: ${newTicket.key}`);
       const createdTicket = await supabaseService.createTicket(newTicket);
       
       if (createdTicket) {
