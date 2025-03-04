@@ -11,13 +11,15 @@ interface ProjectHeaderProps {
   ticketCount?: number;
   onCreateTicket?: () => void;
   onConfigureClick?: () => void;
+  rightContent?: React.ReactNode; // Added this prop
 }
 
 const ProjectHeader: React.FC<ProjectHeaderProps> = ({ 
   project, 
   ticketCount, 
   onCreateTicket, 
-  onConfigureClick 
+  onConfigureClick,
+  rightContent 
 }) => {
   return (
     <div className="mb-6">
@@ -28,30 +30,36 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-2 mt-4 md:mt-0">
-          <Button size="sm" variant="outline" className="gap-1">
-            <Clock className="h-4 w-4" />
-            <span>Recent</span>
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="gap-1"
-            onClick={onConfigureClick}
-          >
-            <Settings className="h-4 w-4" />
-            <span>Configure</span>
-          </Button>
-          
-          <Button 
-            size="sm" 
-            className="gap-1"
-            onClick={onCreateTicket}
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create</span>
-          </Button>
+          {!rightContent ? (
+            <>
+              <Button size="sm" variant="outline" className="gap-1">
+                <Clock className="h-4 w-4" />
+                <span>Recent</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="gap-1"
+                onClick={onConfigureClick}
+              >
+                <Settings className="h-4 w-4" />
+                <span>Configure</span>
+              </Button>
+              
+              <Button 
+                size="sm" 
+                className="gap-1"
+                onClick={onCreateTicket}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create</span>
+              </Button>
+            </>
+          ) : (
+            rightContent
+          )}
         </div>
       </div>
       
