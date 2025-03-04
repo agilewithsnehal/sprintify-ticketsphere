@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { Ticket as TicketType, Status, Comment } from '@/lib/types';
 import { toast } from 'sonner';
@@ -21,31 +20,39 @@ export function useTicketManagement(
 
   const handleTicketCreate = useCallback(async (newTicket: TicketType) => {
     try {
-      // Create the ticket in the database first
-      const createdTicket = await supabaseService.createTicket(newTicket);
-      
-      if (!createdTicket) {
-        toast.error('Failed to create ticket');
+      // Check if the ticket already exists in any column (to prevent duplicates)
+      if (newTicket.id && findTicketInColumns(newTicket.id)) {
+        console.log('Ticket already exists in board. Skipping duplicate creation.');
         return;
       }
       
-      // Update the UI with the created ticket (from the database)
+      // If this is a newly created ticket from Supabase, just update the UI
+      // The database creation already happened in the modal component
       setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === createdTicket.status) {
+        if (col.id === newTicket.status) {
+          // Check for duplicates before adding
+          const existingTicket = col.tickets.find((t: TicketType) => 
+            t.id === newTicket.id || t.key === newTicket.key
+          );
+          
+          if (existingTicket) {
+            console.log('Ticket already exists in column. Skipping duplicate creation.');
+            return col;
+          }
+          
           return {
             ...col,
-            tickets: [...col.tickets, createdTicket]
+            tickets: [...col.tickets, newTicket]
           };
         }
         return col;
       }));
       
-      toast.success(`Ticket created successfully in ${createdTicket.status.replace(/-/g, ' ')}`);
     } catch (error) {
       console.error('Error handling ticket create:', error);
       toast.error('Failed to update board with new ticket');
     }
-  }, [setColumns]);
+  }, [columns, setColumns, findTicketInColumns]);
 
   const handleTicketUpdate = useCallback(async (updatedTicket: TicketType) => {
     try {

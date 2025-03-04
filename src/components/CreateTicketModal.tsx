@@ -57,11 +57,18 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       return;
     }
 
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       // Generate a key for the ticket
-      const ticketKey = `${project.key}-${Math.floor(Math.random() * 1000)}`;
+      const projectTickets = await supabaseService.getTicketsByProjectId(project.id);
+      const ticketNumber = projectTickets.length + 1;
+      const ticketKey = `${project.key}-${ticketNumber}`;
       
       // Create a new ticket object
       const newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'> = {
@@ -79,9 +86,11 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       const createdTicket = await supabaseService.createTicket(newTicket);
       
       if (createdTicket) {
+        // Only call onTicketCreate if we successfully created a ticket
         onTicketCreate(createdTicket);
         resetForm();
         onClose();
+        toast.success(`Ticket ${ticketKey} created successfully`);
       } else {
         toast.error('Failed to create ticket');
       }
@@ -101,7 +110,9 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create New Ticket</DialogTitle>
