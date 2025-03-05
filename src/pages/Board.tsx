@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -107,6 +108,52 @@ const Board = () => {
       });
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
+      
+      // Handle parent ticket update
+      if (foundTicket.parentId) {
+        // Find the parent ticket
+        let parentTicket = null;
+        for (const column of board.columns) {
+          const parent = column.tickets.find(t => t.id === foundTicket.parentId);
+          if (parent) {
+            parentTicket = parent;
+            break;
+          }
+        }
+        
+        if (parentTicket && parentTicket.status !== destinationColumn) {
+          // Special handling for "done" status
+          if (destinationColumn === 'done') {
+            // Check if all sibling tickets are also done
+            const siblingTickets = [];
+            for (const column of board.columns) {
+              column.tickets.forEach(t => {
+                if (t.parentId === parentTicket.id) {
+                  siblingTickets.push(t);
+                }
+              });
+            }
+            
+            const allSiblingsDone = siblingTickets.every(t => 
+              t.id === ticketId || t.status === 'done'
+            );
+            
+            if (!allSiblingsDone) {
+              console.log('Not all sibling tickets are done, parent remains in current status');
+              refetch();
+              return;
+            }
+          }
+          
+          // Update parent ticket
+          await supabaseService.updateTicket(parentTicket.id, {
+            ...parentTicket,
+            status: destinationColumn
+          });
+          
+          toast.success(`Parent ticket also moved to ${destinationColumn.replace(/-/g, ' ')}`);
+        }
+      }
       
       refetch();
     } catch (error) {

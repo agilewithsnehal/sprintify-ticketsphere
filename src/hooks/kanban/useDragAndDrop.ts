@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
 import { Status, Ticket as TicketType } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export function useDragAndDrop(
   columns: any[],
@@ -36,6 +37,29 @@ export function useDragAndDrop(
       : [...destColumn.tickets];
 
     const [movedTicket] = sourceTickets.splice(source.index, 1);
+
+    // Check if we're moving to "done" status and this is a parent ticket
+    if (destination.droppableId === 'done' && movedTicket) {
+      // Find child tickets across all columns
+      const childTickets: TicketType[] = [];
+      columns.forEach(col => {
+        col.tickets.forEach((ticket: TicketType) => {
+          if (ticket.parentId === movedTicket.id) {
+            childTickets.push(ticket);
+          }
+        });
+      });
+
+      // If there are children and any of them are not done, prevent the move
+      if (childTickets.length > 0) {
+        const allChildrenDone = childTickets.every((ticket: TicketType) => ticket.status === 'done');
+        
+        if (!allChildrenDone) {
+          toast.error("Cannot move to Done: All child tickets must be completed first");
+          return;
+        }
+      }
+    }
     
     // Create the updated ticket with new status
     const updatedTicket = { 

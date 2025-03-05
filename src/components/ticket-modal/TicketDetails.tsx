@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +14,7 @@ import { Trash2, Link, ExternalLink } from 'lucide-react';
 import { supabaseService } from '@/lib/supabase';
 import { IssueTypeIcon } from '../ticket-form/IssueTypeIcon';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 interface TicketDetailsProps {
   ticket: Ticket;
@@ -91,6 +91,21 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
     fetchRelatedTickets();
   }, [ticket.id, ticket.parentId]);
 
+  const handleStatusChangeWithValidation = async (status: Status) => {
+    // If moving to done status and has children, validate all children are done
+    if (status === 'done' && childTickets.length > 0) {
+      const allChildrenDone = childTickets.every(child => child.status === 'done');
+      
+      if (!allChildrenDone) {
+        toast.error("Cannot move to Done: All child tickets must be completed first");
+        return;
+      }
+    }
+    
+    // Status change is valid, proceed
+    handleStatusChange(status);
+  };
+
   const handleTicketClick = (ticketId: string) => {
     // Navigate to ticket detail page
     navigate(`/board/${ticket.project.id}/ticket/${ticketId}`);
@@ -149,7 +164,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           {isEditing ? (
             <Select
               value={ticket.status}
-              onValueChange={(value: Status) => handleStatusChange(value)}
+              onValueChange={(value: Status) => handleStatusChangeWithValidation(value)}
             >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
@@ -194,7 +209,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           )}
         </div>
         
-        {/* Link Section - Parent Ticket */}
         {ticket.parentId && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Parent</p>
@@ -215,7 +229,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           </div>
         )}
         
-        {/* Link Section - Child Tickets */}
         {childTickets.length > 0 && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Children ({childTickets.length})</p>

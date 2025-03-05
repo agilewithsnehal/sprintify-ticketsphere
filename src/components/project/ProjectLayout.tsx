@@ -65,6 +65,20 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ project, tickets }) => {
       if (updateParent && ticket.parentId) {
         const parentTicket = tickets.find(t => t.id === ticket.parentId);
         if (parentTicket && parentTicket.status !== destinationColumn) {
+          // Special handling for "done" status
+          if (destinationColumn === 'done') {
+            // Check if all sibling tickets are also done
+            const siblingTickets = tickets.filter(t => t.parentId === ticket.parentId);
+            const allSiblingsDone = siblingTickets.every(t => 
+              t.id === ticketId || t.status === 'done'
+            );
+            
+            if (!allSiblingsDone) {
+              console.log('Not all sibling tickets are done, parent remains in current status');
+              return;
+            }
+          }
+          
           console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
           
           await supabaseService.updateTicket(
