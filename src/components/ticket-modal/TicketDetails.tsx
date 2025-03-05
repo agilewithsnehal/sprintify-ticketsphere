@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,9 +11,10 @@ import {
   issueTypeOptions,
   issueTypeColors 
 } from './constants';
-import { Trash2, Link } from 'lucide-react';
+import { Trash2, Link, ExternalLink } from 'lucide-react';
 import { supabaseService } from '@/lib/supabase';
 import { IssueTypeIcon } from '../ticket-form/IssueTypeIcon';
+import { useNavigate } from 'react-router-dom';
 
 interface TicketDetailsProps {
   ticket: Ticket;
@@ -41,6 +43,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   const [availableAssignees, setAvailableAssignees] = useState<User[]>([]);
   const [parentTicket, setParentTicket] = useState<Ticket | null>(null);
   const [childTickets, setChildTickets] = useState<Ticket[]>([]);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -68,15 +71,16 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   useEffect(() => {
     const fetchRelatedTickets = async () => {
       try {
-        const allTickets = await supabaseService.getAllTickets();
-        
+        // Fetch parent ticket if this ticket has a parent
         if (ticket.parentId) {
+          const allTickets = await supabaseService.getAllTickets();
           const parent = allTickets.find(t => t.id === ticket.parentId);
           setParentTicket(parent || null);
         } else {
           setParentTicket(null);
         }
         
+        // Fetch all child tickets
         const children = await supabaseService.getChildTickets(ticket.id);
         setChildTickets(children);
       } catch (error) {
@@ -88,7 +92,8 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   }, [ticket.id, ticket.parentId]);
 
   const handleTicketClick = (ticketId: string) => {
-    window.location.href = `/board/${ticket.project.id}/ticket/${ticketId}`;
+    // Navigate to ticket detail page
+    navigate(`/board/${ticket.project.id}/ticket/${ticketId}`);
   };
 
   return (
@@ -189,35 +194,43 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           )}
         </div>
         
-        {parentTicket && (
+        {/* Link Section - Parent Ticket */}
+        {ticket.parentId && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Parent</p>
-            <div 
-              className="flex items-center space-x-2 text-sm p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer"
-              onClick={() => handleTicketClick(parentTicket.id)}
-            >
-              <Link className="h-3 w-3" />
-              <IssueTypeIcon issueType={parentTicket.issueType} size={14} />
-              <span className="font-medium">{parentTicket.key}</span>
-              <span className="truncate">{parentTicket.summary}</span>
-            </div>
+            {parentTicket ? (
+              <div 
+                className="flex items-center space-x-2 text-sm p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
+                onClick={() => handleTicketClick(parentTicket.id)}
+              >
+                <Link className="h-3 w-3" />
+                <IssueTypeIcon issueType={parentTicket.issueType} size={14} />
+                <span className="font-medium">{parentTicket.key}</span>
+                <span className="truncate text-xs">{parentTicket.summary}</span>
+                <ExternalLink className="h-3 w-3 ml-auto" />
+              </div>
+            ) : (
+              <p className="text-xs italic text-muted-foreground">Loading parent ticket...</p>
+            )}
           </div>
         )}
         
+        {/* Link Section - Child Tickets */}
         {childTickets.length > 0 && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Children ({childTickets.length})</p>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
               {childTickets.map(child => (
                 <div 
                   key={child.id}
-                  className="flex items-center space-x-2 text-sm p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer"
+                  className="flex items-center space-x-2 text-sm p-2 rounded-md bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
                   onClick={() => handleTicketClick(child.id)}
                 >
                   <Link className="h-3 w-3" />
                   <IssueTypeIcon issueType={child.issueType} size={14} />
                   <span className="font-medium">{child.key}</span>
-                  <span className="truncate">{child.summary}</span>
+                  <span className="truncate text-xs">{child.summary}</span>
+                  <ExternalLink className="h-3 w-3 ml-auto" />
                 </div>
               ))}
             </div>
