@@ -1,14 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, BarChart3, ArrowLeft, Columns } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ColumnConfigurationModal from './ColumnConfigurationModal';
 import { toast } from 'sonner';
+import { supabaseService } from '@/lib/supabase';
+import { Column } from '@/lib/types';
 
 interface BoardToolbarProps {
   boardName: string;
   projectId: string;
+  columns: Column[];
+  onColumnsUpdate: (columns: Column[]) => void;
   onCreateTicket: () => void;
   onFilterClick: () => void;
   onGroupClick: () => void;
@@ -17,25 +21,36 @@ interface BoardToolbarProps {
 const BoardToolbar: React.FC<BoardToolbarProps> = ({ 
   boardName, 
   projectId,
+  columns,
+  onColumnsUpdate,
   onCreateTicket,
   onFilterClick,
   onGroupClick
 }) => {
   const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Default columns - in a real implementation, these would come from the board data
-  const defaultColumns = [
-    { id: 'backlog', title: 'Backlog' },
-    { id: 'todo', title: 'To Do' },
-    { id: 'in-progress', title: 'In Progress' },
-    { id: 'review', title: 'Review' },
-    { id: 'done', title: 'Done' }
-  ];
-  
-  const handleSaveColumns = (columns: any[]) => {
-    // In a real implementation, this would update the columns in the database
-    console.log('Columns updated:', columns);
-    toast.success('Column configuration saved');
+  const handleSaveColumns = async (updatedColumns: Column[]) => {
+    try {
+      setIsSaving(true);
+      
+      // Call the service to update the columns in the database
+      const success = await supabaseService.updateBoardColumns(projectId, updatedColumns);
+      
+      if (success) {
+        // Update the local state
+        onColumnsUpdate(updatedColumns);
+        toast.success('Column configuration saved');
+      } else {
+        toast.error('Failed to save column configuration');
+      }
+    } catch (error) {
+      console.error('Error saving columns:', error);
+      toast.error('An error occurred while saving columns');
+    } finally {
+      setIsSaving(false);
+      setConfigureColumnsOpen(false);
+    }
   };
   
   return (
@@ -119,8 +134,9 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
       <ColumnConfigurationModal
         isOpen={configureColumnsOpen}
         onOpenChange={setConfigureColumnsOpen}
-        columns={defaultColumns}
+        columns={columns}
         onSave={handleSaveColumns}
+        isSaving={isSaving}
       />
     </div>
   );

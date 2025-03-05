@@ -50,6 +50,8 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
   const handleDeleteProject = async () => {
     try {
       setIsDeleting(true);
+      console.log('Deleting project:', project.id);
+      
       const success = await supabaseService.deleteProject(project.id);
       
       if (success) {

@@ -1,81 +1,95 @@
 
-import React, { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabaseService } from '@/lib/supabase'; 
-import { Board as BoardType, Status, Ticket } from '@/lib/types';
-import { toast } from 'sonner';
-import BoardNotFound from './BoardNotFound';
+import React, { useState, useEffect } from 'react';
+import { supabaseService } from '@/lib/supabase';
 import BoardSkeleton from './BoardSkeleton';
-import BoardToolbar from './BoardToolbar';
+import BoardNotFound from './BoardNotFound';
 import KanbanBoardWrapper from './KanbanBoardWrapper';
+import { Board, Status, Column } from '@/lib/types';
+import BoardToolbar from './BoardToolbar';
 
 interface BoardContainerProps {
   projectId: string;
   boardName: string;
   onCreateTicket: () => void;
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
 }
 
-const BoardContainer: React.FC<BoardContainerProps> = ({ 
-  projectId, 
-  boardName, 
-  onCreateTicket, 
-  onTicketMove 
+const BoardContainer: React.FC<BoardContainerProps> = ({
+  projectId,
+  boardName,
+  onCreateTicket,
+  onTicketMove
 }) => {
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
-  const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
+  const [board, setBoard] = useState<Board | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   
-  const { data: board, isLoading, error } = useQuery({
-    queryKey: ['board', projectId],
-    queryFn: async () => {
-      console.log('Fetching board for project:', projectId);
-      return await supabaseService.createBoard(projectId);
-    },
-    enabled: !!projectId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
   useEffect(() => {
-    if (error) {
-      console.error('Error fetching board:', error);
-      toast.error('Failed to load board data');
+    const fetchBoard = async () => {
+      try {
+        setIsLoading(true);
+        
+        const boardData = await supabaseService.createBoard(projectId);
+        
+        if (boardData) {
+          setBoard(boardData);
+        } else {
+          setError(new Error('Board not found'));
+        }
+      } catch (err: any) {
+        console.error('Error fetching board:', err);
+        setError(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchBoard();
+  }, [projectId]);
+
+  const handleColumnsUpdate = (updatedColumns: Column[]) => {
+    if (board) {
+      setBoard({
+        ...board,
+        columns: updatedColumns
+      });
     }
-  }, [error]);
-
+  };
+  
   const handleFilterClick = () => {
-    setIsFilterMenuOpen(!isFilterMenuOpen);
-    toast.info('Filtering will be available soon!');
+    console.log('Filter clicked');
+    // Implement filter functionality
   };
-
+  
   const handleGroupClick = () => {
-    setIsGroupMenuOpen(!isGroupMenuOpen);
-    toast.info('Grouping will be available soon!');
+    console.log('Group clicked');
+    // Implement group functionality
   };
-
+  
   if (isLoading) {
     return <BoardSkeleton />;
   }
-
-  if (!board || error) {
+  
+  if (error || !board) {
     return <BoardNotFound projectId={projectId} />;
   }
 
   return (
-    <div className="relative overflow-hidden h-[calc(100vh-240px)]">
-      <BoardToolbar
+    <div className="flex flex-col">
+      <BoardToolbar 
         boardName={boardName}
-        projectId={projectId} // Pass projectId to BoardToolbar
+        projectId={projectId}
+        columns={board.columns}
+        onColumnsUpdate={handleColumnsUpdate}
         onCreateTicket={onCreateTicket}
         onFilterClick={handleFilterClick}
         onGroupClick={handleGroupClick}
       />
       
-      {board && (
-        <KanbanBoardWrapper
-          board={board} 
-          onTicketMove={onTicketMove} 
-        />
-      )}
+      <KanbanBoardWrapper 
+        board={board} 
+        onTicketMove={onTicketMove} 
+      />
     </div>
   );
 };

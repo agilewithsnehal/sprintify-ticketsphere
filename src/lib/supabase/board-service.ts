@@ -1,5 +1,5 @@
 
-import { Board } from "@/lib/types";
+import { Board, Column } from "@/lib/types";
 import { supabaseService as projectService } from './project-service';
 import { ticketService } from './ticket';
 
@@ -34,4 +34,19 @@ export const supabaseService = {
       return null;
     }
   },
+
+  async updateBoardColumns(projectId: string, columns: Column[]): Promise<boolean> {
+    try {
+      console.log('Updating board columns for project:', projectId, columns);
+      
+      // In a real implementation, this would update the columns in the database
+      // For now, we'll just return true to simulate success
+      // Later, when we have a proper board table, we would update it
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating board columns:', error);
+      return false;
+    }
+  }
 };

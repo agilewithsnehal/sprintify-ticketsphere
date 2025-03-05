@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -15,32 +15,35 @@ import {
   Draggable, 
   DropResult 
 } from 'react-beautiful-dnd';
-import { GripVertical, X, Plus, CheckCircle, Edit, Check } from 'lucide-react';
+import { GripVertical, X, Plus, CheckCircle, Edit, Check, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-
-interface ColumnItem {
-  id: string;
-  title: string;
-}
+import { Column } from '@/lib/types';
 
 interface ColumnConfigurationModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  columns: ColumnItem[];
-  onSave: (columns: ColumnItem[]) => void;
+  columns: Column[];
+  onSave: (columns: Column[]) => void;
+  isSaving?: boolean;
 }
 
 const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   isOpen,
   onOpenChange,
   columns: initialColumns,
-  onSave
+  onSave,
+  isSaving = false
 }) => {
-  const [columns, setColumns] = useState<ColumnItem[]>(initialColumns);
+  const [columns, setColumns] = useState<Column[]>(initialColumns);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [newColumnTitle, setNewColumnTitle] = useState('');
+
+  // Update local columns when initialColumns change
+  useEffect(() => {
+    setColumns(initialColumns);
+  }, [initialColumns]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -85,18 +88,16 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
     }
 
     const newId = `column-${Date.now()}`;
-    setColumns([...columns, { id: newId, title: newColumnTitle }]);
+    setColumns([...columns, { id: newId, title: newColumnTitle, tickets: [] }]);
     setNewColumnTitle('');
   };
 
   const handleSaveColumns = () => {
     onSave(columns);
-    onOpenChange(false);
-    toast.success('Board columns updated successfully');
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => !isSaving && onOpenChange(open)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Configure Board Columns</DialogTitle>
@@ -168,6 +169,7 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
                                 size="icon"
                                 className="text-destructive hover:text-destructive"
                                 onClick={() => handleRemoveColumn(column.id)}
+                                disabled={isSaving}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -189,8 +191,13 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
               className="flex-1"
+              disabled={isSaving}
             />
-            <Button variant="outline" onClick={handleAddColumn}>
+            <Button 
+              variant="outline" 
+              onClick={handleAddColumn}
+              disabled={isSaving}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add
             </Button>
@@ -198,16 +205,30 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="ghost" 
+            onClick={() => onOpenChange(false)}
+            disabled={isSaving}
+          >
             Cancel
           </Button>
           <Button 
             variant="default" 
             onClick={handleSaveColumns}
             className="gap-2"
+            disabled={isSaving}
           >
-            <CheckCircle className="h-4 w-4" />
-            Save Changes
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                Save Changes
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
