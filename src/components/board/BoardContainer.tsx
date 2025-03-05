@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabaseService } from '@/lib/supabase';
 import BoardSkeleton from './BoardSkeleton';
@@ -6,6 +5,7 @@ import BoardNotFound from './BoardNotFound';
 import KanbanBoardWrapper from './KanbanBoardWrapper';
 import { Board, Status, Column } from '@/lib/types';
 import BoardToolbar from './BoardToolbar';
+import { toast } from 'react-toastify';
 
 interface BoardContainerProps {
   projectId: string;
@@ -24,35 +24,40 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  useEffect(() => {
-    const fetchBoard = async () => {
-      try {
-        setIsLoading(true);
-        
-        const boardData = await supabaseService.createBoard(projectId);
-        
-        if (boardData) {
-          setBoard(boardData);
-        } else {
-          setError(new Error('Board not found'));
-        }
-      } catch (err: any) {
-        console.error('Error fetching board:', err);
-        setError(err);
-      } finally {
-        setIsLoading(false);
+  const fetchBoard = async () => {
+    try {
+      setIsLoading(true);
+      
+      const boardData = await supabaseService.createBoard(projectId);
+      
+      if (boardData) {
+        console.log('Board fetched with columns:', boardData.columns.map(c => c.title));
+        setBoard(boardData);
+      } else {
+        setError(new Error('Board not found'));
       }
-    };
-    
+    } catch (err: any) {
+      console.error('Error fetching board:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchBoard();
   }, [projectId]);
 
-  const handleColumnsUpdate = (updatedColumns: Column[]) => {
-    if (board) {
-      setBoard({
-        ...board,
-        columns: updatedColumns
-      });
+  const handleColumnsUpdate = async (updatedColumns: Column[]) => {
+    try {
+      await supabaseService.updateBoardColumns(projectId, updatedColumns);
+      
+      fetchBoard();
+      
+      toast.success('Board columns updated');
+    } catch (error) {
+      console.error('Error updating columns:', error);
+      toast.error('Failed to update board columns');
     }
   };
   

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -40,7 +39,6 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   const [editingTitle, setEditingTitle] = useState('');
   const [newColumnTitle, setNewColumnTitle] = useState('');
 
-  // Update local columns when initialColumns change
   useEffect(() => {
     setColumns(initialColumns);
   }, [initialColumns]);
@@ -87,9 +85,12 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
       return;
     }
 
-    // Use 'todo' as default Status for new columns
     const newId = 'todo' as Status;
-    setColumns([...columns, { id: newId, title: newColumnTitle, tickets: [] }]);
+    setColumns([...columns, { 
+      id: newId, 
+      title: newColumnTitle, 
+      tickets: [] 
+    }]);
     setNewColumnTitle('');
   };
 

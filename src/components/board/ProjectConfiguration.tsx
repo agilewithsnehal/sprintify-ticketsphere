@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -44,6 +43,8 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
   const [isSavingColumns, setIsSavingColumns] = useState(false);
+  const [columns, setColumns] = useState<Column[] | null>(null);
+  const [isColumnConfigOpen, setIsColumnConfigOpen] = useState(false);
   const navigate = useNavigate();
   
   const handleOpenChange = (open: boolean) => {
@@ -74,53 +75,59 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
     }
   };
 
-  const [boardData, setBoardData] = useState<{ columns: Column[] } | null>(null);
-  
-  const fetchBoardData = async () => {
-    try {
-      const board = await supabaseService.createBoard(project.id);
-      setBoardData(board);
-    } catch (error) {
-      console.error('Error fetching board data:', error);
-      toast.error('Failed to load board configuration');
-    }
-  };
-  
-  const handleSaveColumns = async (updatedColumns: Column[]) => {
-    try {
-      setIsSavingColumns(true);
-      
-      // Call the service to update the columns in the database
-      const success = await supabaseService.updateBoardColumns(project.id, updatedColumns);
-      
-      if (success) {
-        toast.success('Column configuration saved');
-        // If we have board data, update it
-        if (boardData) {
-          setBoardData({
-            ...boardData,
-            columns: updatedColumns
-          });
+  const handleColumnConfigurationClick = () => {
+    const fetchBoardColumns = async () => {
+      try {
+        const board = await supabaseService.createBoard(project.id);
+        if (board && board.columns) {
+          setColumns(board.columns);
+          setIsColumnConfigOpen(true);
+        } else {
+          toast.error('Failed to load board columns');
         }
-      } else {
-        toast.error('Failed to save column configuration');
+      } catch (error) {
+        console.error('Error loading board columns:', error);
+        toast.error('Failed to load board columns');
       }
+    };
+    
+    fetchBoardColumns();
+  };
+
+  const handleSaveColumns = async (updatedColumns: Column[]) => {
+    setIsSaving(true);
+    try {
+      await supabaseService.updateBoardColumns(project.id, updatedColumns);
+      setColumns(updatedColumns);
+      toast.success('Board columns updated successfully');
+      setIsColumnConfigOpen(false);
     } catch (error) {
       console.error('Error saving columns:', error);
-      toast.error('An error occurred while saving columns');
+      toast.error('Failed to save board columns');
     } finally {
-      setIsSavingColumns(false);
-      setConfigureColumnsOpen(false);
+      setIsSaving(false);
     }
   };
-  
-  const handleConfigureColumns = () => {
-    if (!boardData) {
-      fetchBoardData();
+
+  const handleResetColumns = async () => {
+    setIsSaving(true);
+    try {
+      await supabaseService.resetBoardColumns(project.id);
+      toast.success('Board columns reset to default');
+      setIsColumnConfigOpen(false);
+      
+      const board = await supabaseService.createBoard(project.id);
+      if (board && board.columns) {
+        setColumns(board.columns);
+      }
+    } catch (error) {
+      console.error('Error resetting columns:', error);
+      toast.error('Failed to reset board columns');
+    } finally {
+      setIsSaving(false);
     }
-    setConfigureColumnsOpen(true);
   };
-  
+
   const handleManageWorkflow = () => {
     toast.info('Workflow management will be available in a future update');
   };
@@ -138,10 +145,9 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
     toast.info('Permission configuration will be available in a future update');
   };
 
-  // Load board data when opening the column configuration
   React.useEffect(() => {
-    if (configureColumnsOpen && !boardData) {
-      fetchBoardData();
+    if (configureColumnsOpen && !columns) {
+      handleColumnConfigurationClick();
     }
   }, [configureColumnsOpen]);
 
@@ -165,7 +171,7 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={handleConfigureColumns}
+                      onClick={handleColumnConfigurationClick}
                     >
                       <Columns className="h-4 w-4 mr-2" />
                       Customize
@@ -282,13 +288,15 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
         </AlertDialog>
         
         {/* Column Configuration Modal */}
-        {boardData && (
+        {columns && (
           <ColumnConfigurationModal
             isOpen={configureColumnsOpen}
             onOpenChange={setConfigureColumnsOpen}
-            columns={boardData.columns}
+            columns={columns}
             onSave={handleSaveColumns}
             isSaving={isSavingColumns}
+            onReset={handleResetColumns}
+            isColumnConfigOpen={isColumnConfigOpen}
           />
         )}
       </>
@@ -316,7 +324,7 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
               <Button 
                 variant="outline" 
                 className="gap-2"
-                onClick={handleConfigureColumns}
+                onClick={handleColumnConfigurationClick}
               >
                 <Columns className="h-4 w-4" />
                 Customize
@@ -481,13 +489,15 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
       </AlertDialog>
       
       {/* Column Configuration Modal */}
-      {boardData && (
+      {columns && (
         <ColumnConfigurationModal
           isOpen={configureColumnsOpen}
           onOpenChange={setConfigureColumnsOpen}
-          columns={boardData.columns}
+          columns={columns}
           onSave={handleSaveColumns}
           isSaving={isSavingColumns}
+          onReset={handleResetColumns}
+          isColumnConfigOpen={isColumnConfigOpen}
         />
       )}
     </div>
@@ -495,4 +505,3 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
 };
 
 export default ProjectConfiguration;
-

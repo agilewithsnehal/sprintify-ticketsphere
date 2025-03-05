@@ -1,3 +1,4 @@
+
 import { Board, Column } from "@/lib/types";
 import { supabaseService as projectService } from './project-service';
 import { ticketService } from './ticket';
@@ -14,6 +15,17 @@ const storeColumns = (projectId: string, columns: Column[]): void => {
   localStorage.setItem(`board_columns_${projectId}`, JSON.stringify(columns));
 };
 
+// Default columns to use when no configuration exists
+const getDefaultColumns = () => {
+  return [
+    { id: 'backlog', title: 'Backlog', tickets: [] },
+    { id: 'todo', title: 'To Do', tickets: [] },
+    { id: 'in-progress', title: 'In Progress', tickets: [] },
+    { id: 'review', title: 'Review', tickets: [] },
+    { id: 'done', title: 'Done', tickets: [] }
+  ];
+};
+
 export const supabaseService = {
   async createBoard(projectId: string): Promise<Board | null> {
     try {
@@ -23,44 +35,33 @@ export const supabaseService = {
       const tickets = await ticketService.getTicketsByProjectId(projectId);
       
       // Check if we have stored column configuration
-      const storedColumns = getStoredColumns(projectId);
+      let storedColumns = getStoredColumns(projectId);
       
-      if (storedColumns) {
-        // If we have stored columns, use them but update the tickets
-        const columns = storedColumns.map(column => {
-          const columnTickets = tickets.filter(ticket => ticket.status === column.id);
-          return {
-            ...column,
-            tickets: columnTickets
-          };
-        });
+      // If no stored columns, use default columns
+      if (!storedColumns || storedColumns.length === 0) {
+        console.log('No stored columns found, using defaults');
+        storedColumns = getDefaultColumns();
         
-        return {
-          id: `board-${projectId}`,
-          name: `${project.name} Board`,
-          project,
-          columns
-        };
+        // Save default columns to localStorage
+        storeColumns(projectId, storedColumns);
       }
       
-      // Otherwise use default columns
-      const backlog = tickets.filter(ticket => ticket.status === 'backlog');
-      const todo = tickets.filter(ticket => ticket.status === 'todo');
-      const inProgress = tickets.filter(ticket => ticket.status === 'in-progress');
-      const review = tickets.filter(ticket => ticket.status === 'review');
-      const done = tickets.filter(ticket => ticket.status === 'done');
+      // Map tickets to their respective columns
+      const columns = storedColumns.map(column => {
+        const columnTickets = tickets.filter(ticket => ticket.status === column.id);
+        return {
+          ...column,
+          tickets: columnTickets
+        };
+      });
+      
+      console.log('Board created with columns:', columns.map(c => c.title));
       
       return {
         id: `board-${projectId}`,
         name: `${project.name} Board`,
         project,
-        columns: [
-          { id: 'backlog', title: 'Backlog', tickets: backlog },
-          { id: 'todo', title: 'To Do', tickets: todo },
-          { id: 'in-progress', title: 'In Progress', tickets: inProgress },
-          { id: 'review', title: 'Review', tickets: review },
-          { id: 'done', title: 'Done', tickets: done }
-        ]
+        columns
       };
     } catch (error) {
       console.error('Error creating board:', error);
@@ -73,7 +74,6 @@ export const supabaseService = {
       console.log('Updating board columns for project:', projectId, columns);
       
       // Store the column configuration in localStorage
-      // In a real application, we would save this to a database
       storeColumns(projectId, columns.map(column => ({
         id: column.id,
         title: column.title,
@@ -91,6 +91,22 @@ export const supabaseService = {
       return true;
     } catch (error) {
       console.error('Error updating board columns:', error);
+      return false;
+    }
+  },
+  
+  // Function to reset columns to default
+  async resetBoardColumns(projectId: string): Promise<boolean> {
+    try {
+      const defaultColumns = getDefaultColumns();
+      
+      // Store the default columns in localStorage
+      storeColumns(projectId, defaultColumns);
+      
+      console.log('Reset board columns to default for project:', projectId);
+      return true;
+    } catch (error) {
+      console.error('Error resetting board columns:', error);
       return false;
     }
   }
