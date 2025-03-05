@@ -115,7 +115,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               className="h-24 w-24 border-2 border-primary/20" 
               style={{ backgroundColor: avatarColors[avatarColor as keyof typeof avatarColors] || '#9b87f5' }}
             >
-              <AvatarFallback className="text-xl text-white">
+              <AvatarFallback className="text-xl font-bold text-black">
                 {getInitials(name)}
               </AvatarFallback>
             </Avatar>

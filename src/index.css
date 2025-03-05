@@ -73,4 +73,8 @@
   .glass-card {
     @apply bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:shadow-md transition-all duration-200;
   }
+  
+  .avatar-initials {
+    @apply text-black font-bold;
+  }
 }

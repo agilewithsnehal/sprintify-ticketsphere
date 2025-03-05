@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/lib/types";
 
@@ -23,6 +24,7 @@ export const supabaseService = {
     try {
       console.log('Updating user profile:', updates);
       
+      // Update the database record with the correct field name (snake_case)
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -39,6 +41,7 @@ export const supabaseService = {
         return null;
       }
       
+      // Transform the response to match our User type (camelCase)
       return {
         id: data.id,
         name: data.name,

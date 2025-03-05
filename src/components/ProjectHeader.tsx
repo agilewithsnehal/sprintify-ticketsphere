@@ -108,7 +108,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
                     : getRandomColor(member.id) 
                 }}
               >
-                <AvatarFallback className="text-white text-xs">
+                <AvatarFallback className="text-black text-xs font-bold">
                   {getInitials(member.name)}
                 </AvatarFallback>
               </Avatar>
