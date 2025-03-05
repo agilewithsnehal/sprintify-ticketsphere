@@ -52,23 +52,6 @@ export const supabaseService = {
   
   async uploadProfileImage(file: File, userId: string): Promise<string | null> {
     try {
-      // First, check if the avatars bucket exists, create it if it doesn't
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
-      
-      if (!avatarBucketExists) {
-        // Create the bucket if it doesn't exist
-        const { error: createBucketError } = await supabase.storage.createBucket('avatars', {
-          public: true,
-          fileSizeLimit: 5242880 // 5MB file size limit
-        });
-        
-        if (createBucketError) {
-          console.error('Error creating avatars bucket:', createBucketError);
-          return null;
-        }
-      }
-      
       // Create a unique file path for the avatar
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`;
