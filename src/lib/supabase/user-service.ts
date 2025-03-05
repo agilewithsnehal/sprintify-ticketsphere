@@ -52,12 +52,25 @@ export const supabaseService = {
   
   async uploadProfileImage(file: File, userId: string): Promise<string | null> {
     try {
-      // Create a unique file path for the avatar
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+      // Create a simple file path - using just the original filename
+      const fileName = file.name;
+      const filePath = `${userId}/${fileName}`;
       
-      // Upload the file to Supabase storage
-      const { error: uploadError } = await supabase.storage
+      // First, check if we need to delete an existing file
+      const { data: existingFiles } = await supabase.storage
+        .from('avatars')
+        .list(userId);
+        
+      // Remove any existing files in the folder to avoid accumulating files
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToRemove = existingFiles.map(f => `${userId}/${f.name}`);
+        await supabase.storage
+          .from('avatars')
+          .remove(filesToRemove);
+      }
+      
+      // Upload the new file
+      const { data, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -69,12 +82,12 @@ export const supabaseService = {
         return null;
       }
       
-      // Get the public URL for the uploaded file
-      const { data } = supabase.storage
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
       
-      return data.publicUrl;
+      return publicUrlData.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
       return null;

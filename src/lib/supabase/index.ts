@@ -15,7 +15,7 @@ export const supabaseService = {
   // Ticket operations
   getTicketsByProjectId: ticketService.getTicketsByProjectId,
   getAllTickets: ticketService.getAllTickets,
-  getChildTickets: ticketService.getChildTickets,  // Add the missing method
+  getChildTickets: ticketService.getChildTickets,
   createTicket: ticketService.createTicket,
   updateTicket: ticketService.updateTicket,
   deleteTicket: ticketService.deleteTicket,

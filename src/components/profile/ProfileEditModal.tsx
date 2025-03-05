@@ -70,6 +70,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       
       // If a new file was selected, upload it
       if (selectedFile) {
+        toast.info('Uploading profile image...');
         const uploadedUrl = await supabaseService.uploadProfileImage(selectedFile, user.id);
         if (uploadedUrl) {
           avatarUrl = uploadedUrl;
@@ -87,6 +88,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         setIsLoading(false);
         return;
       }
+      
+      toast.info('Updating profile...');
       
       // Update the user profile
       const updatedUser = await supabaseService.updateUserProfile(user.id, {
