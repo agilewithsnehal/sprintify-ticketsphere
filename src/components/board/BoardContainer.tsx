@@ -13,7 +13,7 @@ interface BoardContainerProps {
   projectId: string;
   boardName: string;
   onCreateTicket: () => void;
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
 }
 
 const BoardContainer: React.FC<BoardContainerProps> = ({ 

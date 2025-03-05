@@ -5,7 +5,7 @@ import { Board, Status } from '@/lib/types';
 
 interface KanbanBoardWrapperProps {
   board: Board;
-  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
+  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
 }
 
 const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicketMove }) => {

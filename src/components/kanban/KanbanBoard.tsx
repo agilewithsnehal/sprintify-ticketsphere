@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 interface KanbanBoardProps {
   board: BoardType;
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {

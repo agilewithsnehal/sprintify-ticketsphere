@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Project, Status, Ticket } from '@/lib/types';
 import ProjectHeader from '@/components/ProjectHeader';
@@ -42,7 +43,12 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ project, tickets }) => {
     }
   };
 
-  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
+  const handleTicketMove = async (
+    ticketId: string, 
+    sourceColumn: Status, 
+    destinationColumn: Status,
+    updateParent: boolean = false
+  ) => {
     try {
       console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
       
@@ -54,6 +60,21 @@ const ProjectLayout: React.FC<ProjectLayoutProps> = ({ project, tickets }) => {
       
       await supabaseService.updateTicket(ticketId, { ...ticket, status: destinationColumn });
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
+      
+      // Update parent ticket status if applicable
+      if (updateParent && ticket.parentId) {
+        const parentTicket = tickets.find(t => t.id === ticket.parentId);
+        if (parentTicket && parentTicket.status !== destinationColumn) {
+          console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
+          
+          await supabaseService.updateTicket(
+            parentTicket.id, 
+            { ...parentTicket, status: destinationColumn }
+          );
+          
+          toast.success(`Parent ticket also moved to ${destinationColumn.replace(/-/g, ' ')}`);
+        }
+      }
     } catch (error) {
       console.error('Error moving ticket:', error);
       toast.error('Failed to move ticket');

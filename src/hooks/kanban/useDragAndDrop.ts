@@ -2,11 +2,12 @@
 import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
 import { Status, Ticket as TicketType } from '@/lib/types';
+import { supabaseService } from '@/lib/supabase';
 
 export function useDragAndDrop(
   columns: any[],
   setColumns: React.Dispatch<React.SetStateAction<any[]>>,
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void
 ) {
   const onDragEnd = useCallback(async (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -62,7 +63,8 @@ export function useDragAndDrop(
         onTicketMove(
           draggableId,
           source.droppableId as Status,
-          destination.droppableId as Status
+          destination.droppableId as Status,
+          true // Add parameter to update parent ticket status
         );
       }
     }

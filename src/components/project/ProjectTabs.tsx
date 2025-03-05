@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ListTodo, Users, BarChart3, Settings } from 'lucide-react';
+import { ListTodo, Users, BarChart3, Settings, GitBranch } from 'lucide-react';
 import BoardContainer from '@/components/board/BoardContainer';
 import ProjectConfiguration from '@/components/board/ProjectConfiguration';
 import ProjectMembersTab from './ProjectMembersTab';
 import ProjectReportsTab from './ProjectReportsTab';
+import IssueHierarchyView from './IssueHierarchyView';
 import { Project, Status, Ticket } from '@/lib/types';
 
 interface ProjectTabsProps {
@@ -14,7 +15,7 @@ interface ProjectTabsProps {
   activeTab: string;
   setActiveTab: (value: string) => void;
   onCreateTicket: () => void;
-  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
+  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
 }
 
 const ProjectTabs: React.FC<ProjectTabsProps> = ({
@@ -31,10 +32,14 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
       onValueChange={setActiveTab} 
       className="mt-6"
     >
-      <TabsList className="grid w-full grid-cols-4 mb-6">
+      <TabsList className="grid w-full grid-cols-5 mb-6">
         <TabsTrigger value="board" className="gap-2">
           <ListTodo className="h-4 w-4" />
           Board
+        </TabsTrigger>
+        <TabsTrigger value="hierarchy" className="gap-2">
+          <GitBranch className="h-4 w-4" />
+          Hierarchy
         </TabsTrigger>
         <TabsTrigger value="members" className="gap-2">
           <Users className="h-4 w-4" />
@@ -56,6 +61,13 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
           boardName={project.name}
           onCreateTicket={onCreateTicket}
           onTicketMove={onTicketMove}
+        />
+      </TabsContent>
+      
+      <TabsContent value="hierarchy">
+        <IssueHierarchyView 
+          tickets={tickets} 
+          projectId={project.id} 
         />
       </TabsContent>
       
