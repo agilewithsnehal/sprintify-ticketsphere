@@ -26,14 +26,15 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
     if (updates.assignee !== undefined) updateData.assignee_id = updates.assignee?.id || null;
     if (updates.parentId !== undefined) updateData.parent_id = updates.parentId;
     
-    // Add updated_at timestamp
+    // Always add updated_at timestamp
     updateData.updated_at = new Date().toISOString();
     
+    // Execute the update in the database
     const { data: ticket, error } = await supabase
       .from('tickets')
       .update(updateData)
       .eq('id', ticketId)
-      .select()
+      .select('*')
       .single();
 
     if (error) {
@@ -48,7 +49,7 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
     
     console.log(`Successfully updated ticket ${ticketId} in database`);
     
-    // Map the database ticket to our application ticket type
+    // Map the database ticket to our application ticket type and return it
     return await mapDbTicketToTicket(ticket);
   } catch (error) {
     console.error('Error updating ticket:', error);

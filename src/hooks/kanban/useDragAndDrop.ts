@@ -36,11 +36,19 @@ export function useDragAndDrop(
       ? sourceTickets 
       : [...destColumn.tickets];
 
-    const [movedTicket] = sourceTickets.splice(source.index, 1);
+    // Find the ticket we're moving
+    const movedTicket = sourceTickets.find(t => t.id === draggableId);
+    if (!movedTicket) {
+      toast.error("Ticket not found");
+      return;
+    }
 
-    // Check if we're moving to "done" status and this is a parent ticket
-    if (destination.droppableId === 'done' && movedTicket) {
-      // Find child tickets across all columns
+    // Remove from source column
+    const newSourceTickets = sourceTickets.filter(t => t.id !== draggableId);
+
+    // Check if we're moving to "done" status and this is a parent ticket (has children)
+    if (destination.droppableId === 'done') {
+      // Find all child tickets across all columns
       const childTickets: TicketType[] = [];
       columns.forEach(col => {
         col.tickets.forEach((ticket: TicketType) => {
@@ -68,12 +76,13 @@ export function useDragAndDrop(
       updatedAt: new Date()
     };
 
+    // Add to destination column
     destTickets.splice(destination.index, 0, updatedTicket);
 
     // Update local state first for immediate UI response
     setColumns(prevColumns => prevColumns.map(col => {
       if (col.id === source.droppableId) {
-        return { ...col, tickets: sourceTickets };
+        return { ...col, tickets: newSourceTickets };
       }
       if (col.id === destination.droppableId) {
         return { ...col, tickets: destTickets };

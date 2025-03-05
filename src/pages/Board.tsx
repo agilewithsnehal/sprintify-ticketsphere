@@ -82,11 +82,12 @@ const Board = () => {
       </Layout>
     );
   }
-
+  
   const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent = true) => {
     try {
       console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
       
+      // Find the ticket that's being moved
       let foundTicket = null;
       for (const column of board.columns) {
         const ticket = column.tickets.find(t => t.id === ticketId);
@@ -101,6 +102,7 @@ const Board = () => {
         return;
       }
       
+      // First, update the moved ticket status in the database
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
       });
@@ -113,7 +115,9 @@ const Board = () => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
+      // Handle parent-child relationships if needed
       if (updateParent && foundTicket.parentId) {
+        // Find the parent ticket
         let parentTicket = null;
         let parentColumn = null;
         
@@ -127,7 +131,9 @@ const Board = () => {
         }
         
         if (parentTicket) {
+          // Parent behavior depends on where the child was moved
           if (destinationColumn === 'done' && parentTicket.status !== 'done') {
+            // When child moves to done, check if all siblings are done
             const siblingTickets = [];
             
             for (const column of board.columns) {
@@ -154,10 +160,11 @@ const Board = () => {
               console.log('Not all sibling tickets are done, parent remains in current status');
             }
           } 
+          // If parent is in a more advanced stage than child, move parent back
           else if (
             (parentTicket.status === 'done' && destinationColumn !== 'done') || 
-            (parentTicket.status === 'review' && destinationColumn !== 'review' && destinationColumn !== 'done') ||
-            (parentTicket.status === 'in-progress' && destinationColumn === 'todo' || destinationColumn === 'backlog')
+            (parentTicket.status === 'review' && ['todo', 'backlog', 'in-progress'].includes(destinationColumn)) ||
+            (parentTicket.status === 'in-progress' && ['todo', 'backlog'].includes(destinationColumn))
           ) {
             console.log(`Child ticket moved to earlier stage, updating parent ticket ${parentTicket.id} to ${destinationColumn}`);
             
@@ -170,6 +177,7 @@ const Board = () => {
         }
       }
       
+      // Refresh the board to reflect the changes
       refetch();
     } catch (error) {
       console.error('Error moving ticket:', error);
