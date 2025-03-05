@@ -57,58 +57,18 @@ export const supabaseService = {
       // Generate a unique filename to avoid conflicts
       const fileExt = file.name.split('.').pop();
       const fileName = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${userId}/${fileName}`;
+      const filePath = `${fileName}`; // Important: Don't use folders for demo users
       
       console.log('Prepared file path:', filePath);
       
-      // First, make sure the bucket exists and is accessible
-      const { data: bucketExists } = await supabase.storage.getBucket('avatars');
-      if (!bucketExists) {
-        console.error('Avatars bucket does not exist or is not accessible');
-        return null;
-      }
-      
-      // Check for existing files and remove them if necessary
-      try {
-        console.log('Checking for existing files...');
-        const { data: existingFiles, error: listError } = await supabase.storage
-          .from('avatars')
-          .list(userId);
-        
-        if (listError) {
-          console.log('Error listing files:', listError);
-        } else {
-          console.log('Existing files:', existingFiles);
-        }
-        
-        // Remove existing files if any
-        if (existingFiles && existingFiles.length > 0) {
-          console.log('Found existing files to remove:', existingFiles.length);
-          const filesToRemove = existingFiles.map(f => `${userId}/${f.name}`);
-          const { error: removeError } = await supabase.storage
-            .from('avatars')
-            .remove(filesToRemove);
-            
-          if (removeError) {
-            console.log('Error removing old files:', removeError);
-          } else {
-            console.log('Successfully removed old files');
-          }
-        } else {
-          console.log('No existing files found');
-        }
-      } catch (listError) {
-        console.error('Error managing existing files:', listError);
-        // Continue with upload even if cleaning fails
-      }
-      
-      // Upload the new file with explicit content type
+      // Create a public URL with the avatar's location
       console.log('Uploading new file...');
       console.log('File details:', { name: file.name, type: file.type, size: file.size });
       
       // Ensure file type is set correctly
       const contentType = file.type || 'image/jpeg';
       
+      // Upload directly to the avatars bucket
       const { data, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
@@ -139,6 +99,7 @@ export const supabaseService = {
       
       if (updateError) {
         console.error('Error updating user avatar URL:', updateError);
+        return null;
       }
       
       return publicUrlData.publicUrl;
