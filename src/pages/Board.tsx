@@ -5,7 +5,7 @@ import BoardContainer from '@/components/board/BoardContainer';
 import BoardNotFound from '@/components/board/BoardNotFound';
 import BoardSkeleton from '@/components/board/BoardSkeleton';
 import { Status, Ticket } from '@/lib/types';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import CreateTicketModal from '@/components/CreateTicketModal';

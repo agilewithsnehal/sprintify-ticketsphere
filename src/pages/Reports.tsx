@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase'; // Updated import
 import { Status, Priority, Ticket } from '@/lib/types';
 import { BarChart3, PieChart as PieChartIcon, LineChart, Download } from 'lucide-react';
 import { toast } from 'sonner';

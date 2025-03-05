@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Project, Status, Ticket } from '@/lib/types';
 import ProjectHeader from '@/components/ProjectHeader';
@@ -8,7 +7,7 @@ import { TicketPlus } from 'lucide-react';
 import CreateTicketModal from '@/components/CreateTicketModal';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 
 interface ProjectLayoutProps {
   project: Project;

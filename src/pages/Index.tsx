@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { BarChart3, CalendarRange, CheckCircle, Clock, ListTodo, Plus, Search, TicketPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 import { Project, Ticket, User } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
 

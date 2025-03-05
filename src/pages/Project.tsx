@@ -2,7 +2,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase'; // Updated import
 import Layout from '@/components/Layout';
 import { toast } from 'sonner';
 import {

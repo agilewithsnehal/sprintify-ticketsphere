@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase'; // Updated import
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 

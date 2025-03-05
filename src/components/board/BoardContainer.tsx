@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase'; // Updated import
 import { Board as BoardType, Status, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
 import BoardNotFound from './BoardNotFound';

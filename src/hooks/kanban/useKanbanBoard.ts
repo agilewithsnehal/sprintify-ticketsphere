@@ -1,11 +1,10 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useTicketManagement } from './useTicketManagement';
 import { useModalManagement } from './useModalManagement';
 import { useDragAndDrop } from './useDragAndDrop';
 import { useScrollHandling } from './useScrollHandling';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 
 export function useKanbanBoard(
   board: BoardType,

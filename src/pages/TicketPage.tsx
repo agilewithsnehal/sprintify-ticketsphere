@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase'; // Updated import
 import { Ticket as TicketType, Comment } from '@/lib/types';
 import TicketModal from '@/components/ticket-modal';
 import { Button } from '@/components/ui/button';
