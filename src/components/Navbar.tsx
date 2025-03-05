@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -10,7 +9,6 @@ import { supabaseService } from '@/lib/supabase';
 import { User } from '@/lib/types';
 import ProfileEditModal from '@/components/profile/ProfileEditModal';
 
-// Avatar color mapping
 const avatarColors = {
   'purple': '#9b87f5',
   'blue': '#0EA5E9',
@@ -121,7 +119,7 @@ const Navbar: React.FC = () => {
               className="h-8 w-8 border border-border"
               style={{ backgroundColor: getAvatarColor(currentUser) }}
             >
-              <AvatarFallback className="text-white">
+              <AvatarFallback className="text-black">
                 {getInitials(currentUser?.name)}
               </AvatarFallback>
             </Avatar>
@@ -139,7 +137,6 @@ const Navbar: React.FC = () => {
         </div>
       </div>
       
-      {/* Mobile menu */}
       {isMenuOpen && (
         <motion.div 
           className="md:hidden py-4 px-4 space-y-4 border-b border-border bg-background"
@@ -159,7 +156,7 @@ const Navbar: React.FC = () => {
               className="h-8 w-8"
               style={{ backgroundColor: getAvatarColor(currentUser) }}
             >
-              <AvatarFallback className="text-white">
+              <AvatarFallback className="text-black">
                 {getInitials(currentUser?.name)}
               </AvatarFallback>
             </Avatar>
@@ -201,7 +198,6 @@ const Navbar: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Profile Edit Modal */}
       <ProfileEditModal
         user={currentUser}
         isOpen={isProfileModalOpen}

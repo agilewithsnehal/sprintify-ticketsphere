@@ -185,6 +185,7 @@ export type Database = {
       users: {
         Row: {
           avatar: string | null
+          avatar_color: string | null
           created_at: string
           email: string
           id: string
@@ -193,6 +194,7 @@ export type Database = {
         }
         Insert: {
           avatar?: string | null
+          avatar_color?: string | null
           created_at?: string
           email: string
           id?: string
@@ -201,6 +203,7 @@ export type Database = {
         }
         Update: {
           avatar?: string | null
+          avatar_color?: string | null
           created_at?: string
           email?: string
           id?: string
