@@ -1,7 +1,7 @@
 
 import { Board } from "@/lib/types";
 import { supabaseService as projectService } from './project-service';
-import { supabaseService as ticketService } from './ticket-service';
+import { ticketService } from './ticket';
 
 export const supabaseService = {
   async createBoard(projectId: string): Promise<Board | null> {
