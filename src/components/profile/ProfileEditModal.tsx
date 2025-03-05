@@ -45,6 +45,20 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Log file details
+      console.log('Selected file:', file.name, file.type, file.size);
+      
+      // Validate file type and size
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('File size should be less than 5MB');
+        return;
+      }
+      
       setSelectedFile(file);
       
       // Create a preview of the selected image
@@ -71,11 +85,17 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       // If a new file was selected, upload it
       if (selectedFile) {
         toast.info('Uploading profile image...');
+        console.log('Uploading new profile image');
+        
         const uploadedUrl = await supabaseService.uploadProfileImage(selectedFile, user.id);
+        console.log('Upload result:', uploadedUrl);
+        
         if (uploadedUrl) {
           avatarUrl = uploadedUrl;
+          console.log('New avatar URL:', avatarUrl);
         } else {
           toast.error('Failed to upload profile image');
+          console.error('Upload returned null URL');
           setIsLoading(false);
           return;
         }

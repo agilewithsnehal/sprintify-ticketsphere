@@ -52,29 +52,55 @@ export const supabaseService = {
   
   async uploadProfileImage(file: File, userId: string): Promise<string | null> {
     try {
-      // Create a simple file path - using just the original filename
-      const fileName = file.name;
-      const filePath = `${userId}/${fileName}`;
+      console.log('Starting profile image upload for user:', userId);
       
-      // First, check if we need to delete an existing file
-      const { data: existingFiles } = await supabase.storage
-        .from('avatars')
-        .list(userId);
-        
-      // Remove any existing files in the folder to avoid accumulating files
-      if (existingFiles && existingFiles.length > 0) {
-        const filesToRemove = existingFiles.map(f => `${userId}/${f.name}`);
-        await supabase.storage
+      // Generate a unique filename to avoid conflicts
+      const fileExt = file.name.split('.').pop();
+      const uniqueFilename = `avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${uniqueFilename}`;
+      
+      console.log('Prepared file path:', filePath);
+      
+      // First check if the user folder exists and remove any existing files
+      try {
+        console.log('Checking for existing files...');
+        const { data: existingFiles, error: listError } = await supabase.storage
           .from('avatars')
-          .remove(filesToRemove);
+          .list(userId);
+          
+        if (listError) {
+          console.log('Error listing files:', listError);
+        }
+        
+        // Remove existing files if any
+        if (existingFiles && existingFiles.length > 0) {
+          console.log('Found existing files to remove:', existingFiles.length);
+          const filesToRemove = existingFiles.map(f => `${userId}/${f.name}`);
+          const { error: removeError } = await supabase.storage
+            .from('avatars')
+            .remove(filesToRemove);
+            
+          if (removeError) {
+            console.log('Error removing old files:', removeError);
+          } else {
+            console.log('Successfully removed old files');
+          }
+        } else {
+          console.log('No existing files found');
+        }
+      } catch (listError) {
+        console.error('Error managing existing files:', listError);
+        // Continue with upload even if cleaning fails
       }
       
-      // Upload the new file
+      // Upload the new file with explicit content type
+      console.log('Uploading new file...');
       const { data, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          contentType: file.type // Explicitly set the content type
         });
       
       if (uploadError) {
@@ -82,11 +108,14 @@ export const supabaseService = {
         return null;
       }
       
+      console.log('File uploaded successfully:', data);
+      
       // Get the public URL
       const { data: publicUrlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
       
+      console.log('Generated public URL:', publicUrlData.publicUrl);
       return publicUrlData.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
