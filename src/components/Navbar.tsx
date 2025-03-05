@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabaseService } from '@/lib/supabase';
 import { User } from '@/lib/types';
+import ProfileEditModal from '@/components/profile/ProfileEditModal';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -26,6 +28,10 @@ const Navbar: React.FC = () => {
     
     fetchCurrentUser();
   }, []);
+
+  const handleProfileUpdate = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/80 border-b border-border">
@@ -81,7 +87,10 @@ const Navbar: React.FC = () => {
             </Badge>
           </Button>
           
-          <div className="hidden md:flex items-center space-x-2">
+          <div 
+            className="hidden md:flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setIsProfileModalOpen(true)}
+          >
             <Avatar className="h-8 w-8 border border-border">
               <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
               <AvatarFallback>{currentUser?.name?.substring(0, 2) || 'U'}</AvatarFallback>
@@ -109,7 +118,13 @@ const Navbar: React.FC = () => {
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="flex items-center space-x-3 mb-4">
+          <div 
+            className="flex items-center space-x-3 mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              setIsProfileModalOpen(true);
+              setIsMenuOpen(false);
+            }}
+          >
             <Avatar className="h-8 w-8">
               <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
               <AvatarFallback>{currentUser?.name?.substring(0, 2) || 'U'}</AvatarFallback>
@@ -151,6 +166,14 @@ const Navbar: React.FC = () => {
           </nav>
         </motion.div>
       )}
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        user={currentUser}
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onProfileUpdate={handleProfileUpdate}
+      />
     </header>
   );
 };
