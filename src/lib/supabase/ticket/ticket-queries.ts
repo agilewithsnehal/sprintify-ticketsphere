@@ -51,6 +51,30 @@ export async function getAllTickets(): Promise<Ticket[]> {
 }
 
 /**
+ * Fetches all tickets for a specific user
+ */
+export async function getTicketsByUserId(userId: string): Promise<Ticket[]> {
+  try {
+    const { data: dbTickets, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('assignee_id', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    const tickets = await Promise.all(
+      dbTickets.map(ticket => mapDbTicketToTicket(ticket))
+    );
+
+    return tickets;
+  } catch (error) {
+    console.error('Error fetching user tickets:', error);
+    return [];
+  }
+}
+
+/**
  * Fetches all child tickets for a specific parent ticket
  */
 export async function getChildTickets(ticketId: string): Promise<Ticket[]> {
