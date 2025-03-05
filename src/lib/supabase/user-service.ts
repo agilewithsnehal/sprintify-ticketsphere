@@ -56,8 +56,8 @@ export const supabaseService = {
       
       // Generate a unique filename to avoid conflicts
       const fileExt = file.name.split('.').pop();
-      const uniqueFilename = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${userId}/${uniqueFilename}`;
+      const fileName = `avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
       
       console.log('Prepared file path:', filePath);
       
@@ -67,9 +67,11 @@ export const supabaseService = {
         const { data: existingFiles, error: listError } = await supabase.storage
           .from('avatars')
           .list(userId);
-          
+        
         if (listError) {
           console.log('Error listing files:', listError);
+        } else {
+          console.log('Existing files:', existingFiles);
         }
         
         // Remove existing files if any
@@ -95,12 +97,14 @@ export const supabaseService = {
       
       // Upload the new file with explicit content type
       console.log('Uploading new file...');
+      console.log('File details:', { name: file.name, type: file.type, size: file.size });
+      
       const { data, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
-          contentType: file.type // Explicitly set the content type
+          contentType: file.type
         });
       
       if (uploadError) {
