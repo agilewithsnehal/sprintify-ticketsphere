@@ -94,13 +94,13 @@ export function useDragAndDrop(
       try {
         console.log(`About to call onTicketMove for ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
         
-        // Now handle parent-child relationships via the callback
+        // Call the callback ensuring the updateParent flag is explicitly set to true
         if (onTicketMove) {
           onTicketMove(
             draggableId,
             source.droppableId as Status,
             destination.droppableId as Status,
-            true // Always pass true to update parent ticket status
+            true // Explicitly set to true to ensure parent updates are processed
           );
         } else {
           console.warn('onTicketMove callback is not provided');

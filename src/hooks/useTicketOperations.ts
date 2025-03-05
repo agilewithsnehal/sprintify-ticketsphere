@@ -29,12 +29,13 @@ export const useTicketOperations = (refetch: () => void) => {
         console.log(`Ticket has parent ID: ${updatedTicket.parentId}, attempting to update parent`);
         
         try {
-          // Fetch the parent ticket details
+          // Fetch the parent ticket details with appropriate error handling
           const parentTicket = await supabaseService.ticket.getTicketById(updatedTicket.parentId);
           
           if (!parentTicket) {
             console.error(`Parent ticket with ID ${updatedTicket.parentId} not found`);
             toast.error('Could not find parent ticket');
+            refetch(); // Still refetch to update UI
             return;
           }
           
@@ -44,27 +45,18 @@ export const useTicketOperations = (refetch: () => void) => {
           const childTickets = await supabaseService.getChildTickets(parentTicket.id);
           console.log(`Found ${childTickets.length} child tickets for parent ${parentTicket.id}`);
           
+          let shouldUpdateParent = false;
+          let newParentStatus = parentTicket.status;
+          
           // Parent behavior depends on where the child was moved
           if (destinationColumn === 'done' && parentTicket.status !== 'done') {
             // When child moves to done, check if all siblings are done
-            const allSiblingsDone = childTickets.every(t => 
-              t.id === ticketId ? t.status === 'done' : t.status === 'done'
-            );
+            const allSiblingsDone = childTickets.every(t => t.status === 'done');
             
             if (allSiblingsDone) {
               console.log(`All child tickets are done, moving parent ticket ${parentTicket.id} to done`);
-              
-              const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-                status: 'done'
-              });
-              
-              if (updatedParent) {
-                toast.success('Parent ticket automatically moved to Done');
-                refetch(); // Important: refetch after parent update to show changes
-              } else {
-                console.error('Failed to update parent ticket to done');
-                toast.error('Failed to update parent ticket');
-              }
+              shouldUpdateParent = true;
+              newParentStatus = 'done';
             } else {
               console.log('Not all sibling tickets are done, parent remains in current status');
             }
@@ -76,24 +68,37 @@ export const useTicketOperations = (refetch: () => void) => {
             (parentTicket.status === 'in-progress' && ['todo', 'backlog'].includes(destinationColumn))
           ) {
             console.log(`Child ticket moved to earlier stage, updating parent ticket ${parentTicket.id} to ${destinationColumn}`);
+            shouldUpdateParent = true;
+            newParentStatus = destinationColumn;
+          }
+          
+          if (shouldUpdateParent) {
+            console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${newParentStatus}`);
             
             const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-              status: destinationColumn
+              status: newParentStatus
             });
             
             if (updatedParent) {
-              toast.info(`Parent ticket moved to ${destinationColumn.replace(/-/g, ' ')} to match child status`);
-              refetch(); // Important: refetch after parent update to show changes
+              if (newParentStatus === 'done') {
+                toast.success('Parent ticket automatically moved to Done');
+              } else {
+                toast.info(`Parent ticket moved to ${newParentStatus.replace(/-/g, ' ')} to match child status`);
+              }
             } else {
               console.error('Failed to update parent ticket status');
               toast.error('Failed to update parent ticket');
             }
+            
+            // Important! Refetch data to ensure UI is updated with parent ticket changes
+            refetch();
           } else {
             console.log(`No need to update parent ticket status from ${parentTicket.status} to ${destinationColumn}`);
           }
         } catch (parentError) {
           console.error('Error handling parent ticket update:', parentError);
           toast.error('Error updating parent ticket');
+          refetch(); // Still refetch to update UI
         }
       }
     } catch (error) {
