@@ -14,7 +14,7 @@ import { Trash2, Link, ExternalLink } from 'lucide-react';
 import { supabaseService } from '@/lib/supabase';
 import { IssueTypeIcon } from '../ticket-form/IssueTypeIcon';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 interface TicketDetailsProps {
   ticket: Ticket;
