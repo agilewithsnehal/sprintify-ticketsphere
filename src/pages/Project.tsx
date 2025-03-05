@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/lib/supabase'; // Updated import
@@ -10,10 +10,12 @@ import {
   ProjectLoadingState,
   ProjectNotFound
 } from '@/components/project';
+import ProjectConfiguration from '@/components/board/ProjectConfiguration';
 
 const Project = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const [configOpen, setConfigOpen] = useState(false);
   
   const { data: project, isLoading: isLoadingProject, error } = useQuery({
     queryKey: ['project', projectId],
@@ -58,7 +60,19 @@ const Project = () => {
 
   return (
     <Layout>
-      <ProjectLayout project={project} tickets={tickets} />
+      <ProjectLayout 
+        project={project} 
+        tickets={tickets} 
+        onConfigureClick={() => setConfigOpen(true)}
+      />
+      
+      {project && (
+        <ProjectConfiguration 
+          project={project}
+          isOpen={configOpen}
+          onOpenChange={setConfigOpen}
+        />
+      )}
     </Layout>
   );
 };
