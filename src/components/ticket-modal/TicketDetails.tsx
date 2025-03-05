@@ -12,7 +12,7 @@ import {
   issueTypeColors 
 } from './constants';
 import { Trash2, Link } from 'lucide-react';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 import { IssueTypeIcon } from '../ticket-form/IssueTypeIcon';
 
 interface TicketDetailsProps {

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IssueType } from '@/lib/types';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 
 interface ParentTicketSelectProps {
   parentTicketId: string;
@@ -22,7 +21,6 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
   const [availableParents, setAvailableParents] = useState<{id: string, key: string, summary: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Determine what types of tickets can be parents based on the current issue type
   useEffect(() => {
     const fetchPotentialParents = async () => {
       if (!projectId) return;
@@ -31,7 +29,6 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
       try {
         const allTickets = await supabaseService.getTicketsByProjectId(projectId);
         
-        // Filter based on hierarchy: Epic > Feature > Story > Task
         let validParentTypes: IssueType[] = [];
         
         switch (issueType) {

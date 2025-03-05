@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -7,7 +8,7 @@ import TicketHeader from './TicketHeader';
 import TicketDescription from './TicketDescription';
 import TicketDetails from './TicketDetails';
 import TicketComments from './TicketComments';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface TicketModalProps {

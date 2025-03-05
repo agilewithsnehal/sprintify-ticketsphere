@@ -1,8 +1,7 @@
-
 import { useCallback } from 'react';
 import { Ticket as TicketType, Status, Comment } from '@/lib/types';
 import { toast } from 'sonner';
-import { supabaseService } from '@/lib/supabase-service';
+import { supabaseService } from '@/lib/supabase';
 
 export function useTicketManagement(
   columns: any[],
