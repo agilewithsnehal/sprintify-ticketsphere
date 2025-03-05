@@ -61,7 +61,14 @@ export const supabaseService = {
       
       console.log('Prepared file path:', filePath);
       
-      // First check if the user folder exists and remove any existing files
+      // First, make sure the bucket exists and is accessible
+      const { data: bucketExists } = await supabase.storage.getBucket('avatars');
+      if (!bucketExists) {
+        console.error('Avatars bucket does not exist or is not accessible');
+        return null;
+      }
+      
+      // Check for existing files and remove them if necessary
       try {
         console.log('Checking for existing files...');
         const { data: existingFiles, error: listError } = await supabase.storage
@@ -99,12 +106,15 @@ export const supabaseService = {
       console.log('Uploading new file...');
       console.log('File details:', { name: file.name, type: file.type, size: file.size });
       
+      // Ensure file type is set correctly
+      const contentType = file.type || 'image/jpeg';
+      
       const { data, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true,
-          contentType: file.type
+          contentType
         });
       
       if (uploadError) {
@@ -120,6 +130,17 @@ export const supabaseService = {
         .getPublicUrl(filePath);
       
       console.log('Generated public URL:', publicUrlData.publicUrl);
+      
+      // Now, update the user record with the new avatar URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar: publicUrlData.publicUrl })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('Error updating user avatar URL:', updateError);
+      }
+      
       return publicUrlData.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
