@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -168,4 +167,3 @@ export const useTicketOperations = (refetch: () => void) => {
     handleCreateTicket
   };
 };
-
