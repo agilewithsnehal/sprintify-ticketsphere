@@ -31,4 +31,5 @@ export const supabaseService = {
 
   // Board operations
   createBoard: boardService.createBoard,
+  updateBoardColumns: boardService.updateBoardColumns,
 };

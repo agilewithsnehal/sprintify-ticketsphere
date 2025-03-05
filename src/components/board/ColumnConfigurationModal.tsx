@@ -18,7 +18,7 @@ import {
 import { GripVertical, X, Plus, CheckCircle, Edit, Check, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Column } from '@/lib/types';
+import { Column, Status } from '@/lib/types';
 
 interface ColumnConfigurationModalProps {
   isOpen: boolean;
@@ -87,7 +87,8 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
       return;
     }
 
-    const newId = `column-${Date.now()}`;
+    // Use 'todo' as default Status for new columns
+    const newId = 'todo' as Status;
     setColumns([...columns, { id: newId, title: newColumnTitle, tickets: [] }]);
     setNewColumnTitle('');
   };
