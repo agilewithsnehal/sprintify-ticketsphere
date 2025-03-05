@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, BarChart3, ArrowLeft, Columns } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import ColumnConfigurationModal from './ColumnConfigurationModal';
 import { toast } from 'sonner';
 import { supabaseService } from '@/lib/supabase';
@@ -29,6 +29,10 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
 }) => {
   const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const location = useLocation();
+  
+  // Check if we're in the standalone board view or in the project view
+  const isStandaloneBoard = location.pathname.startsWith('/board/');
   
   const handleSaveColumns = async (updatedColumns: Column[]) => {
     try {
@@ -56,17 +60,19 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
   return (
     <div className="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1 mr-2"
-          asChild
-        >
-          <Link to={`/project/${projectId}`}>
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Project</span>
-          </Link>
-        </Button>
+        {isStandaloneBoard && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 mr-2"
+            asChild
+          >
+            <Link to={`/project/${projectId}`}>
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Project</span>
+            </Link>
+          </Button>
+        )}
 
         <h2 className="text-xl font-semibold flex items-center">
           {boardName}
