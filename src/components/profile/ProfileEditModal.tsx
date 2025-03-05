@@ -24,6 +24,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   onProfileUpdate
 }) => {
   const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [isLoading, setIsLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +36,10 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
+  };
+  
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,9 +80,18 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         }
       }
       
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error('Please enter a valid email address');
+        setIsLoading(false);
+        return;
+      }
+      
       // Update the user profile
       const updatedUser = await supabaseService.updateUserProfile(user.id, {
         name,
+        email,
         avatar: avatarUrl
       });
       
@@ -135,9 +149,9 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              value={user.email}
-              disabled
-              className="bg-muted/50"
+              value={email}
+              onChange={handleEmailChange}
+              placeholder="Your email"
             />
           </div>
           

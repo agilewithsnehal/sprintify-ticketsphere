@@ -25,6 +25,7 @@ export const supabaseService = {
         .from('users')
         .update({
           name: updates.name,
+          email: updates.email,
           avatar: updates.avatar
         })
         .eq('id', userId)

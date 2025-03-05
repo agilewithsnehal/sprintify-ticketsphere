@@ -26,6 +26,8 @@ export const supabaseService = {
 
   // User operations
   getCurrentUser: userService.getCurrentUser,
+  updateUserProfile: userService.updateUserProfile,
+  uploadProfileImage: userService.uploadProfileImage,
 
   // Board operations
   createBoard: boardService.createBoard,
