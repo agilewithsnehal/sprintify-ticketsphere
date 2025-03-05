@@ -131,7 +131,7 @@ const IssueHierarchyView: React.FC<IssueHierarchyViewProps> = ({ tickets, projec
                 </div>
               </div>
               <Link 
-                to={`/ticket/${ticket.id}`} 
+                to={`/board/${projectId}/ticket/${ticket.id}`} 
                 className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
               >
                 View Details
