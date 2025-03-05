@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -38,7 +37,16 @@ const TicketModal: React.FC<TicketModalProps> = ({
     setEditedTicket(ticket);
   }, [ticket]);
 
-  const formattedDate = format(new Date(ticket.createdAt), 'MMM d, yyyy');
+  const getFormattedDate = () => {
+    try {
+      return format(new Date(ticket.createdAt), 'MMM d, yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return format(new Date(), 'MMM d, yyyy');
+    }
+  };
+
+  const formattedDate = getFormattedDate();
 
   const handleInputChange = (field: keyof Ticket, value: any) => {
     setEditedTicket(prev => ({ ...prev, [field]: value }));
@@ -98,7 +106,6 @@ const TicketModal: React.FC<TicketModalProps> = ({
     }
     
     try {
-      // Add comment to the database using supabaseService
       const newComment = await supabaseService.addComment(ticket.id, content, currentUser.id);
       
       if (!newComment) {
@@ -106,13 +113,11 @@ const TicketModal: React.FC<TicketModalProps> = ({
         return;
       }
       
-      // Update local state with the new comment
       const updatedTicket = {
         ...ticket,
         comments: [...ticket.comments, newComment]
       };
       
-      // Call onTicketUpdate to update the ticket in the parent component
       onTicketUpdate(updatedTicket);
       toast.success('Comment added successfully');
     } catch (error) {

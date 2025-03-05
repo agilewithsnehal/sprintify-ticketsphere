@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
@@ -199,7 +198,7 @@ export function useTicketCreation({
       const ticketKey = await generateTicketKey(project);
       console.log(`Generated ticket key: ${ticketKey}`);
       
-      // Create new ticket object
+      // Create new ticket object with valid dates
       const newTicket: Partial<Ticket> = {
         key: ticketKey,
         summary,
@@ -210,7 +209,10 @@ export function useTicketCreation({
         project,
         reporter,
         assignee,
-        parentId: parentTicketId || undefined
+        parentId: parentTicketId || undefined,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        comments: []
       };
       
       console.log('Creating new ticket:', newTicket);
