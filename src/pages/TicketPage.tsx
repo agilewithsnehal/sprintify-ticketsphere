@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { supabaseService } from '@/lib/supabase'; // Updated import
+import { supabaseService } from '@/lib/supabase';
 import { Ticket as TicketType, Comment } from '@/lib/types';
 import TicketModal from '@/components/ticket-modal';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,6 @@ const TicketPage = () => {
   useEffect(() => {
     const fetchTicket = async () => {
       try {
-        // Validate ticketId
         if (!ticketId || ticketId === 'undefined') {
           console.error('Invalid ticketId provided:', ticketId);
           setError('Invalid ticket ID provided');
@@ -32,7 +30,6 @@ const TicketPage = () => {
 
         console.log('Fetching ticket with ID:', ticketId);
         
-        // Get all tickets and find the one we need
         const tickets = await supabaseService.getAllTickets();
         const foundTicket = tickets.find(t => t.id === ticketId);
         
@@ -46,7 +43,6 @@ const TicketPage = () => {
         setTicket(foundTicket);
         console.log('Ticket loaded:', foundTicket);
 
-        // Load current user
         const user = await supabaseService.getCurrentUser();
         setCurrentUser(user);
       } catch (err) {
@@ -61,31 +57,22 @@ const TicketPage = () => {
   }, [ticketId]);
 
   const handleTicketUpdate = async (updatedTicket: TicketType) => {
-    try {
-      // If adding a comment, we don't need to update the entire ticket
-      if (ticket && 
-          updatedTicket.comments.length > ticket.comments.length && 
-          updatedTicket.status === ticket.status && 
-          updatedTicket.priority === ticket.priority && 
-          updatedTicket.assignee?.id === ticket.assignee?.id) {
-        // The last comment is the new one
-        const newComment = updatedTicket.comments[updatedTicket.comments.length - 1];
-        // No need to call updateTicket, as the comment is already added to the database in the TicketModal
-        setTicket(updatedTicket);
-        toast.success('Comment added successfully');
-        return;
-      }
+    if (ticket && 
+        updatedTicket.comments.length > ticket.comments.length && 
+        updatedTicket.status === ticket.status && 
+        updatedTicket.priority === ticket.priority && 
+        updatedTicket.assignee?.id === ticket.assignee?.id) {
+      const newComment = updatedTicket.comments[updatedTicket.comments.length - 1];
+      setTicket(updatedTicket);
+      toast.success('Comment added successfully');
+      return;
+    }
 
-      // For other updates, proceed with updating the ticket
-      const result = await supabaseService.updateTicket(updatedTicket.id, updatedTicket);
-      if (result) {
-        toast.success('Ticket updated successfully');
-        setTicket(result);
-      } else {
-        toast.error('Failed to update ticket');
-      }
-    } catch (error) {
-      console.error('Error updating ticket:', error);
+    const result = await supabaseService.updateTicket(updatedTicket.id, updatedTicket);
+    if (result) {
+      toast.success('Ticket updated successfully');
+      setTicket(result);
+    } else {
       toast.error('Failed to update ticket');
     }
   };
@@ -95,7 +82,6 @@ const TicketPage = () => {
     
     try {
       setIsDeleting(true);
-      // Call the actual delete method from the supabase service
       const success = await supabaseService.deleteTicket(ticket.id);
       
       if (success) {

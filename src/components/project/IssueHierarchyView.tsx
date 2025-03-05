@@ -11,12 +11,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { priorityColors, statusColors } from '@/components/ticket-modal/constants';
+import TicketModal from '@/components/ticket-modal';
+import { supabaseService } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface IssueHierarchyViewProps {
   tickets: Ticket[];
   projectId: string;
+  onTicketUpdated?: () => void;
 }
 
 type TicketNode = {
@@ -24,8 +28,25 @@ type TicketNode = {
   children: TicketNode[];
 };
 
-const IssueHierarchyView: React.FC<IssueHierarchyViewProps> = ({ tickets, projectId }) => {
+const IssueHierarchyView: React.FC<IssueHierarchyViewProps> = ({ 
+  tickets, 
+  projectId,
+  onTicketUpdated 
+}) => {
   const [hierarchyData, setHierarchyData] = useState<TicketNode[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const user = await supabaseService.getCurrentUser();
+      setCurrentUser(user);
+    };
+    
+    fetchCurrentUser();
+  }, []);
   
   useEffect(() => {
     // Build hierarchy tree
@@ -92,6 +113,52 @@ const IssueHierarchyView: React.FC<IssueHierarchyViewProps> = ({ tickets, projec
     }
   };
   
+  const handleOpenTicket = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setIsTicketModalOpen(true);
+  };
+  
+  const handleCloseTicketModal = () => {
+    setIsTicketModalOpen(false);
+    setSelectedTicket(null);
+  };
+  
+  const handleTicketUpdate = async (updatedTicket: Ticket) => {
+    try {
+      const result = await supabaseService.updateTicket(updatedTicket.id, updatedTicket);
+      if (result) {
+        toast.success('Ticket updated successfully');
+        if (onTicketUpdated) {
+          onTicketUpdated();
+        }
+      } else {
+        toast.error('Failed to update ticket');
+      }
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      toast.error('Failed to update ticket');
+    }
+  };
+  
+  const handleTicketDelete = async (ticketId: string) => {
+    try {
+      const success = await supabaseService.deleteTicket(ticketId);
+      
+      if (success) {
+        toast.success('Ticket deleted successfully');
+        setIsTicketModalOpen(false);
+        if (onTicketUpdated) {
+          onTicketUpdated();
+        }
+      } else {
+        toast.error('Failed to delete ticket');
+      }
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast.error('Failed to delete ticket');
+    }
+  };
+  
   // Render a ticket node and its children recursively
   const renderTicketNode = (node: TicketNode, level: number = 0) => {
     const { ticket, children } = node;
@@ -130,12 +197,20 @@ const IssueHierarchyView: React.FC<IssueHierarchyViewProps> = ({ tickets, projec
                   {ticket.assignee ? ticket.assignee.name : 'Unassigned'}
                 </div>
               </div>
-              <Link 
-                to={`/board/${projectId}/ticket/${ticket.id}`} 
-                className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-              >
-                View Details
-              </Link>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleOpenTicket(ticket)}
+                  className="px-3 py-1 text-xs bg-secondary hover:bg-secondary/80 rounded-md"
+                >
+                  Edit
+                </button>
+                <Link 
+                  to={`/board/${projectId}/ticket/${ticket.id}`} 
+                  className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                >
+                  View Details
+                </Link>
+              </div>
             </div>
             
             {hasChildren && (
@@ -168,6 +243,17 @@ const IssueHierarchyView: React.FC<IssueHierarchyViewProps> = ({ tickets, projec
           </div>
         )}
       </CardContent>
+      
+      {selectedTicket && (
+        <TicketModal 
+          isOpen={isTicketModalOpen} 
+          onClose={handleCloseTicketModal} 
+          ticket={selectedTicket}
+          onTicketUpdate={handleTicketUpdate}
+          onTicketDelete={() => handleTicketDelete(selectedTicket.id)}
+          currentUser={currentUser}
+        />
+      )}
     </Card>
   );
 };

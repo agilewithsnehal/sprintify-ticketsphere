@@ -10,6 +10,7 @@ import {
   issueTypeOptions,
   issueTypeColors 
 } from './constants';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Link, ExternalLink } from 'lucide-react';
 import { supabaseService } from '@/lib/supabase';
 import { IssueTypeIcon } from '../ticket-form/IssueTypeIcon';
@@ -43,6 +44,8 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   const [availableAssignees, setAvailableAssignees] = useState<User[]>([]);
   const [parentTicket, setParentTicket] = useState<Ticket | null>(null);
   const [childTickets, setChildTickets] = useState<Ticket[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteWithChildren, setDeleteWithChildren] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -71,7 +74,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   useEffect(() => {
     const fetchRelatedTickets = async () => {
       try {
-        // Fetch parent ticket if this ticket has a parent
         if (ticket.parentId) {
           const allTickets = await supabaseService.getAllTickets();
           const parent = allTickets.find(t => t.id === ticket.parentId);
@@ -80,7 +82,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           setParentTicket(null);
         }
         
-        // Fetch all child tickets
         const children = await supabaseService.getChildTickets(ticket.id);
         setChildTickets(children);
       } catch (error) {
@@ -92,7 +93,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   }, [ticket.id, ticket.parentId]);
 
   const handleStatusChangeWithValidation = async (status: Status) => {
-    // If moving to done status and has children, validate all children are done
     if (status === 'done' && childTickets.length > 0) {
       const allChildrenDone = childTickets.every(child => child.status === 'done');
       
@@ -102,13 +102,35 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
       }
     }
     
-    // Status change is valid, proceed
     handleStatusChange(status);
   };
 
   const handleTicketClick = (ticketId: string) => {
-    // Navigate to ticket detail page
     navigate(`/board/${ticket.project.id}/ticket/${ticketId}`);
+  };
+
+  const handleConfirmDelete = () => {
+    if (onTicketDelete) {
+      if (deleteWithChildren) {
+        console.log('Deleting ticket with children');
+        localStorage.setItem('delete_with_children', 'true');
+      } else {
+        localStorage.setItem('delete_with_children', 'false');
+      }
+      onTicketDelete();
+    }
+    setIsDeleteDialogOpen(false);
+  };
+
+  const handleDeleteClick = () => {
+    if (childTickets.length > 0) {
+      setIsDeleteDialogOpen(true);
+    } else {
+      if (onTicketDelete) {
+        localStorage.setItem('delete_with_children', 'false');
+        onTicketDelete();
+      }
+    }
   };
 
   return (
@@ -291,7 +313,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
             <Button 
               variant="destructive" 
               size="sm" 
-              onClick={onTicketDelete}
+              onClick={handleDeleteClick}
               className="w-full text-xs"
             >
               <Trash2 className="h-4 w-4 mr-1" />
@@ -300,6 +322,56 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           </div>
         )}
       </div>
+      
+      {onTicketDelete && (
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete ticket with child issues?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This ticket has {childTickets.length} child {childTickets.length === 1 ? 'issue' : 'issues'}. 
+                What would you like to do with them?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <div className="flex items-start gap-2">
+                <input 
+                  type="radio" 
+                  id="update-parent" 
+                  name="delete-option" 
+                  checked={!deleteWithChildren}
+                  onChange={() => setDeleteWithChildren(false)}
+                  className="mt-1"
+                />
+                <label htmlFor="update-parent" className="text-sm">
+                  <div className="font-medium">Remove parent reference only</div>
+                  <div className="text-muted-foreground">Child issues will remain, but will no longer be linked to this ticket</div>
+                </label>
+              </div>
+              <div className="flex items-start gap-2 mt-3">
+                <input 
+                  type="radio" 
+                  id="delete-children" 
+                  name="delete-option" 
+                  checked={deleteWithChildren}
+                  onChange={() => setDeleteWithChildren(true)}
+                  className="mt-1"
+                />
+                <label htmlFor="delete-children" className="text-sm">
+                  <div className="font-medium">Delete all child issues</div>
+                  <div className="text-muted-foreground">All child issues will be permanently deleted along with this ticket</div>
+                </label>
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 };
