@@ -96,12 +96,12 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
           ))}
         </SelectContent>
       </Select>
-      {availableParents.length === 0 && !isLoading && issueType !== 'epic' && (
+      {availableParents.length === 0 && !isLoading && (
         <p className="text-xs text-muted-foreground mt-1">
-          No valid parent tickets found. Create 
-          {issueType === 'feature' ? ' an epic' : 
-           issueType === 'story' ? ' a feature or epic' : 
-           ' a story, feature, or epic'} first.
+          No valid parent tickets found. 
+          {issueType === 'feature' && 'Create an epic first.'}
+          {issueType === 'story' && 'Create a feature or epic first.'}
+          {(issueType === 'task' || issueType === 'bug') && 'Create a story, feature, or epic first.'}
         </p>
       )}
     </div>
