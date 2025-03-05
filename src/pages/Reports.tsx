@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -6,11 +5,12 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { supabaseService } from '@/lib/supabase'; // Updated import
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart as RechartsLineChart, Line } from 'recharts';
+import { supabaseService } from '@/lib/supabase';
 import { Status, Priority, Ticket } from '@/lib/types';
-import { BarChart3, PieChart as PieChartIcon, LineChart, Download } from 'lucide-react';
+import { BarChart3, PieChartIcon, LineChart, Download, Clock, Timer } from 'lucide-react';
 import { toast } from 'sonner';
+import { calculateCycleTime, calculateLeadTime } from '@/lib/metrics';
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -68,7 +68,6 @@ const Reports = () => {
     );
   }
   
-  // Process data for status report
   const statusCounts = tickets.reduce((acc, ticket) => {
     const status = ticket.status.replace(/-/g, ' ');
     acc[status] = (acc[status] || 0) + 1;
@@ -80,7 +79,6 @@ const Reports = () => {
     value: statusCounts[status]
   }));
   
-  // Process data for priority report
   const priorityCounts = tickets.reduce((acc, ticket) => {
     const priority = ticket.priority;
     acc[priority] = (acc[priority] || 0) + 1;
@@ -92,7 +90,6 @@ const Reports = () => {
     value: priorityCounts[priority]
   }));
   
-  // Process data for project distribution
   const projectCounts = tickets.reduce((acc, ticket) => {
     const projectName = ticket.project.name;
     acc[projectName] = (acc[projectName] || 0) + 1;
@@ -104,7 +101,36 @@ const Reports = () => {
     value: projectCounts[project]
   }));
   
-  // Colors for charts
+  const completedTickets = tickets.filter(ticket => ticket.status === 'done');
+  
+  const cycleTimeData = completedTickets.map(ticket => {
+    const cycleTime = calculateCycleTime(ticket);
+    return {
+      key: ticket.key,
+      name: ticket.key,
+      days: cycleTime,
+      summary: ticket.summary
+    };
+  }).sort((a, b) => b.days - a.days).slice(0, 10);
+  
+  const leadTimeData = completedTickets.map(ticket => {
+    const leadTime = calculateLeadTime(ticket);
+    return {
+      key: ticket.key,
+      name: ticket.key,
+      days: leadTime,
+      summary: ticket.summary
+    };
+  }).sort((a, b) => b.days - a.days).slice(0, 10);
+  
+  const avgCycleTime = cycleTimeData.length > 0 
+    ? (cycleTimeData.reduce((sum, item) => sum + item.days, 0) / cycleTimeData.length).toFixed(1)
+    : 'N/A';
+    
+  const avgLeadTime = leadTimeData.length > 0 
+    ? (leadTimeData.reduce((sum, item) => sum + item.days, 0) / leadTimeData.length).toFixed(1)
+    : 'N/A';
+  
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   const handleExportData = () => {
@@ -124,6 +150,14 @@ const Reports = () => {
         case 'project':
           dataToExport = projectData;
           filename = 'ticket-project-report.json';
+          break;
+        case 'cycletime':
+          dataToExport = cycleTimeData;
+          filename = 'ticket-cycletime-report.json';
+          break;
+        case 'leadtime':
+          dataToExport = leadTimeData;
+          filename = 'ticket-leadtime-report.json';
           break;
         default:
           dataToExport = tickets;
@@ -166,7 +200,7 @@ const Reports = () => {
         </div>
         
         <Tabs defaultValue="status" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="mb-6 grid grid-cols-3 sm:w-[400px]">
+          <TabsList className="mb-6 grid grid-cols-5 sm:w-[600px]">
             <TabsTrigger value="status" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Status
@@ -178,6 +212,14 @@ const Reports = () => {
             <TabsTrigger value="project" className="flex items-center gap-2">
               <LineChart className="h-4 w-4" />
               Projects
+            </TabsTrigger>
+            <TabsTrigger value="cycletime" className="flex items-center gap-2">
+              <Timer className="h-4 w-4" />
+              Cycle Time
+            </TabsTrigger>
+            <TabsTrigger value="leadtime" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Lead Time
             </TabsTrigger>
           </TabsList>
           
@@ -272,6 +314,92 @@ const Reports = () => {
                 </div>
                 <div className="mt-4 text-sm text-muted-foreground">
                   <p>Total projects: {projectData.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="cycletime">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cycle Time</CardTitle>
+                <CardDescription>Time taken for tickets to move from in-progress to done (average: {avgCycleTime} days)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={cycleTimeData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={70}
+                      />
+                      <YAxis label={{ value: 'Days', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip 
+                        formatter={(value, name, props) => [
+                          `${value} days`, 'Cycle Time'
+                        ]}
+                        labelFormatter={(label, props) => {
+                          const item = props[0]?.payload;
+                          return item ? `${item.key}: ${item.summary}` : label;
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="days" name="Cycle Time (days)" fill="#4C86A8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p>Cycle Time: Time taken from when work begins on a ticket (in-progress) until it's completed (done)</p>
+                  <p className="mt-2">Total completed tickets: {completedTickets.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="leadtime">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lead Time</CardTitle>
+                <CardDescription>Time taken from ticket creation to completion (average: {avgLeadTime} days)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={leadTimeData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={70}
+                      />
+                      <YAxis label={{ value: 'Days', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip 
+                        formatter={(value, name, props) => [
+                          `${value} days`, 'Lead Time'
+                        ]}
+                        labelFormatter={(label, props) => {
+                          const item = props[0]?.payload;
+                          return item ? `${item.key}: ${item.summary}` : label;
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="days" name="Lead Time (days)" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p>Lead Time: Total time from when a ticket is created until it's completed (done)</p>
+                  <p className="mt-2">Total completed tickets: {completedTickets.length}</p>
                 </div>
               </CardContent>
             </Card>
