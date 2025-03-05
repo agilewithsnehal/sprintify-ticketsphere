@@ -56,3 +56,34 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
     return null;
   }
 }
+
+/**
+ * Gets a ticket by ID from the database
+ */
+export async function getTicketById(ticketId: string): Promise<Ticket | null> {
+  try {
+    console.log(`Fetching ticket ${ticketId}`);
+    
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching ticket:', error);
+      throw error;
+    }
+    
+    if (!ticket) {
+      console.error('No ticket found with ID:', ticketId);
+      return null;
+    }
+    
+    // Map the database ticket to our application ticket type and return it
+    return await mapDbTicketToTicket(ticket);
+  } catch (error) {
+    console.error('Error getting ticket by ID:', error);
+    return null;
+  }
+}
