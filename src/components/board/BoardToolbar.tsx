@@ -1,12 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, BarChart3, ArrowLeft } from 'lucide-react';
+import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, BarChart3, ArrowLeft, Columns } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ColumnConfigurationModal from './ColumnConfigurationModal';
+import { toast } from 'sonner';
 
 interface BoardToolbarProps {
   boardName: string;
-  projectId: string; // Added projectId prop
+  projectId: string;
   onCreateTicket: () => void;
   onFilterClick: () => void;
   onGroupClick: () => void;
@@ -14,11 +16,28 @@ interface BoardToolbarProps {
 
 const BoardToolbar: React.FC<BoardToolbarProps> = ({ 
   boardName, 
-  projectId, // Using the new prop
+  projectId,
   onCreateTicket,
   onFilterClick,
   onGroupClick
 }) => {
+  const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
+  
+  // Default columns - in a real implementation, these would come from the board data
+  const defaultColumns = [
+    { id: 'backlog', title: 'Backlog' },
+    { id: 'todo', title: 'To Do' },
+    { id: 'in-progress', title: 'In Progress' },
+    { id: 'review', title: 'Review' },
+    { id: 'done', title: 'Done' }
+  ];
+  
+  const handleSaveColumns = (columns: any[]) => {
+    // In a real implementation, this would update the columns in the database
+    console.log('Columns updated:', columns);
+    toast.success('Column configuration saved');
+  };
+  
   return (
     <div className="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -57,6 +76,16 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
           variant="outline" 
           size="sm" 
           className="gap-1"
+          onClick={() => setConfigureColumnsOpen(true)}
+        >
+          <Columns className="h-4 w-4" />
+          <span>Configure Columns</span>
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-1"
           onClick={onFilterClick}
         >
           <Filter className="h-4 w-4" />
@@ -86,6 +115,13 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
           </Link>
         </Button>
       </div>
+      
+      <ColumnConfigurationModal
+        isOpen={configureColumnsOpen}
+        onOpenChange={setConfigureColumnsOpen}
+        columns={defaultColumns}
+        onSave={handleSaveColumns}
+      />
     </div>
   );
 };

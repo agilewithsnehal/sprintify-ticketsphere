@@ -1,0 +1,218 @@
+
+import React, { useState } from 'react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { 
+  DragDropContext, 
+  Droppable, 
+  Draggable, 
+  DropResult 
+} from 'react-beautiful-dnd';
+import { GripVertical, X, Plus, CheckCircle, Edit, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+interface ColumnItem {
+  id: string;
+  title: string;
+}
+
+interface ColumnConfigurationModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  columns: ColumnItem[];
+  onSave: (columns: ColumnItem[]) => void;
+}
+
+const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
+  isOpen,
+  onOpenChange,
+  columns: initialColumns,
+  onSave
+}) => {
+  const [columns, setColumns] = useState<ColumnItem[]>(initialColumns);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [newColumnTitle, setNewColumnTitle] = useState('');
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(columns);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setColumns(items);
+  };
+
+  const handleEdit = (id: string, title: string) => {
+    setEditingId(id);
+    setEditingTitle(title);
+  };
+
+  const handleSaveEdit = (id: string) => {
+    if (!editingTitle.trim()) {
+      toast.error('Column title cannot be empty');
+      return;
+    }
+
+    setColumns(columns.map(col => 
+      col.id === id ? { ...col, title: editingTitle } : col
+    ));
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  const handleRemoveColumn = (id: string) => {
+    if (columns.length <= 1) {
+      toast.error('You must have at least one column');
+      return;
+    }
+    setColumns(columns.filter(col => col.id !== id));
+  };
+
+  const handleAddColumn = () => {
+    if (!newColumnTitle.trim()) {
+      toast.error('Column title cannot be empty');
+      return;
+    }
+
+    const newId = `column-${Date.now()}`;
+    setColumns([...columns, { id: newId, title: newColumnTitle }]);
+    setNewColumnTitle('');
+  };
+
+  const handleSaveColumns = () => {
+    onSave(columns);
+    onOpenChange(false);
+    toast.success('Board columns updated successfully');
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Configure Board Columns</DialogTitle>
+          <DialogDescription>
+            Drag to reorder columns, edit names, or add new columns.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4">
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="columns">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-2"
+                >
+                  {columns.map((column, index) => (
+                    <Draggable 
+                      key={column.id} 
+                      draggableId={column.id} 
+                      index={index}
+                    >
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className="flex items-center space-x-2 bg-secondary/50 p-2 rounded-md"
+                        >
+                          <div
+                            {...provided.dragHandleProps}
+                            className="cursor-grab"
+                          >
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                          </div>
+
+                          {editingId === column.id ? (
+                            <div className="flex-1 flex items-center space-x-2">
+                              <Input 
+                                value={editingTitle}
+                                onChange={(e) => setEditingTitle(e.target.value)}
+                                className="flex-1"
+                                placeholder="Column title"
+                                autoFocus
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleSaveEdit(column.id)}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex-1 font-medium">{column.title}</div>
+                          )}
+
+                          {editingId !== column.id && (
+                            <div className="flex items-center space-x-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleEdit(column.id, column.title)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleRemoveColumn(column.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          <div className="mt-4 flex items-center space-x-2">
+            <Input
+              placeholder="New column title"
+              value={newColumnTitle}
+              onChange={(e) => setNewColumnTitle(e.target.value)}
+              className="flex-1"
+            />
+            <Button variant="outline" onClick={handleAddColumn}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add
+            </Button>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="default" 
+            onClick={handleSaveColumns}
+            className="gap-2"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ColumnConfigurationModal;

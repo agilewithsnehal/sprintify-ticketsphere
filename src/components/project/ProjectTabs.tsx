@@ -80,7 +80,9 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
       </TabsContent>
       
       <TabsContent value="settings">
-        <ProjectConfiguration project={project} />
+        <div className="max-w-3xl mx-auto">
+          <ProjectConfiguration project={project} isOpen={true} />
+        </div>
       </TabsContent>
     </Tabs>
   );
