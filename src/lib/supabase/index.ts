@@ -1,6 +1,6 @@
 
 import { supabaseService as projectService } from './project-service';
-import { supabaseService as ticketService } from './ticket-service';
+import { ticketService } from './ticket';
 import { supabaseService as commentService } from './comment-service';
 import { supabaseService as userService } from './user-service';
 import { supabaseService as boardService } from './board-service';
