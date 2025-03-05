@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { IssueType } from '@/lib/types';
-import { Bug, GitBranch, ArrowUp, CheckSquare } from 'lucide-react';
+import { Bug, GitBranch, ArrowUp, CheckSquare, Clipboard } from 'lucide-react';
 import { issueTypeColors } from '../ticket-modal/constants';
 
 interface IssueTypeIconProps {
@@ -25,9 +25,11 @@ export const IssueTypeIcon: React.FC<IssueTypeIconProps> = ({
         return <ArrowUp size={size} className={`${iconColor} ${className}`} />;
       case 'story':
         return <CheckSquare size={size} className={`${iconColor} ${className}`} />;
+      case 'bug':
+        return <Bug size={size} className={`${iconColor} ${className}`} />;
       case 'task':
       default:
-        return <Bug size={size} className={`${iconColor} ${className}`} />;
+        return <Clipboard size={size} className={`${iconColor} ${className}`} />;
     }
   };
 

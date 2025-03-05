@@ -3,7 +3,7 @@ export type Priority = 'low' | 'medium' | 'high';
 
 export type Status = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
 
-export type IssueType = 'epic' | 'feature' | 'story' | 'task';
+export type IssueType = 'epic' | 'feature' | 'story' | 'task' | 'bug';
 
 export type User = {
   id: string;

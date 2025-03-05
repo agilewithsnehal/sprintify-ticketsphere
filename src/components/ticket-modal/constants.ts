@@ -48,7 +48,8 @@ export const issueTypeOptions = [
   { value: 'epic', label: 'Epic' },
   { value: 'feature', label: 'Feature' },
   { value: 'story', label: 'Story' },
-  { value: 'task', label: 'Task' }
+  { value: 'task', label: 'Task' },
+  { value: 'bug', label: 'Bug' }
 ];
 
 // Issue type colors
@@ -56,7 +57,8 @@ export const issueTypeColors = {
   'epic': 'text-purple-600',
   'feature': 'text-blue-600',
   'story': 'text-green-600',
-  'task': 'text-gray-600'
+  'task': 'text-gray-600',
+  'bug': 'text-red-600'
 };
 
 // Issue type background colors
@@ -64,5 +66,6 @@ export const issueTypeBgColors = {
   'epic': 'bg-purple-100',
   'feature': 'bg-blue-100',
   'story': 'bg-green-100',
-  'task': 'bg-gray-100'
+  'task': 'bg-gray-100',
+  'bug': 'bg-red-100'
 };
