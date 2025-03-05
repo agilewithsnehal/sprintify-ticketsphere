@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IssueType } from '@/lib/types';
@@ -98,12 +97,12 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
       </Select>
       {availableParents.length === 0 && !isLoading && issueType !== 'epic' && (
         <p className="text-xs text-muted-foreground mt-1">
-          No valid parent tickets found. Create a {
-            issueType === 'feature' 
-              ? 'epic' 
-              : issueType === 'story' 
-                ? 'feature or epic' 
-                : 'story, feature, or epic'
+          No valid parent tickets found. Create a{' '}
+          {issueType === 'feature' 
+            ? 'n epic' 
+            : issueType === 'story' 
+              ? ' feature or epic' 
+              : ' story, feature, or epic'
           } first.
         </p>
       )}
