@@ -71,7 +71,7 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
     fetchPotentialParents();
   }, [projectId, issueType]);
   
-  // Don't show parent select for epics or if there are no available parents
+  // Don't show parent select for epics
   if (issueType === 'epic') {
     return null;
   }
@@ -88,7 +88,7 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
           <SelectValue placeholder="Select parent ticket" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">No Parent</SelectItem>
+          <SelectItem value="none">No Parent</SelectItem>
           {availableParents.map(parent => (
             <SelectItem key={parent.id} value={parent.id}>
               {parent.key} - {parent.summary}
@@ -99,9 +99,9 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
       {availableParents.length === 0 && !isLoading && (
         <p className="text-xs text-muted-foreground mt-1">
           No valid parent tickets found. 
-          {issueType === 'feature' && 'Create an epic first.'}
-          {issueType === 'story' && 'Create a feature or epic first.'}
-          {(issueType === 'task' || issueType === 'bug') && 'Create a story, feature, or epic first.'}
+          {issueType === 'feature' && ' Create an epic first.'}
+          {issueType === 'story' && ' Create a feature or epic first.'}
+          {(issueType === 'task' || issueType === 'bug') && ' Create a story, feature, or epic first.'}
         </p>
       )}
     </div>

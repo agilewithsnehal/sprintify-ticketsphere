@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -63,8 +64,8 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   onParentTicketChange = () => {}
 }) => {
   const handleParentChange = (value: string) => {
-    // Handle empty string to clear parent
-    if (value === "") {
+    // Handle "none" value to clear parent
+    if (value === "none") {
       onParentTicketChange("");
     } else {
       onParentTicketChange(value);
@@ -149,7 +150,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
         </Button>
         <Button 
           type="submit" 
-          disabled={isSubmitting || !projectId}
+          disabled={isSubmitting || !projectId || !summary.trim()}
         >
           {isSubmitting ? 'Creating...' : 'Create Ticket'}
         </Button>

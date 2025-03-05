@@ -1,10 +1,8 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { X } from 'lucide-react';
 import { Ticket } from '@/lib/types';
 import { priorityColors, statusColors } from './constants';
 
@@ -20,7 +18,6 @@ const TicketHeader: React.FC<TicketHeaderProps> = ({
   ticket,
   isEditing,
   editedTicket,
-  onClose,
   handleInputChange,
 }) => {
   return (
@@ -39,9 +36,6 @@ const TicketHeader: React.FC<TicketHeaderProps> = ({
             </>
           ) : null}
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
       </div>
       
       {isEditing ? (

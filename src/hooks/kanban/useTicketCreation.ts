@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
-import { supabaseService } from '@/lib/supabase'; // Updated import
+import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -113,8 +113,12 @@ export function useTicketCreation({
   };
 
   const handleParentChange = (value: string) => {
-    // Empty string means "No Parent"
-    setParentTicketId(value);
+    // "none" or empty string means "No Parent"
+    if (value === "none" || value === "") {
+      setParentTicketId("");
+    } else {
+      setParentTicketId(value);
+    }
   };
 
   const resetForm = () => {
@@ -207,6 +211,9 @@ export function useTicketCreation({
       // Generate a temporary ID for the ticket
       const tempId = uuidv4();
       
+      // Parent ticket ID handling - empty string means no parent
+      const finalParentId = parentTicketId && parentTicketId !== "none" ? parentTicketId : undefined;
+      
       // Create new ticket object with valid dates and ID
       const newTicket: Ticket = {
         id: tempId, // Add temporary ID
@@ -219,7 +226,7 @@ export function useTicketCreation({
         project,
         reporter,
         assignee,
-        parentId: parentTicketId || undefined,
+        parentId: finalParentId,
         createdAt: new Date(),
         updatedAt: new Date(),
         comments: []
