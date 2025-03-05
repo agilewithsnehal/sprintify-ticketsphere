@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -14,7 +15,7 @@ import {
   Draggable, 
   DropResult 
 } from 'react-beautiful-dnd';
-import { GripVertical, X, Plus, CheckCircle, Edit, Check, Loader2 } from 'lucide-react';
+import { GripVertical, X, Plus, CheckCircle, Edit, Check, Loader2, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Column, Status } from '@/lib/types';
@@ -25,6 +26,8 @@ interface ColumnConfigurationModalProps {
   columns: Column[];
   onSave: (columns: Column[]) => void;
   isSaving?: boolean;
+  onReset?: () => Promise<void>;
+  isColumnConfigOpen?: boolean;
 }
 
 const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
@@ -32,7 +35,9 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   onOpenChange,
   columns: initialColumns,
   onSave,
-  isSaving = false
+  isSaving = false,
+  onReset,
+  isColumnConfigOpen
 }) => {
   const [columns, setColumns] = useState<Column[]>(initialColumns);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -85,6 +90,7 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
       return;
     }
 
+    // Use the first status as default for new columns
     const newId = 'todo' as Status;
     setColumns([...columns, { 
       id: newId, 
@@ -206,32 +212,45 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button 
-            variant="ghost" 
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          <Button 
-            variant="default" 
-            onClick={handleSaveColumns}
-            className="gap-2"
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="h-4 w-4" />
-                Save Changes
-              </>
-            )}
-          </Button>
+        <DialogFooter className="flex justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={onReset}
+              disabled={isSaving}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Reset to Default
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="default" 
+              onClick={handleSaveColumns}
+              className="gap-2"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

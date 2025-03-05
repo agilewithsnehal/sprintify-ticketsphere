@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -95,7 +96,7 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
   };
 
   const handleSaveColumns = async (updatedColumns: Column[]) => {
-    setIsSaving(true);
+    setIsSavingColumns(true);
     try {
       await supabaseService.updateBoardColumns(project.id, updatedColumns);
       setColumns(updatedColumns);
@@ -105,12 +106,12 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
       console.error('Error saving columns:', error);
       toast.error('Failed to save board columns');
     } finally {
-      setIsSaving(false);
+      setIsSavingColumns(false);
     }
   };
 
   const handleResetColumns = async () => {
-    setIsSaving(true);
+    setIsSavingColumns(true);
     try {
       await supabaseService.resetBoardColumns(project.id);
       toast.success('Board columns reset to default');
@@ -124,7 +125,7 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
       console.error('Error resetting columns:', error);
       toast.error('Failed to reset board columns');
     } finally {
-      setIsSaving(false);
+      setIsSavingColumns(false);
     }
   };
 

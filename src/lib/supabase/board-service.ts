@@ -1,5 +1,5 @@
 
-import { Board, Column } from "@/lib/types";
+import { Board, Column, Status } from "@/lib/types";
 import { supabaseService as projectService } from './project-service';
 import { ticketService } from './ticket';
 import { supabase } from "@/integrations/supabase/client";
@@ -16,13 +16,13 @@ const storeColumns = (projectId: string, columns: Column[]): void => {
 };
 
 // Default columns to use when no configuration exists
-const getDefaultColumns = () => {
+const getDefaultColumns = (): Column[] => {
   return [
-    { id: 'backlog', title: 'Backlog', tickets: [] },
-    { id: 'todo', title: 'To Do', tickets: [] },
-    { id: 'in-progress', title: 'In Progress', tickets: [] },
-    { id: 'review', title: 'Review', tickets: [] },
-    { id: 'done', title: 'Done', tickets: [] }
+    { id: 'backlog' as Status, title: 'Backlog', tickets: [] },
+    { id: 'todo' as Status, title: 'To Do', tickets: [] },
+    { id: 'in-progress' as Status, title: 'In Progress', tickets: [] },
+    { id: 'review' as Status, title: 'Review', tickets: [] },
+    { id: 'done' as Status, title: 'Done', tickets: [] }
   ];
 };
 

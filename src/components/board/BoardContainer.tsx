@@ -5,7 +5,7 @@ import BoardNotFound from './BoardNotFound';
 import KanbanBoardWrapper from './KanbanBoardWrapper';
 import { Board, Status, Column } from '@/lib/types';
 import BoardToolbar from './BoardToolbar';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 interface BoardContainerProps {
   projectId: string;
