@@ -92,20 +92,7 @@ export function useDragAndDrop(
 
     if (source.droppableId !== destination.droppableId) {
       try {
-        // Persist the change to the database directly
-        const updatedInDb = await supabaseService.updateTicket(draggableId, {
-          status: destination.droppableId as Status
-        });
-        
-        if (!updatedInDb) {
-          toast.error("Failed to save ticket status change");
-          // Revert the UI if the database update failed
-          setColumns(prevColumns => [...prevColumns]);
-          return;
-        }
-        
-        // Show success message for the initial ticket move
-        toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+        console.log(`About to call onTicketMove for ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
         
         // Now handle parent-child relationships via the callback
         if (onTicketMove) {
@@ -115,6 +102,22 @@ export function useDragAndDrop(
             destination.droppableId as Status,
             true // Always pass true to update parent ticket status
           );
+        } else {
+          console.warn('onTicketMove callback is not provided');
+          
+          // Fallback to direct database update if no callback is provided
+          const updatedInDb = await supabaseService.updateTicket(draggableId, {
+            status: destination.droppableId as Status
+          });
+          
+          if (!updatedInDb) {
+            toast.error("Failed to save ticket status change");
+            // Revert the UI if the database update failed
+            setColumns(prevColumns => [...prevColumns]);
+            return;
+          }
+          
+          toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
         }
       } catch (error) {
         console.error('Error updating ticket status:', error);

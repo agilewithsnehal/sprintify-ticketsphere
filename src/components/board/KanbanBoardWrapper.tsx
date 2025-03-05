@@ -16,7 +16,13 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
     }
   }, [board]);
 
-  return <KanbanBoard board={board} onTicketMove={onTicketMove} />;
+  // Make sure to pass the onTicketMove prop with all required parameters
+  const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent = true) => {
+    console.log(`KanbanBoardWrapper: Handling ticket move ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
+    onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
+  };
+
+  return <KanbanBoard board={board} onTicketMove={handleTicketMove} />;
 };
 
 export default KanbanBoardWrapper;
