@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 export function useKanbanBoard(
   board: BoardType,
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void
 ) {
   const [columns, setColumns] = useState(board.columns || []);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -83,6 +83,8 @@ export function useKanbanBoard(
     }
     
     try {
+      console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
+      
       // Update the ticket in the database
       const result = await supabaseService.updateTicket(ticketId, {
         ...ticket,
@@ -98,7 +100,7 @@ export function useKanbanBoard(
       
       // Call the parent callback if provided
       if (onTicketMove) {
-        onTicketMove(ticketId, sourceColumn, destinationColumn);
+        onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
       }
     } catch (error) {
       console.error('Error persisting ticket move:', error);

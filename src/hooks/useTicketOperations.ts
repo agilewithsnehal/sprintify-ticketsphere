@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -17,7 +18,7 @@ export const useTicketOperations = (refetch: () => void) => {
         return;
       }
       
-      // First, update the moved ticket status in the database
+      // Update the moved ticket status in the database
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
       });
@@ -66,10 +67,8 @@ export const useTicketOperations = (refetch: () => void) => {
               console.log('Not all children are done, not moving parent to done');
               shouldUpdateParent = false;
             }
-          } else {
-            // For all other statuses, move parent to match the child if:
-            // 1. Parent is in an earlier stage than child or
-            // 2. Parent is in a later stage but child moved to earlier stage
+          } else if (destinationColumn === 'in-progress' || destinationColumn === 'review') {
+            // For in-progress or review, move parent to match if parent is in an earlier stage
             const statusOrder = ['backlog', 'todo', 'in-progress', 'review', 'done'];
             const parentStatusIndex = statusOrder.indexOf(parentTicket.status);
             const childStatusIndex = statusOrder.indexOf(destinationColumn);
@@ -79,20 +78,27 @@ export const useTicketOperations = (refetch: () => void) => {
               console.log(`Child moved to more advanced status than parent, updating parent from ${parentTicket.status} to ${destinationColumn}`);
               shouldUpdateParent = true;
             }
-            // If parent is done but child moved to not-done
-            else if (parentTicket.status === 'done' && destinationColumn !== 'done') {
-              console.log(`Child moved from done, moving parent back from done to ${destinationColumn}`);
+          } else if (destinationColumn === 'todo' || destinationColumn === 'backlog') {
+            // If child moved back to todo or backlog and parent is in a later stage
+            // Check if parent should move back based on all children's status
+            
+            // Don't move parent back if any child is still in a later stage
+            const statusOrder = ['backlog', 'todo', 'in-progress', 'review', 'done'];
+            const childStatusIndex = statusOrder.indexOf(destinationColumn);
+            
+            // Check if any child is in a later stage than the destination
+            const anyChildInLaterStage = childTickets.some(child => {
+              const childStageIndex = statusOrder.indexOf(child.status);
+              return childStageIndex > childStatusIndex && child.id !== ticketId;
+            });
+            
+            if (!anyChildInLaterStage) {
+              // If no other child is in a later stage, move parent back
+              console.log(`No other children in later stages, moving parent back to ${destinationColumn}`);
               shouldUpdateParent = true;
-            }
-            // If parent is in review but child moved to earlier stage
-            else if (parentTicket.status === 'review' && (destinationColumn === 'todo' || destinationColumn === 'backlog' || destinationColumn === 'in-progress')) {
-              console.log(`Child moved to earlier stage, moving parent back from review to ${destinationColumn}`);
-              shouldUpdateParent = true;
-            }
-            // If parent is in progress but child moved to even earlier stage
-            else if (parentTicket.status === 'in-progress' && (destinationColumn === 'todo' || destinationColumn === 'backlog')) {
-              console.log(`Child moved to earlier stage, moving parent back from in-progress to ${destinationColumn}`);
-              shouldUpdateParent = true;
+            } else {
+              console.log('Other children still in later stages, not moving parent back');
+              shouldUpdateParent = false;
             }
           }
           
