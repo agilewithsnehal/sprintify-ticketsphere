@@ -90,7 +90,8 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
       return;
     }
 
-    // Use the first status as default for new columns
+    // Use an existing Status enum value for new columns to maintain type safety
+    // This is a simplification - in a real app, we might want to generate unique IDs
     const newId = 'todo' as Status;
     setColumns([...columns, { 
       id: newId, 

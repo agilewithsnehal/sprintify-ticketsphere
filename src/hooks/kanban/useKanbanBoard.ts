@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useTicketManagement } from './useTicketManagement';
@@ -16,7 +17,11 @@ export function useKanbanBoard(
 
   // Update columns when board changes
   useEffect(() => {
-    setColumns(board.columns);
+    if (board && board.columns) {
+      console.log('useKanbanBoard: Updating columns from board:', 
+        board.columns.map(c => c.title).join(', '));
+      setColumns(board.columns);
+    }
   }, [board]);
 
   // Load current user

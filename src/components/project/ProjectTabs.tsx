@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListTodo, Users, BarChart3, Settings, GitBranch } from 'lucide-react';
@@ -77,7 +76,7 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
         </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="board">
+      <TabsContent value="board" className="overflow-visible">
         <BoardContainer 
           projectId={project.id} 
           boardName={project.name}
