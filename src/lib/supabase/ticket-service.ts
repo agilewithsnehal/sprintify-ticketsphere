@@ -45,6 +45,27 @@ export const supabaseService = {
     }
   },
 
+  async getChildTickets(ticketId: string): Promise<Ticket[]> {
+    try {
+      const { data: dbTickets, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('parent_id', ticketId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const tickets = await Promise.all(
+        dbTickets.map(ticket => mapDbTicketToTicket(ticket))
+      );
+
+      return tickets;
+    } catch (error) {
+      console.error('Error fetching child tickets:', error);
+      return [];
+    }
+  },
+
   async createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'>): Promise<Ticket | null> {
     try {
       console.log('Creating new ticket in database:', newTicket.key);
@@ -118,6 +139,17 @@ export const supabaseService = {
 
   async deleteTicket(ticketId: string): Promise<boolean> {
     try {
+      // First update any child tickets to remove the parent reference
+      const { error: childUpdateError } = await supabase
+        .from('tickets')
+        .update({ parent_id: null })
+        .eq('parent_id', ticketId);
+        
+      if (childUpdateError) {
+        console.error('Error removing parent references from child tickets:', childUpdateError);
+      }
+      
+      // Now delete the ticket
       const { error } = await supabase
         .from('tickets')
         .delete()

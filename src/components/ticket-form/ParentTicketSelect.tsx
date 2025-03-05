@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IssueType } from '@/lib/types';
@@ -39,6 +40,9 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
             validParentTypes = ['epic', 'feature'];
             break;
           case 'task':
+            validParentTypes = ['epic', 'feature', 'story'];
+            break;
+          case 'bug':
             validParentTypes = ['epic', 'feature', 'story'];
             break;
           default:

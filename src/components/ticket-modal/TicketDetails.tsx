@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,25 +42,20 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   const [parentTicket, setParentTicket] = useState<Ticket | null>(null);
   const [childTickets, setChildTickets] = useState<Ticket[]>([]);
   
-  // Fetch current user and update assignees list
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
         const user = await supabaseService.getCurrentUser();
         setCurrentUser(user);
         
-        // Start with project members
         const projectMembers = [...ticket.project.members];
         
-        // Check if current user is already in the members list
         const isCurrentUserInMembers = projectMembers.some(member => member.id === user.id);
         
-        // If not, add current user to available assignees
         if (!isCurrentUserInMembers) {
           projectMembers.push(user);
         }
         
-        // Set available assignees
         setAvailableAssignees(projectMembers);
       } catch (error) {
         console.error('Error fetching current user:', error);
@@ -71,13 +65,11 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
     fetchCurrentUser();
   }, [ticket.project.members]);
 
-  // Fetch parent and child tickets
   useEffect(() => {
     const fetchRelatedTickets = async () => {
       try {
         const allTickets = await supabaseService.getAllTickets();
         
-        // Find parent ticket if parentId exists
         if (ticket.parentId) {
           const parent = allTickets.find(t => t.id === ticket.parentId);
           setParentTicket(parent || null);
@@ -85,8 +77,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           setParentTicket(null);
         }
         
-        // Find child tickets
-        const children = allTickets.filter(t => t.parentId === ticket.id);
+        const children = await supabaseService.getChildTickets(ticket.id);
         setChildTickets(children);
       } catch (error) {
         console.error('Error fetching related tickets:', error);
@@ -97,7 +88,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
   }, [ticket.id, ticket.parentId]);
 
   const handleTicketClick = (ticketId: string) => {
-    // Navigate to the ticket in the current project context
     window.location.href = `/board/${ticket.project.id}/ticket/${ticketId}`;
   };
 
@@ -199,7 +189,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           )}
         </div>
         
-        {/* Parent Ticket */}
         {parentTicket && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Parent</p>
@@ -215,7 +204,6 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
           </div>
         )}
         
-        {/* Child Tickets */}
         {childTickets.length > 0 && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Children ({childTickets.length})</p>
