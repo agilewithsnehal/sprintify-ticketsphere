@@ -46,6 +46,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   };
   
   useEffect(() => {
+    console.log('BoardContainer: Fetching board for project:', projectId);
     fetchBoard();
   }, [projectId]);
 

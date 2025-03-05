@@ -29,6 +29,7 @@ const getDefaultColumns = (): Column[] => {
 export const supabaseService = {
   async createBoard(projectId: string): Promise<Board | null> {
     try {
+      console.log('Creating board for project:', projectId);
       const project = await projectService.getProjectById(projectId);
       if (!project) return null;
       
@@ -46,8 +47,19 @@ export const supabaseService = {
         storeColumns(projectId, storedColumns);
       }
       
+      // Ensure each column has a valid Status id
+      const validColumns = storedColumns.map(column => {
+        // Ensure column.id is a valid Status
+        const columnId = column.id as Status;
+        return {
+          ...column,
+          id: columnId,
+          tickets: [] // Start with empty tickets, we'll fill them below
+        };
+      });
+      
       // Map tickets to their respective columns
-      const columns = storedColumns.map(column => {
+      const columns = validColumns.map(column => {
         const columnTickets = tickets.filter(ticket => ticket.status === column.id);
         return {
           ...column,
@@ -73,20 +85,15 @@ export const supabaseService = {
     try {
       console.log('Updating board columns for project:', projectId, columns);
       
-      // Store the column configuration in localStorage
-      storeColumns(projectId, columns.map(column => ({
+      // Ensure we're storing columns with valid Status ids
+      const columnsToStore = columns.map(column => ({
         id: column.id,
         title: column.title,
         tickets: [] // Don't store tickets in localStorage to save space
-      })));
+      }));
       
-      // In the future, when we have a proper board table in the database:
-      // const { data, error } = await supabase
-      //   .from('board_configurations')
-      //   .upsert({ 
-      //     project_id: projectId, 
-      //     columns: columns.map(c => ({ id: c.id, title: c.title }))
-      //   });
+      // Store the column configuration in localStorage
+      storeColumns(projectId, columnsToStore);
       
       return true;
     } catch (error) {

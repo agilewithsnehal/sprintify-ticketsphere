@@ -11,7 +11,7 @@ export function useKanbanBoard(
   board: BoardType,
   onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void
 ) {
-  const [columns, setColumns] = useState(board.columns);
+  const [columns, setColumns] = useState(board.columns || []);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -19,7 +19,9 @@ export function useKanbanBoard(
   useEffect(() => {
     if (board && board.columns) {
       console.log('useKanbanBoard: Updating columns from board:', 
-        board.columns.map(c => c.title).join(', '));
+        board.columns.map(c => c.title).join(', '), 
+        'Column count:', board.columns.length);
+      
       setColumns(board.columns);
     }
   }, [board]);
