@@ -6,6 +6,7 @@ import { useModalManagement } from './useModalManagement';
 import { useDragAndDrop } from './useDragAndDrop';
 import { useScrollHandling } from './useScrollHandling';
 import { supabaseService } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export function useKanbanBoard(
   board: BoardType,
@@ -14,6 +15,7 @@ export function useKanbanBoard(
   const [columns, setColumns] = useState(board.columns || []);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const columnsRef = useRef(columns); // Use a ref to track previous column state
 
   // Update columns when board changes
   useEffect(() => {
@@ -29,6 +31,7 @@ export function useKanbanBoard(
       }));
       
       setColumns(columnsCopy);
+      columnsRef.current = columnsCopy;
     }
   }, [board]);
 
@@ -65,7 +68,45 @@ export function useKanbanBoard(
     handleCloseCreateModal
   } = useModalManagement(findTicketInColumns);
 
-  const { onDragEnd } = useDragAndDrop(columns, setColumns, onTicketMove);
+  // Configure drag and drop with proper persistence
+  const handleTicketMoveWithPersistence = async (
+    ticketId: string, 
+    sourceColumn: Status, 
+    destinationColumn: Status,
+    updateParent: boolean = true
+  ) => {
+    // First, find the ticket in our columns
+    const ticket = findTicketInColumns(ticketId);
+    if (!ticket) {
+      console.error('Cannot move ticket: Ticket not found in columns');
+      return;
+    }
+    
+    try {
+      // Update the ticket in the database
+      const result = await supabaseService.updateTicket(ticketId, {
+        ...ticket,
+        status: destinationColumn
+      });
+      
+      if (!result) {
+        toast.error('Failed to update ticket status in database');
+        return;
+      }
+      
+      console.log(`Ticket ${ticketId} successfully moved to ${destinationColumn} in database`);
+      
+      // Call the parent callback if provided
+      if (onTicketMove) {
+        onTicketMove(ticketId, sourceColumn, destinationColumn);
+      }
+    } catch (error) {
+      console.error('Error persisting ticket move:', error);
+      toast.error('Failed to save ticket status');
+    }
+  };
+
+  const { onDragEnd } = useDragAndDrop(columns, setColumns, handleTicketMoveWithPersistence);
   
   const { scrollLeft, scrollRight } = useScrollHandling(scrollContainerRef);
 

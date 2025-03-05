@@ -82,17 +82,36 @@ export function useDragAndDrop(
     }));
 
     if (source.droppableId !== destination.droppableId) {
-      // If the status changed, call the onTicketMove callback
-      if (onTicketMove) {
-        onTicketMove(
-          draggableId,
-          source.droppableId as Status,
-          destination.droppableId as Status,
-          true // Always pass true to update parent ticket status
-        );
+      try {
+        // Persist the change to the database directly
+        const updatedInDb = await supabaseService.updateTicket(draggableId, {
+          status: destination.droppableId as Status
+        });
+        
+        if (!updatedInDb) {
+          toast.error("Failed to save ticket status change");
+          // Revert the UI if the database update failed
+          setColumns(prevColumns => [...prevColumns]);
+          return;
+        }
+        
+        // Now handle parent-child relationships via the callback
+        if (onTicketMove) {
+          onTicketMove(
+            draggableId,
+            source.droppableId as Status,
+            destination.droppableId as Status,
+            true // Always pass true to update parent ticket status
+          );
+        }
+      } catch (error) {
+        console.error('Error updating ticket status:', error);
+        toast.error("Failed to save ticket status change");
+        // Revert the UI if the database update failed
+        setColumns(prevColumns => [...prevColumns]);
       }
     }
-  }, [columns, onTicketMove]);
+  }, [columns, onTicketMove, setColumns]);
 
   return { onDragEnd };
 }

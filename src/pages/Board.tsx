@@ -101,26 +101,35 @@ const Board = () => {
         return;
       }
       
-      await supabaseService.updateTicket(ticketId, { 
-        ...foundTicket, 
+      const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
       });
+      
+      if (!updatedTicket) {
+        toast.error('Failed to update ticket status');
+        refetch();
+        return;
+      }
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
       if (updateParent && foundTicket.parentId) {
         let parentTicket = null;
+        let parentColumn = null;
+        
         for (const column of board.columns) {
           const parent = column.tickets.find(t => t.id === foundTicket.parentId);
           if (parent) {
             parentTicket = parent;
+            parentColumn = column;
             break;
           }
         }
         
-        if (parentTicket && parentTicket.status !== destinationColumn) {
-          if (destinationColumn === 'done') {
+        if (parentTicket) {
+          if (destinationColumn === 'done' && parentTicket.status !== 'done') {
             const siblingTickets = [];
+            
             for (const column of board.columns) {
               column.tickets.forEach(t => {
                 if (t.parentId === parentTicket.id) {
@@ -133,21 +142,31 @@ const Board = () => {
               t.id === ticketId || t.status === 'done'
             );
             
-            if (!allSiblingsDone) {
+            if (allSiblingsDone) {
+              console.log(`All child tickets are done, moving parent ticket ${parentTicket.id} to done`);
+              
+              await supabaseService.updateTicket(parentTicket.id, {
+                status: 'done'
+              });
+              
+              toast.success('Parent ticket automatically moved to Done');
+            } else {
               console.log('Not all sibling tickets are done, parent remains in current status');
-              refetch();
-              return;
             }
+          } 
+          else if (
+            (parentTicket.status === 'done' && destinationColumn !== 'done') || 
+            (parentTicket.status === 'review' && destinationColumn !== 'review' && destinationColumn !== 'done') ||
+            (parentTicket.status === 'in-progress' && destinationColumn === 'todo' || destinationColumn === 'backlog')
+          ) {
+            console.log(`Child ticket moved to earlier stage, updating parent ticket ${parentTicket.id} to ${destinationColumn}`);
+            
+            await supabaseService.updateTicket(parentTicket.id, {
+              status: destinationColumn
+            });
+            
+            toast.info(`Parent ticket moved to ${destinationColumn.replace(/-/g, ' ')} to match child status`);
           }
-          
-          console.log(`Updating parent ticket ${parentTicket.id} to status ${destinationColumn}`);
-          
-          await supabaseService.updateTicket(parentTicket.id, {
-            ...parentTicket,
-            status: destinationColumn
-          });
-          
-          toast.success(`Parent ticket also moved to ${destinationColumn.replace(/-/g, ' ')}`);
         }
       }
       
@@ -155,6 +174,7 @@ const Board = () => {
     } catch (error) {
       console.error('Error moving ticket:', error);
       toast.error('Failed to move ticket');
+      refetch();
     }
   };
 

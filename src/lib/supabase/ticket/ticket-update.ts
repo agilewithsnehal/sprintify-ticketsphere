@@ -8,6 +8,14 @@ import { mapDbTicketToTicket } from "../utils";
  */
 export async function updateTicket(ticketId: string, updates: Partial<Ticket>): Promise<Ticket | null> {
   try {
+    console.log(`Updating ticket ${ticketId} with:`, 
+      JSON.stringify({
+        status: updates.status,
+        priority: updates.priority,
+        summary: updates.summary ? updates.summary.substring(0, 20) + '...' : undefined
+      })
+    );
+    
     const updateData: any = {};
     
     if (updates.summary !== undefined) updateData.summary = updates.summary;
@@ -18,16 +26,30 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
     if (updates.assignee !== undefined) updateData.assignee_id = updates.assignee?.id || null;
     if (updates.parentId !== undefined) updateData.parent_id = updates.parentId;
     
+    // Add updated_at timestamp
+    updateData.updated_at = new Date().toISOString();
+    
     const { data: ticket, error } = await supabase
       .from('tickets')
-      .update({ ...updateData, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', ticketId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error in Supabase update:', error);
+      throw error;
+    }
     
-    return ticket ? await mapDbTicketToTicket(ticket) : null;
+    if (!ticket) {
+      console.error('No ticket returned after update');
+      return null;
+    }
+    
+    console.log(`Successfully updated ticket ${ticketId} in database`);
+    
+    // Map the database ticket to our application ticket type
+    return await mapDbTicketToTicket(ticket);
   } catch (error) {
     console.error('Error updating ticket:', error);
     return null;
