@@ -54,12 +54,15 @@ export const supabaseService = {
     try {
       // Create a unique file path for the avatar
       const fileExt = file.name.split('.').pop();
-      const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${Date.now()}.${fileExt}`;
       
       // Upload the file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
       if (uploadError) {
         console.error('Error uploading avatar:', uploadError);
