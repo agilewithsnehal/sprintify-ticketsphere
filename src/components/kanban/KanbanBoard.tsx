@@ -58,8 +58,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
   // Modified function to return Promise<boolean> instead of Promise<void>
   const handleTicketCreateWrapper = async (newTicket: TicketType): Promise<boolean> => {
     try {
-      await handleTicketCreate(newTicket);
-      return true; // Return true on success
+      console.log('Calling handleTicketCreate with ticket:', newTicket);
+      
+      if (!newTicket.id) {
+        console.error('New ticket is missing ID in handleTicketCreateWrapper');
+        toast.error('Cannot create ticket: Missing ID');
+        return false;
+      }
+      
+      // Make sure we have valid dates
+      if (!newTicket.createdAt) newTicket.createdAt = new Date();
+      if (!newTicket.updatedAt) newTicket.updatedAt = new Date();
+      
+      const result = await handleTicketCreate(newTicket);
+      return result === false ? false : true; // Convert any non-false result to true
     } catch (error) {
       console.error('Error creating ticket in wrapper:', error);
       return false; // Return false on failure

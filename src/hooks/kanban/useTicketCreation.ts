@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 interface UseTicketCreationProps {
   initialProject?: Project;
@@ -198,8 +199,12 @@ export function useTicketCreation({
       const ticketKey = await generateTicketKey(project);
       console.log(`Generated ticket key: ${ticketKey}`);
       
-      // Create new ticket object with valid dates
-      const newTicket: Partial<Ticket> = {
+      // Generate a temporary ID for the ticket
+      const tempId = uuidv4();
+      
+      // Create new ticket object with valid dates and ID
+      const newTicket: Ticket = {
+        id: tempId, // Add temporary ID
         key: ticketKey,
         summary,
         description,
@@ -215,10 +220,10 @@ export function useTicketCreation({
         comments: []
       };
       
-      console.log('Creating new ticket:', newTicket);
+      console.log('Creating new ticket with temp ID:', newTicket.id);
       
       // Call the create function
-      const success = await onTicketCreate(newTicket as Ticket);
+      const success = await onTicketCreate(newTicket);
       
       if (success) {
         resetForm();

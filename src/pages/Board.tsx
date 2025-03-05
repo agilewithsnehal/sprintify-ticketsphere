@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import BoardContainer from '@/components/board/BoardContainer';
 import BoardNotFound from '@/components/board/BoardNotFound';
 import BoardSkeleton from '@/components/board/BoardSkeleton';
-import { Status } from '@/lib/types';
+import { Status, Ticket } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -116,15 +115,24 @@ const Board = () => {
     }
   };
 
-  const handleCreateTicket = async (ticket) => {
+  const handleCreateTicket = async (ticket: Ticket) => {
     try {
-      console.log('Creating new ticket:', ticket);
+      console.log('Creating new ticket from Board.tsx:', ticket);
+      
+      if (!ticket.id) {
+        console.error('Ticket has no ID:', ticket);
+        toast.error('Cannot create ticket: Missing ID');
+        return false;
+      }
+      
       const result = await supabaseService.createTicket(ticket);
       if (result) {
+        console.log('Ticket created successfully:', result);
         toast.success('Ticket created successfully');
         refetch();
         return true;
       } else {
+        console.error('Failed to create ticket');
         toast.error('Failed to create ticket');
         return false;
       }

@@ -48,37 +48,51 @@ export function useTicketManagement(
       if (!newTicket.id) {
         console.error('New ticket has no valid ID:', newTicket);
         toast.error('Cannot add ticket: Missing ID');
-        return;
+        return false; // Return false to indicate failure
       }
       
       // Check if the ticket already exists in any column by ID or key
       if (ticketExistsInColumns(newTicket.id, newTicket.key)) {
         console.log('Ticket already exists in board. Skipping duplicate creation.');
         toast.info('Ticket is already on the board');
-        return;
+        return false; // Return false to indicate failure (already exists)
       }
       
-      // Update the local state with the new ticket
+      // Create the ticket in the database
+      const createdTicket = await supabaseService.createTicket(newTicket);
+      
+      if (!createdTicket || !createdTicket.id) {
+        console.error('Failed to create ticket in database:', newTicket);
+        toast.error('Failed to create ticket in database');
+        return false; // Return false to indicate failure
+      }
+      
+      console.log('Ticket created in database with ID:', createdTicket.id);
+      
+      // Update the local state with the new ticket (use the database ticket with real ID)
       setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === newTicket.status) {
+        if (col.id === createdTicket.status) {
           // Ensure there are no duplicates by ID or key
           const noDuplicates = col.tickets.filter((t: TicketType) => 
-            t.id !== newTicket.id && t.key !== newTicket.key
+            t.id !== createdTicket.id && t.key !== createdTicket.key
           );
           
           return {
             ...col,
-            tickets: [...noDuplicates, newTicket]
+            tickets: [...noDuplicates, createdTicket]
           };
         }
         return col;
       }));
       
-      console.log('Ticket added to board:', newTicket.id);
+      console.log('Ticket added to board:', createdTicket.id);
+      toast.success('Ticket created successfully');
+      return true; // Return true to indicate success
       
     } catch (error) {
       console.error('Error handling ticket create:', error);
       toast.error('Failed to update board with new ticket');
+      return false; // Return false to indicate failure
     }
   }, [columns, setColumns, ticketExistsInColumns]);
 
