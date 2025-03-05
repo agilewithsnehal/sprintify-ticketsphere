@@ -1,36 +1,35 @@
 
 import { supabaseService as projectService } from './project-service';
-import { ticketService } from './ticket';
-import { supabaseService as commentService } from './comment-service';
-import { supabaseService as userService } from './user-service';
 import { supabaseService as boardService } from './board-service';
+import { supabaseService as userService } from './user-service';
+import { supabaseService as commentService } from './comment-service';
+import { ticketService } from './ticket';
 
+// Combine all services into one
 export const supabaseService = {
   // Project operations
-  getAllProjects: projectService.getAllProjects,
-  getProjectById: projectService.getProjectById,
-  createProject: projectService.createProject,
-  deleteProject: projectService.deleteProject,
-
+  ...projectService,
+  
+  // Board operations
+  ...boardService,
+  
+  // User operations
+  ...userService,
+  
+  // Comment operations
+  ...commentService,
+  
   // Ticket operations
-  getTicketsByProjectId: ticketService.getTicketsByProjectId,
-  getAllTickets: ticketService.getAllTickets,
-  getChildTickets: ticketService.getChildTickets,
   createTicket: ticketService.createTicket,
+  getAllTickets: ticketService.getAllTickets, 
+  getTicketsByProjectId: ticketService.getTicketsByProjectId,
+  getTicketsByUserId: ticketService.getTicketsByUserId,
+  getChildTickets: ticketService.getChildTickets,
   updateTicket: ticketService.updateTicket,
+  getTicketById: ticketService.getTicketById,
   deleteTicket: ticketService.deleteTicket,
   searchTickets: ticketService.searchTickets,
-
-  // Comment operations
-  addComment: commentService.addComment,
-
-  // User operations
-  getCurrentUser: userService.getCurrentUser,
-  updateUserProfile: userService.updateUserProfile,
-  uploadProfileImage: userService.uploadProfileImage,
-
-  // Board operations
-  createBoard: boardService.createBoard,
-  updateBoardColumns: boardService.updateBoardColumns,
-  resetBoardColumns: boardService.resetBoardColumns,
+  
+  // Also expose the full ticket service for direct access to all ticket operations
+  ticket: ticketService
 };

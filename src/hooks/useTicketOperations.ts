@@ -32,7 +32,7 @@ export const useTicketOperations = (refetch: () => void) => {
       // Handle parent-child relationships if needed
       if (updateParent && updatedTicket.parentId) {
         // We'll need to fetch parent and child tickets from the database
-        const parentTicket = await supabaseService.getTicketById(updatedTicket.parentId);
+        const parentTicket = await supabaseService.ticket.getTicketById(updatedTicket.parentId);
         
         if (parentTicket) {
           const childTickets = await supabaseService.getChildTickets(parentTicket.id);

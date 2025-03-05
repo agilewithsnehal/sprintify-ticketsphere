@@ -104,6 +104,9 @@ export function useDragAndDrop(
           return;
         }
         
+        // Show success message for the initial ticket move
+        toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+        
         // Now handle parent-child relationships via the callback
         if (onTicketMove) {
           onTicketMove(
