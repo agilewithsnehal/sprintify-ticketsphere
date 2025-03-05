@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -84,9 +83,9 @@ const Board = () => {
     );
   }
 
-  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
+  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent = true) => {
     try {
-      console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
+      console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
       
       let foundTicket = null;
       for (const column of board.columns) {
@@ -109,9 +108,7 @@ const Board = () => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Handle parent ticket update
-      if (foundTicket.parentId) {
-        // Find the parent ticket
+      if (updateParent && foundTicket.parentId) {
         let parentTicket = null;
         for (const column of board.columns) {
           const parent = column.tickets.find(t => t.id === foundTicket.parentId);
@@ -122,9 +119,7 @@ const Board = () => {
         }
         
         if (parentTicket && parentTicket.status !== destinationColumn) {
-          // Special handling for "done" status
           if (destinationColumn === 'done') {
-            // Check if all sibling tickets are also done
             const siblingTickets = [];
             for (const column of board.columns) {
               column.tickets.forEach(t => {
@@ -145,7 +140,8 @@ const Board = () => {
             }
           }
           
-          // Update parent ticket
+          console.log(`Updating parent ticket ${parentTicket.id} to status ${destinationColumn}`);
+          
           await supabaseService.updateTicket(parentTicket.id, {
             ...parentTicket,
             status: destinationColumn

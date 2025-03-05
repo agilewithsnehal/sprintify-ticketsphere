@@ -88,7 +88,7 @@ export function useDragAndDrop(
           draggableId,
           source.droppableId as Status,
           destination.droppableId as Status,
-          true // Add parameter to update parent ticket status
+          true // Always pass true to update parent ticket status
         );
       }
     }
