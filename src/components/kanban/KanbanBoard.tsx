@@ -43,8 +43,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     }
     
     console.log("KanbanBoard: Board loaded:", board.name);
-    console.log("KanbanBoard: selectedTicket:", selectedTicket?.id, "isTicketModalOpen:", isTicketModalOpen);
-  }, [board, selectedTicket, isTicketModalOpen]);
+    console.log("KanbanBoard: Columns:", columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
+  }, [board, columns]);
 
   if (!board || !board.project || !board.columns) {
     return (
@@ -55,26 +55,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     );
   }
 
-  // Modified function to return Promise<boolean> instead of Promise<void>
-  const handleTicketCreateWrapper = async (newTicket: TicketType): Promise<boolean> => {
+  const handleTicketCreateWrapper = async (ticket: TicketType): Promise<boolean> => {
     try {
-      console.log('Calling handleTicketCreate with ticket:', newTicket);
+      console.log('Calling handleTicketCreate with ticket:', ticket);
       
-      if (!newTicket.id) {
+      if (!ticket.id) {
         console.error('New ticket is missing ID in handleTicketCreateWrapper');
         toast.error('Cannot create ticket: Missing ID');
         return false;
       }
       
       // Make sure we have valid dates
-      if (!newTicket.createdAt) newTicket.createdAt = new Date();
-      if (!newTicket.updatedAt) newTicket.updatedAt = new Date();
+      if (!ticket.createdAt) ticket.createdAt = new Date();
+      if (!ticket.updatedAt) ticket.updatedAt = new Date();
       
-      const result = await handleTicketCreate(newTicket);
-      return result === false ? false : true; // Convert any non-false result to true
+      const result = await handleTicketCreate(ticket);
+      return result === false ? false : true;
     } catch (error) {
       console.error('Error creating ticket in wrapper:', error);
-      return false; // Return false on failure
+      return false;
     }
   };
 
@@ -97,7 +96,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
                 key={column.id}
                 id={column.id}
                 title={column.title}
-                tickets={column.tickets}
+                tickets={column.tickets || []} 
                 onOpenTicket={handleOpenTicket}
                 onAddTicket={handleOpenCreateModal}
                 projectId={board.project.id}

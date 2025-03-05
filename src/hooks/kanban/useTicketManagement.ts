@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { Ticket as TicketType, Status, Comment } from '@/lib/types';
 import { toast } from 'sonner';
@@ -23,7 +24,6 @@ export function useTicketManagement(
   // Helper to check if ticket exists by key or id
   const ticketExistsInColumns = useCallback((ticketId: string, ticketKey: string): boolean => {
     console.log('Checking if ticket exists:', ticketId, ticketKey);
-    console.log('Current columns:', columns);
     
     for (const column of columns) {
       const existsById = column.tickets.some((t: TicketType) => t.id === ticketId);
@@ -69,20 +69,38 @@ export function useTicketManagement(
       console.log('Ticket created in database with ID:', createdTicket.id);
       
       // Update the local state with the new ticket (use the database ticket with real ID)
-      setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === createdTicket.status) {
-          // Ensure there are no duplicates by ID or key
-          const noDuplicates = col.tickets.filter((t: TicketType) => 
-            t.id !== createdTicket.id && t.key !== createdTicket.key
+      setColumns(prevColumns => {
+        // Make a deep copy to ensure state updates correctly
+        const updatedColumns = [...prevColumns];
+        
+        // Find the column that matches the ticket's status
+        const columnIndex = updatedColumns.findIndex(col => col.id === createdTicket.status);
+        
+        // If the column exists, add the ticket to it
+        if (columnIndex >= 0) {
+          // Create a new tickets array to avoid mutating state
+          const updatedTickets = [...updatedColumns[columnIndex].tickets];
+          
+          // Ensure there are no duplicates
+          const ticketExists = updatedTickets.some(t => 
+            t.id === createdTicket.id || t.key === createdTicket.key
           );
           
-          return {
-            ...col,
-            tickets: [...noDuplicates, createdTicket]
-          };
+          if (!ticketExists) {
+            updatedTickets.push(createdTicket);
+            
+            // Update the column with the new tickets array
+            updatedColumns[columnIndex] = {
+              ...updatedColumns[columnIndex],
+              tickets: updatedTickets
+            };
+          }
+        } else {
+          console.error(`Column with id ${createdTicket.status} not found`);
         }
-        return col;
-      }));
+        
+        return updatedColumns;
+      });
       
       console.log('Ticket added to board:', createdTicket.id);
       toast.success('Ticket created successfully');

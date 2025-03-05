@@ -10,17 +10,24 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
   try {
     console.log('Creating new ticket in database:', newTicket.key);
     
-    const { data: existingTickets } = await supabase
+    // First, check if a ticket with this key already exists
+    const { data: existingTickets, error: checkError } = await supabase
       .from('tickets')
       .select('id, key')
       .eq('key', newTicket.key);
+    
+    if (checkError) {
+      console.error('Error checking for existing ticket:', checkError);
+      return null;
+    }
     
     if (existingTickets && existingTickets.length > 0) {
       console.error('A ticket with this key already exists:', newTicket.key);
       return null;
     }
     
-    const { data: ticket, error } = await supabase
+    // Insert the new ticket
+    const { data: insertedTicket, error: insertError } = await supabase
       .from('tickets')
       .insert({
         key: newTicket.key,
@@ -37,12 +44,18 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
       .select()
       .single();
 
-    if (error) {
-      console.error('Error inserting ticket:', error);
-      throw error;
+    if (insertError) {
+      console.error('Error inserting ticket:', insertError);
+      return null;
     }
     
-    return ticket ? await mapDbTicketToTicket(ticket) : null;
+    if (!insertedTicket) {
+      console.error('No ticket returned after insert');
+      return null;
+    }
+    
+    // Map the database ticket to our application ticket type
+    return await mapDbTicketToTicket(insertedTicket);
   } catch (error) {
     console.error('Error creating ticket:', error);
     return null;

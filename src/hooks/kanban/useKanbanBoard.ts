@@ -19,10 +19,16 @@ export function useKanbanBoard(
   useEffect(() => {
     if (board && board.columns) {
       console.log('useKanbanBoard: Updating columns from board:', 
-        board.columns.map(c => c.title).join(', '), 
+        board.columns.map(c => `${c.title} (${c.tickets.length} tickets)`), 
         'Column count:', board.columns.length);
       
-      setColumns(board.columns);
+      // Make a deep copy of the columns to ensure React detects the state change
+      const columnsCopy = board.columns.map(column => ({
+        ...column,
+        tickets: [...column.tickets]
+      }));
+      
+      setColumns(columnsCopy);
     }
   }, [board]);
 

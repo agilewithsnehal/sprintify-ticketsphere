@@ -54,12 +54,20 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   // Only fetch data when modal is open
   useEffect(() => {
     if (!isOpen) return;
+    console.log('CreateTicketModal: Opened with initial status:', initialColumn);
     // The hook will handle data fetching
-  }, [isOpen]);
+  }, [isOpen, initialColumn]);
 
   const handleClose = () => {
+    console.log('CreateTicketModal: Closing');
     resetForm();
     onClose();
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('CreateTicketModal: Submitting form with status:', status);
+    await handleSubmit(e);
   };
 
   return (
@@ -93,7 +101,7 @@ const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
           currentUser={currentUser}
           isSubmitting={isSubmitting}
           selectedProject={selectedProject}
-          onSubmit={handleSubmit}
+          onSubmit={handleFormSubmit}
           onCancel={handleClose}
           parentTicketId={parentTicketId}
           onParentTicketChange={setParentTicketId}
