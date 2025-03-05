@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/lib/supabase'; // Updated import
 import Layout from '@/components/Layout';
@@ -15,7 +15,22 @@ import ProjectConfiguration from '@/components/board/ProjectConfiguration';
 const Project = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [configOpen, setConfigOpen] = useState(false);
+  
+  // Parse the tab parameter from the URL
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get('tab');
+  
+  // Effect to handle tab parameter
+  useEffect(() => {
+    if (tabParam) {
+      // If the tab is "members", set the activeTab in ProjectLayout
+      if (tabParam === 'settings') {
+        setConfigOpen(true);
+      }
+    }
+  }, [tabParam]);
   
   const { data: project, isLoading: isLoadingProject, error } = useQuery({
     queryKey: ['project', projectId],

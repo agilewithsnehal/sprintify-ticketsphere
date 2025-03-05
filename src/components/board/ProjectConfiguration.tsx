@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { Project } from '@/lib/types';
+import { Project, Column } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import ColumnConfigurationModal from './ColumnConfigurationModal';
 
 interface ProjectConfigurationProps {
   project: Project;
@@ -40,6 +42,8 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
   const [dialogOpen, setDialogOpen] = useState(isOpen);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
+  const [isSavingColumns, setIsSavingColumns] = useState(false);
   const navigate = useNavigate();
   
   const handleOpenChange = (open: boolean) => {
@@ -70,6 +74,77 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
     }
   };
 
+  const [boardData, setBoardData] = useState<{ columns: Column[] } | null>(null);
+  
+  const fetchBoardData = async () => {
+    try {
+      const board = await supabaseService.createBoard(project.id);
+      setBoardData(board);
+    } catch (error) {
+      console.error('Error fetching board data:', error);
+      toast.error('Failed to load board configuration');
+    }
+  };
+  
+  const handleSaveColumns = async (updatedColumns: Column[]) => {
+    try {
+      setIsSavingColumns(true);
+      
+      // Call the service to update the columns in the database
+      const success = await supabaseService.updateBoardColumns(project.id, updatedColumns);
+      
+      if (success) {
+        toast.success('Column configuration saved');
+        // If we have board data, update it
+        if (boardData) {
+          setBoardData({
+            ...boardData,
+            columns: updatedColumns
+          });
+        }
+      } else {
+        toast.error('Failed to save column configuration');
+      }
+    } catch (error) {
+      console.error('Error saving columns:', error);
+      toast.error('An error occurred while saving columns');
+    } finally {
+      setIsSavingColumns(false);
+      setConfigureColumnsOpen(false);
+    }
+  };
+  
+  const handleConfigureColumns = () => {
+    if (!boardData) {
+      fetchBoardData();
+    }
+    setConfigureColumnsOpen(true);
+  };
+  
+  const handleManageWorkflow = () => {
+    toast.info('Workflow management will be available in a future update');
+  };
+  
+  const handleConfigureIssueTypes = () => {
+    toast.info('Issue type configuration will be available in a future update');
+  };
+  
+  const handleManageMembers = () => {
+    navigate(`/project/${project.id}?tab=members`);
+    setDialogOpen(false);
+  };
+  
+  const handleConfigurePermissions = () => {
+    toast.info('Permission configuration will be available in a future update');
+  };
+
+  // Load board data when opening the column configuration
+  React.useEffect(() => {
+    if (configureColumnsOpen && !boardData) {
+      fetchBoardData();
+    }
+  }, [configureColumnsOpen]);
+
   if (onOpenChange) {
     return (
       <>
@@ -87,21 +162,33 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                 <div className="flex flex-col gap-2 pl-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Column Layout</span>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleConfigureColumns}
+                    >
                       <Columns className="h-4 w-4 mr-2" />
                       Customize
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Workflow</span>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleManageWorkflow}
+                    >
                       <Calendar className="h-4 w-4 mr-2" />
                       Manage
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Issue Types</span>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleConfigureIssueTypes}
+                    >
                       <FileText className="h-4 w-4 mr-2" />
                       Configure
                     </Button>
@@ -114,14 +201,22 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                 <div className="flex flex-col gap-2 pl-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Members ({project.members.length})</span>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleManageMembers}
+                    >
                       <Users className="h-4 w-4 mr-2" />
                       Manage
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Permissions</span>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleConfigurePermissions}
+                    >
                       <Shield className="h-4 w-4 mr-2" />
                       Configure
                     </Button>
@@ -185,6 +280,17 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        
+        {/* Column Configuration Modal */}
+        {boardData && (
+          <ColumnConfigurationModal
+            isOpen={configureColumnsOpen}
+            onOpenChange={setConfigureColumnsOpen}
+            columns={boardData.columns}
+            onSave={handleSaveColumns}
+            isSaving={isSavingColumns}
+          />
+        )}
       </>
     );
   }
@@ -207,7 +313,11 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                   Customize the columns that appear on your board
                 </p>
               </div>
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleConfigureColumns}
+              >
                 <Columns className="h-4 w-4" />
                 Customize
               </Button>
@@ -222,7 +332,11 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                   Define transition rules between ticket statuses
                 </p>
               </div>
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleManageWorkflow}
+              >
                 <Calendar className="h-4 w-4" />
                 Configure
               </Button>
@@ -237,7 +351,11 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                   Configure the types of issues that can be created
                 </p>
               </div>
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleConfigureIssueTypes}
+              >
                 <FileText className="h-4 w-4" />
                 Manage
               </Button>
@@ -262,7 +380,11 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                   Add or remove people from this project
                 </p>
               </div>
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleManageMembers}
+              >
                 <Users className="h-4 w-4" />
                 Manage Members
               </Button>
@@ -277,7 +399,11 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
                   Configure role-based access control
                 </p>
               </div>
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={handleConfigurePermissions}
+              >
                 <Shield className="h-4 w-4" />
                 Set Permissions
               </Button>
@@ -353,8 +479,20 @@ const ProjectConfiguration: React.FC<ProjectConfigurationProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Column Configuration Modal */}
+      {boardData && (
+        <ColumnConfigurationModal
+          isOpen={configureColumnsOpen}
+          onOpenChange={setConfigureColumnsOpen}
+          columns={boardData.columns}
+          onSave={handleSaveColumns}
+          isSaving={isSavingColumns}
+        />
+      )}
     </div>
   );
 };
 
 export default ProjectConfiguration;
+

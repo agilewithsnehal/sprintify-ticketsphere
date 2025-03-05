@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListTodo, Users, BarChart3, Settings, GitBranch } from 'lucide-react';
 import BoardContainer from '@/components/board/BoardContainer';
@@ -8,6 +8,7 @@ import ProjectMembersTab from './ProjectMembersTab';
 import ProjectReportsTab from './ProjectReportsTab';
 import IssueHierarchyView from './IssueHierarchyView';
 import { Project, Status, Ticket } from '@/lib/types';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface ProjectTabsProps {
   project: Project;
@@ -26,10 +27,31 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
   onCreateTicket,
   onTicketMove,
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Handle URL tab parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    
+    if (tabParam) {
+      if (['board', 'hierarchy', 'members', 'reports', 'settings'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, [location.search, setActiveTab]);
+  
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/project/${project.id}?tab=${value}`, { replace: true });
+  };
+  
   return (
     <Tabs 
       value={activeTab} 
-      onValueChange={setActiveTab} 
+      onValueChange={handleTabChange} 
       className="mt-6"
     >
       <TabsList className="grid w-full grid-cols-5 mb-6">
