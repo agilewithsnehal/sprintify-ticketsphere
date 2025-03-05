@@ -8,6 +8,7 @@ import TicketModal from '@/components/ticket-modal';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { StandaloneTicket } from '@/components/project';
 
 const TicketPage = () => {
   const { projectId, ticketId } = useParams<{ projectId: string; ticketId: string }>();
@@ -21,17 +22,22 @@ const TicketPage = () => {
   useEffect(() => {
     const fetchTicket = async () => {
       try {
-        if (!ticketId) {
-          setError('Ticket ID is required');
+        // Validate ticketId
+        if (!ticketId || ticketId === 'undefined') {
+          console.error('Invalid ticketId provided:', ticketId);
+          setError('Invalid ticket ID provided');
           setLoading(false);
           return;
         }
 
+        console.log('Fetching ticket with ID:', ticketId);
+        
         // Get all tickets and find the one we need
         const tickets = await supabaseService.getAllTickets();
         const foundTicket = tickets.find(t => t.id === ticketId);
         
         if (!foundTicket) {
+          console.error('Ticket not found with ID:', ticketId);
           setError('Ticket not found');
           setLoading(false);
           return;
@@ -135,6 +141,15 @@ const TicketPage = () => {
           <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
             <div className="text-lg text-red-500">{error || 'Ticket not found'}</div>
             <Button onClick={() => navigate('/')}>Go to Home</Button>
+            {projectId && (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(`/board/${projectId}`)}
+                className="mt-2"
+              >
+                Back to Board
+              </Button>
+            )}
           </div>
         </div>
       </Layout>
@@ -157,14 +172,11 @@ const TicketPage = () => {
         </div>
         
         <div className="bg-background rounded-lg shadow-sm border p-0">
-          <TicketModal 
-            isOpen={true} 
-            onClose={handleBack}
+          <StandaloneTicket
             ticket={ticket}
             onTicketUpdate={handleTicketUpdate}
             onTicketDelete={handleTicketDelete}
             currentUser={currentUser}
-            isStandalone={true}
           />
         </div>
       </div>

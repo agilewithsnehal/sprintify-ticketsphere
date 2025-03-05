@@ -10,6 +10,8 @@ export function useTicketManagement(
 ) {
   // Helper function to find the latest ticket data in the columns
   const findTicketInColumns = useCallback((ticketId: string): TicketType | null => {
+    if (!ticketId) return null;
+    
     for (const column of columns) {
       const ticket = column.tickets.find((t: TicketType) => t.id === ticketId);
       if (ticket) {
@@ -41,6 +43,13 @@ export function useTicketManagement(
   const handleTicketCreate = useCallback(async (newTicket: TicketType) => {
     try {
       console.log('Handling ticket create:', newTicket.key, 'ID:', newTicket.id);
+      
+      // Ensure the ticket has a valid ID
+      if (!newTicket.id) {
+        console.error('New ticket has no valid ID:', newTicket);
+        toast.error('Cannot add ticket: Missing ID');
+        return;
+      }
       
       // Check if the ticket already exists in any column by ID or key
       if (ticketExistsInColumns(newTicket.id, newTicket.key)) {

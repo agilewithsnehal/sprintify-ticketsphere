@@ -7,6 +7,7 @@ import Ticket from '../Ticket';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface KanbanColumnProps {
   id: Status;
@@ -28,7 +29,29 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const navigate = useNavigate();
 
   const handleTicketClick = (ticket: TicketType) => {
+    // Check if the ticket has a valid ID before navigating
+    if (!ticket.id) {
+      console.error('Cannot navigate to ticket with invalid ID:', ticket);
+      toast.error('Cannot open ticket: Invalid ticket ID');
+      return;
+    }
+
     const ticketProjectId = projectId || ticket.project.id;
+    
+    // Also validate the project ID
+    if (!ticketProjectId) {
+      console.error('Cannot navigate to ticket with invalid project ID:', ticket);
+      toast.error('Cannot open ticket: Invalid project ID');
+      return;
+    }
+    
+    // Debug info to help track the issue
+    console.log('Navigating to ticket:', {
+      ticketId: ticket.id,
+      projectId: ticketProjectId,
+      url: `/board/${ticketProjectId}/ticket/${ticket.id}`
+    });
+    
     navigate(`/board/${ticketProjectId}/ticket/${ticket.id}`);
   };
 
@@ -66,7 +89,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             transition={{ duration: 0.2 }}
           >
             {tickets.map((ticket, index) => (
-              <Draggable key={ticket.id} draggableId={ticket.id} index={index}>
+              <Draggable 
+                key={ticket.id || `temp-${index}`} 
+                draggableId={ticket.id || `temp-${index}`} 
+                index={index}
+              >
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
