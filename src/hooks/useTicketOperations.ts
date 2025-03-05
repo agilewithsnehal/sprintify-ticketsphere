@@ -11,11 +11,6 @@ export const useTicketOperations = (refetch: () => void) => {
     try {
       console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
       
-      // Find the ticket that's being moved
-      let foundTicket = null;
-      // This would typically need the board data, but we'll rely on the supabaseService
-      // to fetch the ticket directly from the database
-      
       // First, update the moved ticket status in the database
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
@@ -31,11 +26,14 @@ export const useTicketOperations = (refetch: () => void) => {
       
       // Handle parent-child relationships if needed
       if (updateParent && updatedTicket.parentId) {
-        // We'll need to fetch parent and child tickets from the database
+        // Fetch the parent ticket details
         const parentTicket = await supabaseService.ticket.getTicketById(updatedTicket.parentId);
         
         if (parentTicket) {
+          console.log(`Parent ticket found: ${parentTicket.id}, current status: ${parentTicket.status}`);
+          // We'll need to fetch all child tickets to make decisions
           const childTickets = await supabaseService.getChildTickets(parentTicket.id);
+          console.log(`Found ${childTickets.length} child tickets for parent ${parentTicket.id}`);
           
           // Parent behavior depends on where the child was moved
           if (destinationColumn === 'done' && parentTicket.status !== 'done') {
@@ -47,11 +45,13 @@ export const useTicketOperations = (refetch: () => void) => {
             if (allSiblingsDone) {
               console.log(`All child tickets are done, moving parent ticket ${parentTicket.id} to done`);
               
-              await supabaseService.updateTicket(parentTicket.id, {
+              const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
                 status: 'done'
               });
               
-              toast.success('Parent ticket automatically moved to Done');
+              if (updatedParent) {
+                toast.success('Parent ticket automatically moved to Done');
+              }
             } else {
               console.log('Not all sibling tickets are done, parent remains in current status');
             }
@@ -64,12 +64,16 @@ export const useTicketOperations = (refetch: () => void) => {
           ) {
             console.log(`Child ticket moved to earlier stage, updating parent ticket ${parentTicket.id} to ${destinationColumn}`);
             
-            await supabaseService.updateTicket(parentTicket.id, {
+            const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
               status: destinationColumn
             });
             
-            toast.info(`Parent ticket moved to ${destinationColumn.replace(/-/g, ' ')} to match child status`);
+            if (updatedParent) {
+              toast.info(`Parent ticket moved to ${destinationColumn.replace(/-/g, ' ')} to match child status`);
+            }
           }
+        } else {
+          console.error(`Parent ticket with ID ${updatedTicket.parentId} not found`);
         }
       }
       
