@@ -1,14 +1,14 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Upload } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ProfileEditModalProps {
   user: User | null;
@@ -16,6 +16,18 @@ interface ProfileEditModalProps {
   onClose: () => void;
   onProfileUpdate: (updatedUser: User) => void;
 }
+
+// Available background colors for avatars
+const avatarColors = {
+  'purple': '#9b87f5',
+  'blue': '#0EA5E9',
+  'green': '#10B981',
+  'orange': '#F97316',
+  'pink': '#D946EF',
+  'gray': '#8E9196',
+  'red': '#F43F5E',
+  'yellow': '#F59E0B',
+};
 
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   user,
@@ -26,9 +38,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [isLoading, setIsLoading] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [avatarColor, setAvatarColor] = useState<string>(user?.avatarColor || 'purple');
   
   if (!user) {
     return null;
@@ -42,36 +52,17 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     setEmail(e.target.value);
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Log file details
-      console.log('Selected file:', file.name, file.type, file.size);
-      
-      // Validate file type and size
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
-        return;
-      }
-      
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('File size should be less than 5MB');
-        return;
-      }
-      
-      setSelectedFile(file);
-      
-      // Create a preview of the selected image
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setAvatarPreview(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleColorChange = (color: string) => {
+    setAvatarColor(color);
   };
   
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
   };
   
   const handleSubmit = async () => {
@@ -79,27 +70,6 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     
     try {
       setIsLoading(true);
-      
-      let avatarUrl = user.avatar;
-      
-      // If a new file was selected, upload it
-      if (selectedFile) {
-        toast.info('Uploading profile image...');
-        console.log('Uploading new profile image');
-        
-        const uploadedUrl = await supabaseService.uploadProfileImage(selectedFile, user.id);
-        console.log('Upload result:', uploadedUrl);
-        
-        if (uploadedUrl) {
-          avatarUrl = uploadedUrl;
-          console.log('New avatar URL:', avatarUrl);
-        } else {
-          toast.error('Failed to upload profile image');
-          console.error('Upload returned null URL');
-          setIsLoading(false);
-          return;
-        }
-      }
       
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,11 +81,11 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       
       toast.info('Updating profile...');
       
-      // Update the user profile
+      // Update the user profile with the selected avatar color
       const updatedUser = await supabaseService.updateUserProfile(user.id, {
         name,
         email,
-        avatar: avatarUrl
+        avatarColor
       });
       
       if (updatedUser) {
@@ -141,21 +111,36 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="flex flex-col items-center gap-4">
-            <Avatar className="h-24 w-24 border-2 border-primary/20 cursor-pointer" onClick={triggerFileInput}>
-              <AvatarImage src={avatarPreview || undefined} alt={name} />
-              <AvatarFallback className="text-xl">{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <Upload className="h-8 w-8 text-white" />
-              </div>
+            <Avatar 
+              className="h-24 w-24 border-2 border-primary/20" 
+              style={{ backgroundColor: avatarColors[avatarColor as keyof typeof avatarColors] || '#9b87f5' }}
+            >
+              <AvatarFallback className="text-xl text-white">
+                {getInitials(name)}
+              </AvatarFallback>
             </Avatar>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
-            />
-            <p className="text-sm text-muted-foreground">Click to upload a profile image</p>
+            
+            <div className="w-full max-w-xs">
+              <Label htmlFor="avatarColor" className="mb-2 block">Avatar Color</Label>
+              <Select value={avatarColor} onValueChange={handleColorChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a color" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(avatarColors).map(([colorName, colorValue]) => (
+                    <SelectItem key={colorName} value={colorName}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="h-4 w-4 rounded-full" 
+                          style={{ backgroundColor: colorValue }}
+                        />
+                        <span className="capitalize">{colorName}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           <div className="space-y-2">

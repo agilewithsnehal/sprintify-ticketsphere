@@ -1,3 +1,4 @@
+
 export type Priority = 'low' | 'medium' | 'high';
 
 export type Status = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
@@ -9,6 +10,7 @@ export type User = {
   name: string;
   email: string;
   avatar?: string;
+  avatarColor?: string;
   role: 'admin' | 'manager' | 'developer' | 'viewer';
 };
 

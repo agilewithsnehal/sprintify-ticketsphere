@@ -3,12 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Bell, Menu, X } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabaseService } from '@/lib/supabase';
 import { User } from '@/lib/types';
 import ProfileEditModal from '@/components/profile/ProfileEditModal';
+
+// Avatar color mapping
+const avatarColors = {
+  'purple': '#9b87f5',
+  'blue': '#0EA5E9',
+  'green': '#10B981',
+  'orange': '#F97316',
+  'pink': '#D946EF',
+  'gray': '#8E9196',
+  'red': '#F43F5E',
+  'yellow': '#F59E0B',
+};
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -31,6 +43,20 @@ const Navbar: React.FC = () => {
 
   const handleProfileUpdate = (updatedUser: User) => {
     setCurrentUser(updatedUser);
+  };
+
+  const getInitials = (name: string = '') => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const getAvatarColor = (user: User | null) => {
+    if (!user) return '#9b87f5'; // Default purple
+    return avatarColors[user.avatarColor as keyof typeof avatarColors] || '#9b87f5';
   };
 
   return (
@@ -91,9 +117,13 @@ const Navbar: React.FC = () => {
             className="hidden md:flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => setIsProfileModalOpen(true)}
           >
-            <Avatar className="h-8 w-8 border border-border">
-              <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
-              <AvatarFallback>{currentUser?.name?.substring(0, 2) || 'U'}</AvatarFallback>
+            <Avatar 
+              className="h-8 w-8 border border-border"
+              style={{ backgroundColor: getAvatarColor(currentUser) }}
+            >
+              <AvatarFallback className="text-white">
+                {getInitials(currentUser?.name)}
+              </AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium">{currentUser?.name || 'Loading...'}</span>
           </div>
@@ -125,9 +155,13 @@ const Navbar: React.FC = () => {
               setIsMenuOpen(false);
             }}
           >
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
-              <AvatarFallback>{currentUser?.name?.substring(0, 2) || 'U'}</AvatarFallback>
+            <Avatar 
+              className="h-8 w-8"
+              style={{ backgroundColor: getAvatarColor(currentUser) }}
+            >
+              <AvatarFallback className="text-white">
+                {getInitials(currentUser?.name)}
+              </AvatarFallback>
             </Avatar>
             <div>
               <div className="text-sm font-medium">{currentUser?.name || 'Loading...'}</div>

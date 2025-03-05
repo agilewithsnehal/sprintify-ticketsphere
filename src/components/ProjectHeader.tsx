@@ -1,17 +1,29 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/lib/types';
 import { Plus, ChevronDown, Clock, Settings } from 'lucide-react';
+
+// Avatar color mapping
+const avatarColors = {
+  'purple': '#9b87f5',
+  'blue': '#0EA5E9',
+  'green': '#10B981',
+  'orange': '#F97316',
+  'pink': '#D946EF',
+  'gray': '#8E9196',
+  'red': '#F43F5E',
+  'yellow': '#F59E0B',
+};
 
 interface ProjectHeaderProps {
   project: Project;
   ticketCount?: number;
   onCreateTicket?: () => void;
   onConfigureClick?: () => void;
-  rightContent?: React.ReactNode; // Added this prop
+  rightContent?: React.ReactNode;
 }
 
 const ProjectHeader: React.FC<ProjectHeaderProps> = ({ 
@@ -21,6 +33,22 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   onConfigureClick,
   rightContent 
 }) => {
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const getRandomColor = (id: string) => {
+    // Use the character codes in the id to select a color
+    const colorKeys = Object.keys(avatarColors);
+    const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colorKeys.length;
+    return avatarColors[colorKeys[index] as keyof typeof avatarColors];
+  };
+
   return (
     <div className="mb-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
@@ -72,9 +100,17 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.2 }}
             >
-              <Avatar className="h-8 w-8 border-2 border-background">
-                <AvatarImage src={member.avatar} alt={member.name} />
-                <AvatarFallback>{member.name.substring(0, 2)}</AvatarFallback>
+              <Avatar 
+                className="h-8 w-8 border-2 border-background"
+                style={{ 
+                  backgroundColor: member.avatarColor 
+                    ? avatarColors[member.avatarColor as keyof typeof avatarColors] 
+                    : getRandomColor(member.id) 
+                }}
+              >
+                <AvatarFallback className="text-white text-xs">
+                  {getInitials(member.name)}
+                </AvatarFallback>
               </Avatar>
             </motion.div>
           ))}
