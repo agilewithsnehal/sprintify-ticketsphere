@@ -113,6 +113,7 @@ export type Database = {
           id: string
           issue_type: string
           key: string
+          parent_id: string | null
           priority: string
           project_id: string
           reporter_id: string
@@ -127,6 +128,7 @@ export type Database = {
           id?: string
           issue_type?: string
           key: string
+          parent_id?: string | null
           priority?: string
           project_id: string
           reporter_id: string
@@ -141,6 +143,7 @@ export type Database = {
           id?: string
           issue_type?: string
           key?: string
+          parent_id?: string | null
           priority?: string
           project_id?: string
           reporter_id?: string
@@ -154,6 +157,13 @@ export type Database = {
             columns: ["assignee_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
           {

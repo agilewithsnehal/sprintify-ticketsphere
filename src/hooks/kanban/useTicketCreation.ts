@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase-service';

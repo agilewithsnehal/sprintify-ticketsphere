@@ -1,4 +1,3 @@
-
 export type Priority = 'low' | 'medium' | 'high';
 
 export type Status = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';

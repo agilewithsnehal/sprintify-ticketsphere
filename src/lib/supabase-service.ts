@@ -1,16 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Board, Comment, Priority, Project, Status, Ticket, User, IssueType } from "@/lib/types";
 
-// Helper function to transform database data into our app types
 const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
-  // Fetch project
   const { data: projectData } = await supabase
     .from('projects')
     .select('*')
     .eq('id', dbTicket.project_id)
     .single();
   
-  // Fetch assignee if exists
   let assignee: User | undefined = undefined;
   if (dbTicket.assignee_id) {
     const { data: assigneeData } = await supabase
@@ -30,14 +27,12 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
     }
   }
 
-  // Fetch reporter
   const { data: reporterData } = await supabase
     .from('users')
     .select('*')
     .eq('id', dbTicket.reporter_id)
     .single();
 
-  // Fetch project members
   const { data: memberIds } = await supabase
     .from('project_members')
     .select('user_id')
@@ -61,7 +56,6 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
 
   const members = (await Promise.all(memberPromises)).filter(Boolean) as User[];
 
-  // Fetch comments
   const { data: commentsData } = await supabase
     .from('comments')
     .select('*')
@@ -97,19 +91,17 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
 
   const comments = await Promise.all(commentPromises);
 
-  // Construct project object
   const project: Project = {
     id: projectData.id,
     name: projectData.name,
     description: projectData.description || '',
     key: projectData.key,
     members: members,
-    lead: members.find(m => m.role === 'admin') || members[0], // Assuming admin is the lead
+    lead: members.find(m => m.role === 'admin') || members[0],
     createdAt: new Date(projectData.created_at),
     updatedAt: new Date(projectData.updated_at)
   };
 
-  // Construct and return the ticket
   return {
     id: dbTicket.id,
     key: dbTicket.key,
@@ -117,7 +109,7 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
     description: dbTicket.description || '',
     status: dbTicket.status as Status,
     priority: dbTicket.priority as Priority,
-    issueType: dbTicket.issue_type as IssueType || 'task', // Default to 'task' if not set
+    issueType: dbTicket.issue_type as IssueType || 'task',
     assignee: assignee,
     reporter: {
       id: reporterData.id,
@@ -129,12 +121,12 @@ const mapDbTicketToTicket = async (dbTicket: any): Promise<Ticket> => {
     project: project,
     createdAt: new Date(dbTicket.created_at),
     updatedAt: new Date(dbTicket.updated_at),
-    comments: comments
+    comments: comments,
+    parentId: dbTicket.parent_id || undefined
   };
 };
 
 export const supabaseService = {
-  // Projects
   async getAllProjects(): Promise<Project[]> {
     try {
       const { data: projects, error } = await supabase
@@ -146,7 +138,6 @@ export const supabaseService = {
 
       const projectsWithDetails = await Promise.all(
         projects.map(async (project) => {
-          // Get members
           const { data: memberIds } = await supabase
             .from('project_members')
             .select('user_id')
@@ -201,7 +192,6 @@ export const supabaseService = {
       if (error) throw error;
       if (!project) return null;
 
-      // Get members
       const { data: memberIds } = await supabase
         .from('project_members')
         .select('user_id')
@@ -243,7 +233,6 @@ export const supabaseService = {
 
   async createProject(newProject: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project | null> {
     try {
-      // Insert the project
       const { data: project, error } = await supabase
         .from('projects')
         .insert({
@@ -257,7 +246,6 @@ export const supabaseService = {
       if (error) throw error;
       if (!project) return null;
       
-      // Add members
       const memberPromises = newProject.members.map(async (member) => {
         return supabase
           .from('project_members')
@@ -269,7 +257,6 @@ export const supabaseService = {
       
       await Promise.all(memberPromises);
       
-      // Return the full project
       return this.getProjectById(project.id);
     } catch (error) {
       console.error('Error creating project:', error);
@@ -322,7 +309,6 @@ export const supabaseService = {
     try {
       console.log('Creating new ticket in database:', newTicket.key);
       
-      // First check if a ticket with this key already exists
       const { data: existingTickets } = await supabase
         .from('tickets')
         .select('id, key')
@@ -344,7 +330,8 @@ export const supabaseService = {
           issue_type: newTicket.issueType || 'task',
           assignee_id: newTicket.assignee?.id,
           reporter_id: newTicket.reporter.id,
-          project_id: newTicket.project.id
+          project_id: newTicket.project.id,
+          parent_id: newTicket.parentId
         })
         .select()
         .single();
@@ -371,6 +358,7 @@ export const supabaseService = {
       if (updates.priority !== undefined) updateData.priority = updates.priority;
       if (updates.issueType !== undefined) updateData.issue_type = updates.issueType;
       if (updates.assignee !== undefined) updateData.assignee_id = updates.assignee?.id || null;
+      if (updates.parentId !== undefined) updateData.parent_id = updates.parentId;
       
       const { data: ticket, error } = await supabase
         .from('tickets')
@@ -404,14 +392,12 @@ export const supabaseService = {
       
       if (!comment) return null;
 
-      // Fetch author data
       const { data: author } = await supabase
         .from('users')
         .select('*')
         .eq('id', comment.author_id)
         .single();
 
-      // Update ticket's updated_at timestamp
       await supabase
         .from('tickets')
         .update({ updated_at: new Date().toISOString() })
@@ -442,7 +428,6 @@ export const supabaseService = {
       
       const tickets = await this.getTicketsByProjectId(projectId);
       
-      // Organize tickets by status
       const backlog = tickets.filter(ticket => ticket.status === 'backlog');
       const todo = tickets.filter(ticket => ticket.status === 'todo');
       const inProgress = tickets.filter(ticket => ticket.status === 'in-progress');
@@ -488,8 +473,6 @@ export const supabaseService = {
   },
 
   async getCurrentUser(): Promise<User> {
-    // In a real app with auth, we would get the current user from the session
-    // For now, we'll return the first user as the "current user"
     const { data } = await supabase
       .from('users')
       .select('*')
@@ -523,7 +506,6 @@ export const supabaseService = {
 
   async deleteProject(projectId: string): Promise<boolean> {
     try {
-      // First delete all related tickets
       const { error: ticketsError } = await supabase
         .from('tickets')
         .delete()
@@ -531,7 +513,6 @@ export const supabaseService = {
 
       if (ticketsError) throw ticketsError;
 
-      // Delete project members
       const { error: membersError } = await supabase
         .from('project_members')
         .delete()
@@ -539,7 +520,6 @@ export const supabaseService = {
 
       if (membersError) throw membersError;
 
-      // Finally delete the project
       const { error } = await supabase
         .from('projects')
         .delete()
