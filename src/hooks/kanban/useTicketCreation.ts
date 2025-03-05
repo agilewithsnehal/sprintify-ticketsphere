@@ -112,6 +112,11 @@ export function useTicketCreation({
     setParentTicketId(''); // Reset parent ticket when project changes
   };
 
+  const handleParentChange = (value: string) => {
+    // Empty string means "No Parent"
+    setParentTicketId(value);
+  };
+
   const resetForm = () => {
     setSummary('');
     setDescription('');

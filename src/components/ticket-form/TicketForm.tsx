@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -64,8 +63,8 @@ export const TicketForm: React.FC<TicketFormProps> = ({
   onParentTicketChange = () => {}
 }) => {
   const handleParentChange = (value: string) => {
-    // Handle "none" value to clear parent
-    if (value === "none") {
+    // Handle empty string to clear parent
+    if (value === "") {
       onParentTicketChange("");
     } else {
       onParentTicketChange(value);
@@ -90,7 +89,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
       />
       
       {/* Parent Ticket Selection - only show for non-epics */}
-      {issueType !== 'epic' && projectId && (
+      {projectId && (
         <ParentTicketSelect
           parentTicketId={parentTicketId}
           onParentTicketChange={handleParentChange}

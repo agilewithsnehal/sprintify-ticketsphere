@@ -33,6 +33,9 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
         let validParentTypes: IssueType[] = [];
         
         switch (issueType) {
+          case 'epic':
+            validParentTypes = []; // Epics don't have parents
+            break;
           case 'feature':
             validParentTypes = ['epic'];
             break;
@@ -68,7 +71,8 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
     fetchPotentialParents();
   }, [projectId, issueType]);
   
-  if (issueType === 'epic' || availableParents.length === 0) {
+  // Don't show parent select for epics or if there are no available parents
+  if (issueType === 'epic') {
     return null;
   }
   
@@ -84,7 +88,7 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
           <SelectValue placeholder="Select parent ticket" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="none">No Parent</SelectItem>
+          <SelectItem value="">No Parent</SelectItem>
           {availableParents.map(parent => (
             <SelectItem key={parent.id} value={parent.id}>
               {parent.key} - {parent.summary}
@@ -92,6 +96,11 @@ export const ParentTicketSelect: React.FC<ParentTicketSelectProps> = ({
           ))}
         </SelectContent>
       </Select>
+      {availableParents.length === 0 && !isLoading && issueType !== 'epic' && (
+        <p className="text-xs text-muted-foreground mt-1">
+          No valid parent tickets found. Create a {issueType === 'feature' ? 'epic' : issueType === 'story' ? 'feature or epic' : 'story, feature, or epic'} first.
+        </p>
+      )}
     </div>
   );
 };
