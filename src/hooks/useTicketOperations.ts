@@ -86,12 +86,12 @@ export const useTicketOperations = (refetch: () => void) => {
               shouldUpdateParent = true;
             }
             // If parent is in review but child moved to earlier stage
-            else if (parentTicket.status === 'review' && ['todo', 'backlog', 'in-progress'].includes(destinationColumn)) {
+            else if (parentTicket.status === 'review' && (destinationColumn === 'todo' || destinationColumn === 'backlog' || destinationColumn === 'in-progress')) {
               console.log(`Child moved to earlier stage, moving parent back from review to ${destinationColumn}`);
               shouldUpdateParent = true;
             }
             // If parent is in progress but child moved to even earlier stage
-            else if (parentTicket.status === 'in-progress' && ['todo', 'backlog'].includes(destinationColumn)) {
+            else if (parentTicket.status === 'in-progress' && (destinationColumn === 'todo' || destinationColumn === 'backlog')) {
               console.log(`Child moved to earlier stage, moving parent back from in-progress to ${destinationColumn}`);
               shouldUpdateParent = true;
             }
@@ -168,3 +168,4 @@ export const useTicketOperations = (refetch: () => void) => {
     handleCreateTicket
   };
 };
+
