@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabaseService } from '@/lib/supabase'; // Updated import
+import { supabaseService } from '@/lib/supabase'; 
 import { Board as BoardType, Status, Ticket } from '@/lib/types';
 import { toast } from 'sonner';
 import BoardNotFound from './BoardNotFound';
@@ -64,6 +64,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
     <div className="relative overflow-hidden h-[calc(100vh-240px)]">
       <BoardToolbar
         boardName={boardName}
+        projectId={projectId} // Pass projectId to BoardToolbar
         onCreateTicket={onCreateTicket}
         onFilterClick={handleFilterClick}
         onGroupClick={handleGroupClick}
