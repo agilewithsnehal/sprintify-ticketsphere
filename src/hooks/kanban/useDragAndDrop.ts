@@ -47,6 +47,27 @@ export function useDragAndDrop(
       return;
     }
 
+    // Special validation for parent tickets moving to "done"
+    if (destination.droppableId === 'done' && !movedTicket.parentId) {
+      try {
+        const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
+        
+        if (childTickets && childTickets.length > 0) {
+          const pendingChildren = childTickets.filter(child => child.status !== 'done');
+          
+          if (pendingChildren.length > 0) {
+            console.error('Cannot move parent to done: Some children are not done');
+            toast.error('All child tickets must be done before moving parent to done');
+            return; // Prevent the move entirely
+          }
+        }
+      } catch (error) {
+        console.error('Error checking child tickets:', error);
+        toast.error('Error checking child tickets');
+        return;
+      }
+    }
+
     // Remove from source column
     const newSourceTickets = sourceTickets.filter(t => t.id !== draggableId);
 

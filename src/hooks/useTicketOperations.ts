@@ -18,7 +18,7 @@ export const useTicketOperations = (refetch: () => void) => {
         return;
       }
       
-      // Special validation if moving to "done" status AND this is a parent ticket
+      // Special validation: if moving a parent ticket to "done"
       if (destinationColumn === 'done' && !ticketToMove.parentId) {
         // Check if this ticket has children
         const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
@@ -68,8 +68,9 @@ export const useTicketOperations = (refetch: () => void) => {
           
           console.log(`Parent ticket found: ${parentTicket.id}, current status: ${parentTicket.status}`);
           
-          // For parent tickets, we have a special rule: they can only move to "done" when all children are done
-          // But for all other statuses, they should follow their children
+          // For parent tickets, we have special rules:
+          // 1. They can only move to "done" when all children are done
+          // 2. For all other statuses, they should follow their children
           if (destinationColumn === 'done') {
             // If moving to "done", we need to verify all children are also done
             const allChildTickets = await supabaseService.ticket.getChildTickets(parentTicket.id);
