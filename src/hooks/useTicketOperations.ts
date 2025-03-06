@@ -56,46 +56,50 @@ export const useTicketOperations = (refetch: () => void) => {
           let shouldUpdateParent = false;
           let newParentStatus = destinationColumn; // Default to moving parent to same status as child
           
+          // Status order for progression comparison
+          const statusOrder = ['backlog', 'todo', 'in-progress', 'review', 'done'] as const;
+          
           // Logic for determining parent status
           if (destinationColumn === 'done') {
             // Only move parent to done if ALL children are done
             const allChildrenDone = childTickets.every(t => t.status === 'done');
             shouldUpdateParent = allChildrenDone;
             
-            if (!allChildrenDone) {
-              // If not all children are done, don't move parent to done
+            if (allChildrenDone) {
+              console.log('All children are done, will move parent to done as well');
+              toast.success('All subtasks completed - parent ticket marked as Done');
+            } else {
               console.log('Not all children are done, not moving parent to done');
               shouldUpdateParent = false;
             }
           } else if (destinationColumn === 'in-progress' || destinationColumn === 'review') {
             // For in-progress or review, move parent to match if parent is in an earlier stage
-            const statusOrder = ['backlog', 'todo', 'in-progress', 'review', 'done'];
-            const parentStatusIndex = statusOrder.indexOf(parentTicket.status);
+            const parentStatusIndex = statusOrder.indexOf(parentTicket.status as Status);
             const childStatusIndex = statusOrder.indexOf(destinationColumn);
             
             // If child moved forward and is now ahead of parent
             if (childStatusIndex > parentStatusIndex) {
               console.log(`Child moved to more advanced status than parent, updating parent from ${parentTicket.status} to ${destinationColumn}`);
               shouldUpdateParent = true;
+              toast.info(`Parent ticket automatically moved to ${destinationColumn.replace(/-/g, ' ')}`);
             }
           } else if (destinationColumn === 'todo' || destinationColumn === 'backlog') {
             // If child moved back to todo or backlog and parent is in a later stage
             // Check if parent should move back based on all children's status
             
             // Don't move parent back if any child is still in a later stage
-            const statusOrder = ['backlog', 'todo', 'in-progress', 'review', 'done'];
             const childStatusIndex = statusOrder.indexOf(destinationColumn);
             
             // Check if any child is in a later stage than the destination
             const anyChildInLaterStage = childTickets.some(child => {
-              const childStageIndex = statusOrder.indexOf(child.status);
+              const childStageIndex = statusOrder.indexOf(child.status as Status);
               return childStageIndex > childStatusIndex && child.id !== ticketId;
             });
             
             if (!anyChildInLaterStage) {
-              // If no other child is in a later stage, move parent back
               console.log(`No other children in later stages, moving parent back to ${destinationColumn}`);
               shouldUpdateParent = true;
+              toast.info(`Parent ticket moved back to ${destinationColumn.replace(/-/g, ' ')}`);
             } else {
               console.log('Other children still in later stages, not moving parent back');
               shouldUpdateParent = false;
@@ -110,11 +114,7 @@ export const useTicketOperations = (refetch: () => void) => {
             });
             
             if (updatedParent) {
-              if (newParentStatus === 'done') {
-                toast.success('Parent ticket automatically moved to Done');
-              } else {
-                toast.info(`Parent ticket ${parentTicket.key} moved to ${newParentStatus.replace(/-/g, ' ')} to match child status`);
-              }
+              console.log(`Successfully updated parent ticket status to ${newParentStatus}`);
             } else {
               console.error('Failed to update parent ticket status');
               toast.error('Failed to update parent ticket');

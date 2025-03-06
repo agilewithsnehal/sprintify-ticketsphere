@@ -83,7 +83,7 @@ export function useKanbanBoard(
     }
     
     try {
-      console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
+      console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
       
       // Update the ticket in the database
       const result = await supabaseService.updateTicket(ticketId, {
@@ -98,7 +98,7 @@ export function useKanbanBoard(
       
       console.log(`Ticket ${ticketId} successfully moved to ${destinationColumn} in database`);
       
-      // Call the parent callback if provided
+      // Call the parent callback if provided, making sure to pass the updateParent parameter
       if (onTicketMove) {
         onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
       }
