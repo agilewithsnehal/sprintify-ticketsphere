@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
@@ -35,9 +36,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
   } = useKanbanBoard(board, onTicketMove);
 
   // For auto-scrolling during drag
-  const edgeScrollThreshold = 100; // px from edge to trigger scrolling
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const edgeScrollThreshold = 150; // Increased from 100px for more responsive scrolling
   
   // Handle drag start
   const handleDragStart = useCallback((initial: DragStart) => {
@@ -72,11 +73,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
       
       if (x < leftEdge) {
         // Near left edge, scroll left
-        const scrollAmount = Math.max(5, Math.ceil((leftEdge - x) / 10));
+        const scrollAmount = Math.max(10, Math.ceil((leftEdge - x) / 8)); // Faster scrolling
         container.scrollLeft -= scrollAmount;
       } else if (x > rightEdge) {
         // Near right edge, scroll right
-        const scrollAmount = Math.max(5, Math.ceil((x - rightEdge) / 10));
+        const scrollAmount = Math.max(10, Math.ceil((x - rightEdge) / 8)); // Faster scrolling
         container.scrollLeft += scrollAmount;
       }
     };

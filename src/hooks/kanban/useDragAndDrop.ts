@@ -80,7 +80,7 @@ export function useDragAndDrop(
             draggableId,
             source.droppableId as Status,
             destination.droppableId as Status,
-            true // Explicitly set to true to ensure parent updates are processed
+            true // Always explicitly set to true to ensure parent updates are processed
           );
         } else {
           console.warn('onTicketMove callback is not provided');

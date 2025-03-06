@@ -54,7 +54,7 @@ export const useTicketOperations = (refetch: () => void) => {
           
           // Determine if we should update the parent based on child ticket movement
           let shouldUpdateParent = false;
-          let newParentStatus = destinationColumn; // Default to moving parent to same status as child
+          let newParentStatus = destinationColumn;
           
           // Status order for progression comparison
           const statusOrder = ['backlog', 'todo', 'in-progress', 'review', 'done'];
@@ -73,34 +73,33 @@ export const useTicketOperations = (refetch: () => void) => {
               shouldUpdateParent = false;
             }
           } else if (destinationColumn === 'in-progress' || destinationColumn === 'review') {
-            // For in-progress or review, move parent to match if parent is in an earlier stage
+            // For in-progress or review, always move parent to match if it's in an earlier stage
             const parentStatusIndex = statusOrder.indexOf(parentTicket.status);
             const childStatusIndex = statusOrder.indexOf(destinationColumn);
             
-            // If child moved forward and is now ahead of parent
+            // If child moved forward and is now ahead of parent, update parent
             if (childStatusIndex > parentStatusIndex) {
-              console.log(`Child moved to more advanced status than parent, updating parent from ${parentTicket.status} to ${destinationColumn}`);
+              console.log(`Child moved to more advanced status (${destinationColumn}) than parent (${parentTicket.status}), updating parent`);
               shouldUpdateParent = true;
               toast.info(`Parent ticket automatically moved to ${destinationColumn.replace(/-/g, ' ')}`);
+            } else {
+              console.log(`Child status (${destinationColumn}) not more advanced than parent (${parentTicket.status}), no parent update needed`);
             }
           } else if (destinationColumn === 'todo' || destinationColumn === 'backlog') {
-            // If child moved back to todo or backlog and parent is in a later stage
-            const parentStatusIndex = statusOrder.indexOf(parentTicket.status);
-            const childStatusIndex = statusOrder.indexOf(destinationColumn);
-            
-            // Check if any child is in a later stage than the destination
+            // If all children moved back, move parent back too
             const anyChildInLaterStage = childTickets.some(child => {
               const childStageIndex = statusOrder.indexOf(child.status);
-              return childStageIndex > childStatusIndex && child.id !== ticketId;
+              const destinationIndex = statusOrder.indexOf(destinationColumn);
+              return childStageIndex > destinationIndex && child.id !== ticketId;
             });
             
-            if (!anyChildInLaterStage && parentStatusIndex > childStatusIndex) {
-              console.log(`No other children in later stages, moving parent back to ${destinationColumn}`);
+            if (!anyChildInLaterStage) {
+              console.log('No children in later stages, moving parent back too');
               shouldUpdateParent = true;
+              newParentStatus = destinationColumn;
               toast.info(`Parent ticket moved back to ${destinationColumn.replace(/-/g, ' ')}`);
             } else {
-              console.log('Other children still in later stages or parent already in earlier/same stage, not moving parent');
-              shouldUpdateParent = false;
+              console.log('Some children still in later stages, not moving parent back');
             }
           }
           

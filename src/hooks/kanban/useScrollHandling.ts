@@ -61,7 +61,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
           scrollContainerRef.current.scrollLeft += scrollSpeedRef.current;
         }
       }
-    }, 16); // ~60fps
+    }, 10); // Higher frequency (was 16) for smoother scrolling
   }, [scrollContainerRef]);
 
   const stopAutoScroll = useCallback(() => {
@@ -81,19 +81,20 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
     const containerRect = container.getBoundingClientRect();
     const mouseX = e.clientX;
     
-    const leftEdgeThreshold = containerRect.left + 100; // 100px from left edge
-    const rightEdgeThreshold = containerRect.right - 100; // 100px from right edge
+    // Increased edge detection area for more responsive scrolling
+    const leftEdgeThreshold = containerRect.left + 150; // Increased from 100px to 150px
+    const rightEdgeThreshold = containerRect.right - 150; // Increased from 100px to 150px
     
     // Calculate how close to the edge (for variable speed)
     let speed = 5; // Base speed
     
     if (mouseX < leftEdgeThreshold) {
       const distance = leftEdgeThreshold - mouseX;
-      speed = Math.min(15, 5 + Math.floor(distance / 20)); // Increase speed as you get closer to edge
+      speed = Math.min(20, 5 + Math.floor(distance / 15)); // Increased max speed and sensitivity
       startAutoScroll('left', speed);
     } else if (mouseX > rightEdgeThreshold) {
       const distance = mouseX - rightEdgeThreshold;
-      speed = Math.min(15, 5 + Math.floor(distance / 20)); // Increase speed as you get closer to edge
+      speed = Math.min(20, 5 + Math.floor(distance / 15)); // Increased max speed and sensitivity
       startAutoScroll('right', speed);
     } else {
       stopAutoScroll();
