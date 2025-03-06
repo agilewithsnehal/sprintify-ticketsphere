@@ -35,6 +35,67 @@ export function useKanbanBoard(
     }
   }, [board]);
 
+  // Listen for parent ticket updates events to immediately update UI
+  useEffect(() => {
+    const handleParentTicketUpdated = (event: CustomEvent<{ parentId: string, newStatus: Status }>) => {
+      const { parentId, newStatus } = event.detail;
+      console.log(`Handling parent ticket update event: ${parentId} to ${newStatus}`);
+      
+      // Update the columns state to reflect the parent's new status
+      setColumns(prevColumns => {
+        // Find the parent ticket in all columns
+        let parentTicket: TicketType | null = null;
+        let sourceColumnId: Status | null = null;
+        
+        // Find the parent ticket and its current column
+        prevColumns.forEach(column => {
+          const foundTicket = column.tickets.find(t => t.id === parentId);
+          if (foundTicket) {
+            parentTicket = foundTicket;
+            sourceColumnId = column.id as Status;
+          }
+        });
+        
+        if (!parentTicket || !sourceColumnId || sourceColumnId === newStatus) {
+          console.log('No UI update needed - parent ticket not found or already in correct column');
+          return prevColumns;
+        }
+        
+        console.log(`Moving parent ${parentId} in UI from ${sourceColumnId} to ${newStatus}`);
+        
+        // Create a new array with the parent ticket moved to the new column
+        return prevColumns.map(column => {
+          // Remove from source column
+          if (column.id === sourceColumnId) {
+            return {
+              ...column,
+              tickets: column.tickets.filter(t => t.id !== parentId)
+            };
+          }
+          
+          // Add to destination column
+          if (column.id === newStatus) {
+            return {
+              ...column,
+              tickets: [...column.tickets, { ...parentTicket!, status: newStatus }]
+            };
+          }
+          
+          return column;
+        });
+      });
+    };
+    
+    // Add event listener for parent ticket updates
+    document.addEventListener('ticket-parent-updated', 
+      handleParentTicketUpdated as EventListener);
+      
+    return () => {
+      document.removeEventListener('ticket-parent-updated', 
+        handleParentTicketUpdated as EventListener);
+    };
+  }, []);
+
   // Load current user
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -143,6 +204,11 @@ export function useKanbanBoard(
           if (updatedParent) {
             console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
             toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`);
+            
+            // Dispatch event to update UI immediately
+            document.dispatchEvent(new CustomEvent('ticket-parent-updated', {
+              detail: { parentId: parentTicket.id, newStatus: destinationColumn }
+            }));
           } else {
             console.error('Failed to update parent ticket status');
             toast.error('Failed to update parent ticket');

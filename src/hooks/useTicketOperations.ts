@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -95,6 +96,12 @@ export const useTicketOperations = (refetch: () => void) => {
             toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`, {
               id: 'parent-update-success'
             });
+            
+            // Force an immediate local UI update for the parent ticket
+            // This ensures the UI updates without needing a refetch
+            document.dispatchEvent(new CustomEvent('ticket-parent-updated', {
+              detail: { parentId: parentTicket.id, newStatus: destinationColumn }
+            }));
           } else {
             console.error('Failed to update parent ticket status');
             toast.error('Failed to update parent ticket', {

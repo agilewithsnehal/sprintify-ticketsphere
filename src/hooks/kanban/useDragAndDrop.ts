@@ -178,6 +178,14 @@ export function useDragAndDrop(
               
               if (updatedParent) {
                 toast.success(`Parent ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+                
+                // Dispatch custom event to trigger UI update for the parent ticket
+                document.dispatchEvent(new CustomEvent('ticket-parent-updated', {
+                  detail: { 
+                    parentId: parentTicket.id, 
+                    newStatus: destination.droppableId as Status 
+                  }
+                }));
               } else {
                 toast.error("Failed to update parent ticket");
               }
