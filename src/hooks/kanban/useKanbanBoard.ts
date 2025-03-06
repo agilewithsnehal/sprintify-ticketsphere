@@ -75,6 +75,8 @@ export function useKanbanBoard(
     destinationColumn: Status,
     updateParent: boolean = true
   ) => {
+    console.log(`useKanbanBoard: handleTicketMoveWithPersistence called with ticketId=${ticketId}, source=${sourceColumn}, dest=${destinationColumn}, updateParent=${updateParent}`);
+    
     // First, find the ticket in our columns
     const ticket = findTicketInColumns(ticketId);
     if (!ticket) {
@@ -83,8 +85,6 @@ export function useKanbanBoard(
     }
     
     try {
-      console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
-      
       // Update the ticket in the database
       const result = await supabaseService.updateTicket(ticketId, {
         ...ticket,
@@ -100,6 +100,7 @@ export function useKanbanBoard(
       
       // Call the parent callback if provided, making sure to pass the updateParent parameter
       if (onTicketMove) {
+        console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
         onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
       }
     } catch (error) {

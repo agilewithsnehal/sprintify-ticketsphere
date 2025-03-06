@@ -1,6 +1,5 @@
-
-import React, { useEffect } from 'react';
-import { DragDropContext } from 'react-beautiful-dnd';
+import React, { useEffect, useCallback, useState } from 'react';
+import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useKanbanBoard } from '@/hooks/kanban/useKanbanBoard';
 import KanbanColumn from './KanbanColumn';
@@ -34,6 +33,75 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     scrollLeft,
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
+
+  // For auto-scrolling during drag
+  const edgeScrollThreshold = 100; // px from edge to trigger scrolling
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  
+  // Handle drag start
+  const handleDragStart = useCallback((initial: DragStart) => {
+    console.log('Drag started');
+    setIsDragging(true);
+  }, []);
+  
+  // Handle drag update to get current position
+  const handleDragUpdate = useCallback((update: DragUpdate) => {
+    if (update.clientX && update.clientY) {
+      setDragPosition({ 
+        x: update.clientX, 
+        y: update.clientY 
+      });
+    }
+  }, []);
+  
+  // Handle auto-scrolling during drag
+  useEffect(() => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    
+    const checkForScroll = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      const { x } = dragPosition;
+      
+      // Check if we're near the left or right edge
+      const leftEdge = rect.left + edgeScrollThreshold;
+      const rightEdge = rect.right - edgeScrollThreshold;
+      
+      if (x < leftEdge) {
+        // Near left edge, scroll left
+        const scrollAmount = Math.max(5, Math.ceil((leftEdge - x) / 10));
+        container.scrollLeft -= scrollAmount;
+      } else if (x > rightEdge) {
+        // Near right edge, scroll right
+        const scrollAmount = Math.max(5, Math.ceil((x - rightEdge) / 10));
+        container.scrollLeft += scrollAmount;
+      }
+    };
+    
+    // Set up animation frame for smooth scrolling
+    let animationFrameId: number;
+    const scrollIfNeeded = () => {
+      checkForScroll();
+      animationFrameId = requestAnimationFrame(scrollIfNeeded);
+    };
+    
+    // Start the animation
+    animationFrameId = requestAnimationFrame(scrollIfNeeded);
+    
+    // Clean up
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isDragging, dragPosition, scrollContainerRef, edgeScrollThreshold]);
+  
+  // Reset drag state when drag ends
+  const handleDragEndWithReset = useCallback((result: DropResult) => {
+    setIsDragging(false);
+    onDragEnd(result);
+  }, [onDragEnd]);
 
   useEffect(() => {
     if (!board || !board.project) {
@@ -85,7 +153,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
           onScrollRight={scrollRight} 
         />
         
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext 
+          onDragEnd={handleDragEndWithReset}
+          onDragStart={handleDragStart}
+          onDragUpdate={handleDragUpdate}
+        >
           <div 
             ref={scrollContainerRef}
             className="flex space-x-4 overflow-x-auto pb-4 pt-2 px-10 scrollbar-hide" 

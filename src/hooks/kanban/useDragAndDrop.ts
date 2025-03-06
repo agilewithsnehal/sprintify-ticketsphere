@@ -14,6 +14,7 @@ export function useDragAndDrop(
     const { source, destination, draggableId } = result;
 
     if (!destination) {
+      console.log('No destination, dropping operation cancelled');
       return;
     }
 
@@ -21,6 +22,7 @@ export function useDragAndDrop(
       source.droppableId === destination.droppableId &&
       source.index === destination.index
     ) {
+      console.log('Dropped in same position, no action needed');
       return;
     }
 
@@ -28,6 +30,7 @@ export function useDragAndDrop(
     const destColumn = columns.find(col => col.id === destination.droppableId);
 
     if (!sourceColumn || !destColumn) {
+      console.error('Source or destination column not found');
       return;
     }
 
@@ -46,29 +49,6 @@ export function useDragAndDrop(
     // Remove from source column
     const newSourceTickets = sourceTickets.filter(t => t.id !== draggableId);
 
-    // Check if we're moving to "done" status and this is a parent ticket (has children)
-    if (destination.droppableId === 'done') {
-      // Find all child tickets across all columns
-      const childTickets: TicketType[] = [];
-      columns.forEach(col => {
-        col.tickets.forEach((ticket: TicketType) => {
-          if (ticket.parentId === movedTicket.id) {
-            childTickets.push(ticket);
-          }
-        });
-      });
-
-      // If there are children and any of them are not done, prevent the move
-      if (childTickets.length > 0) {
-        const allChildrenDone = childTickets.every((ticket: TicketType) => ticket.status === 'done');
-        
-        if (!allChildrenDone) {
-          toast.error("Cannot move to Done: All child tickets must be completed first");
-          return;
-        }
-      }
-    }
-    
     // Create the updated ticket with new status
     const updatedTicket = { 
       ...movedTicket,
@@ -92,7 +72,7 @@ export function useDragAndDrop(
 
     if (source.droppableId !== destination.droppableId) {
       try {
-        console.log(`About to call onTicketMove for ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
+        console.log(`Drag ended: Moving ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
         
         // Call the callback ensuring the updateParent flag is explicitly set to true
         if (onTicketMove) {
