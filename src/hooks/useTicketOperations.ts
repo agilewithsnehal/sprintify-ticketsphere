@@ -18,6 +18,26 @@ export const useTicketOperations = (refetch: () => void) => {
         return;
       }
       
+      // Special validation if moving to "done" status AND this is a parent ticket
+      if (destinationColumn === 'done' && !ticketToMove.parentId) {
+        // Check if this ticket has children
+        const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
+        
+        if (childTickets && childTickets.length > 0) {
+          // Check if all children are in "done" status
+          const pendingChildren = childTickets.filter(child => child.status !== 'done');
+          
+          if (pendingChildren.length > 0) {
+            console.log('Cannot move parent to done, some children are not done:', pendingChildren.map(t => t.key));
+            toast.error('All child tickets must be done before moving parent to done');
+            refetch();
+            return;
+          }
+          
+          console.log('All children are done, parent can be moved to done');
+        }
+      }
+      
       // Update the moved ticket status in the database
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 

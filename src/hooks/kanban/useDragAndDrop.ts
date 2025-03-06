@@ -96,6 +96,30 @@ export function useDragAndDrop(
             return;
           }
           
+          // Special validation for "done" status if this is a parent ticket
+          if (destination.droppableId === 'done' && !ticket.parentId) {
+            // Check if this ticket has children
+            const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
+            
+            if (childTickets && childTickets.length > 0) {
+              // Check if all children are in "done" status
+              const pendingChildren = childTickets.filter(child => child.status !== 'done');
+              
+              if (pendingChildren.length > 0) {
+                console.log('Cannot move parent to done, some children are not done:', 
+                  pendingChildren.map(t => t.key).join(', '));
+                
+                toast.error('All child tickets must be done before moving parent to done');
+                
+                // Revert the UI state since we're aborting the operation
+                setColumns(prevColumns => [...prevColumns]);
+                return;
+              }
+              
+              console.log('All children are done, parent can be moved to done');
+            }
+          }
+          
           // First update the moved ticket
           const updatedInDb = await supabaseService.updateTicket(draggableId, {
             status: destination.droppableId as Status
