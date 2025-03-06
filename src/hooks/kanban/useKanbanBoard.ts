@@ -103,7 +103,8 @@ export function useKanbanBoard(
       // Call the parent callback if provided, making sure to pass the updateParent parameter
       if (onTicketMove) {
         console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
-        onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
+        // Always force updateParent to true to ensure parent tickets get updated
+        onTicketMove(ticketId, sourceColumn, destinationColumn, true);
       }
     } catch (error) {
       console.error('Error persisting ticket move:', error);

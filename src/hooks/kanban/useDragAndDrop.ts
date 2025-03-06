@@ -78,11 +78,12 @@ export function useDragAndDrop(
         
         // Call the callback ensuring the updateParent flag is explicitly set to true
         if (onTicketMove) {
+          // Always force updateParent to true to ensure parent tickets get updated
           onTicketMove(
             draggableId,
             source.droppableId as Status,
             destination.droppableId as Status,
-            true // Always explicitly set to true to ensure parent updates are processed
+            true
           );
         } else {
           console.warn('onTicketMove callback is not provided');

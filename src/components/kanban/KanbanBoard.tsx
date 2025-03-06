@@ -58,7 +58,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     }
   }, []);
   
-  // Handle auto-scrolling during drag
+  // Handle auto-scrolling during drag with improved performance
   useEffect(() => {
     if (!isDragging || !scrollContainerRef.current) return;
     
@@ -75,25 +75,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
       const { x } = dragPosition;
       
       // Check if we're near the left or right edge
-      const edgeThreshold = 180; // Wider threshold for better sensitivity
+      const edgeThreshold = 200; // Wider threshold for better sensitivity
       const leftEdge = rect.left + edgeThreshold;
       const rightEdge = rect.right - edgeThreshold;
       
       if (x < leftEdge) {
         // Near left edge, scroll left
         const distance = leftEdge - x;
-        const scrollAmount = Math.max(8, Math.ceil(distance / 10)); // Faster scrolling
+        const scrollAmount = Math.max(15, Math.ceil(distance / 5)); // Much faster scrolling
         container.scrollLeft -= scrollAmount;
       } else if (x > rightEdge) {
         // Near right edge, scroll right
         const distance = x - rightEdge;
-        const scrollAmount = Math.max(8, Math.ceil(distance / 10)); // Faster scrolling
+        const scrollAmount = Math.max(15, Math.ceil(distance / 5)); // Much faster scrolling
         container.scrollLeft += scrollAmount;
       }
     };
     
-    // Set up interval for smooth scrolling (higher frequency)
-    autoScrollIntervalRef.current = window.setInterval(checkForScroll, 8);
+    // Set up interval for smooth scrolling with higher frequency
+    autoScrollIntervalRef.current = window.setInterval(checkForScroll, 5);
     
     // Clean up
     return () => {

@@ -5,7 +5,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
   // Refs for the timer and scroll speed
   const autoScrollTimerRef = useRef<number | null>(null);
   const isScrollingRef = useRef(false);
-  const scrollSpeedRef = useRef(5); // Base scroll speed
+  const scrollSpeedRef = useRef(10); // Increased base scroll speed
 
   // Clean up any timers when component unmounts
   useEffect(() => {
@@ -36,7 +36,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
   }, [scrollContainerRef]);
 
   // Auto-scroll when dragging near edges
-  const startAutoScroll = useCallback((direction: 'left' | 'right', speed = 5) => {
+  const startAutoScroll = useCallback((direction: 'left' | 'right', speed = 10) => {
     console.log(`Starting auto-scroll: ${direction} with speed ${speed}`);
     
     // Always clear existing timer first
@@ -45,11 +45,11 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
       autoScrollTimerRef.current = null;
     }
     
-    // Set the scroll speed
+    // Set the scroll speed - increased for more responsiveness
     scrollSpeedRef.current = speed;
     isScrollingRef.current = true;
     
-    // Start the auto-scroll
+    // Start the auto-scroll with higher frequency and speed
     autoScrollTimerRef.current = window.setInterval(() => {
       if (scrollContainerRef.current) {
         if (direction === 'left') {
@@ -58,7 +58,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
           scrollContainerRef.current.scrollLeft += scrollSpeedRef.current;
         }
       }
-    }, 8); // Higher frequency for smoother scrolling
+    }, 5); // Higher frequency for smoother scrolling
   }, [scrollContainerRef]);
 
   const stopAutoScroll = useCallback(() => {
@@ -79,19 +79,19 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
     const mouseX = e.clientX;
     
     // Wider edge detection area for more responsive scrolling
-    const leftEdgeThreshold = containerRect.left + 180; 
-    const rightEdgeThreshold = containerRect.right - 180;
+    const leftEdgeThreshold = containerRect.left + 200; 
+    const rightEdgeThreshold = containerRect.right - 200;
     
     // Calculate how close to the edge (for variable speed)
-    let speed = 5; // Base speed
+    let speed = 10; // Increased base speed
     
     if (mouseX < leftEdgeThreshold) {
       const distance = leftEdgeThreshold - mouseX;
-      speed = Math.min(30, 5 + Math.floor(distance / 10)); // Increased max speed and sensitivity
+      speed = Math.min(40, 10 + Math.floor(distance / 5)); // Significantly increased max speed and sensitivity
       startAutoScroll('left', speed);
     } else if (mouseX > rightEdgeThreshold) {
       const distance = mouseX - rightEdgeThreshold;
-      speed = Math.min(30, 5 + Math.floor(distance / 10)); // Increased max speed and sensitivity
+      speed = Math.min(40, 10 + Math.floor(distance / 5)); // Significantly increased max speed and sensitivity
       startAutoScroll('right', speed);
     } else {
       stopAutoScroll();
