@@ -5,7 +5,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
   // Refs for the timer and scroll speed
   const autoScrollTimerRef = useRef<number | null>(null);
   const isScrollingRef = useRef(false);
-  const scrollSpeedRef = useRef(25); // Significantly increased base scroll speed
+  const scrollSpeedRef = useRef(15); // Base scroll speed
 
   // Clean up any timers when component unmounts
   useEffect(() => {
@@ -35,8 +35,8 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
     }
   }, [scrollContainerRef]);
 
-  // Auto-scroll when dragging near edges with much more aggressive scrolling
-  const startAutoScroll = useCallback((direction: 'left' | 'right', speed = 25) => {
+  // Auto-scroll when dragging near edges
+  const startAutoScroll = useCallback((direction: 'left' | 'right', speed = 15) => {
     console.log(`Starting auto-scroll: ${direction} with speed ${speed}`);
     
     // Always clear existing timer first
@@ -45,11 +45,11 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
       autoScrollTimerRef.current = null;
     }
     
-    // Set the scroll speed - significantly increased for more responsiveness
+    // Set the scroll speed
     scrollSpeedRef.current = speed;
     isScrollingRef.current = true;
     
-    // Start the auto-scroll with higher frequency and speed
+    // Start the auto-scroll with higher frequency for smoother scrolling
     autoScrollTimerRef.current = window.setInterval(() => {
       if (scrollContainerRef.current) {
         if (direction === 'left') {
@@ -58,7 +58,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
           scrollContainerRef.current.scrollLeft += scrollSpeedRef.current;
         }
       }
-    }, 2); // Much higher frequency for smoother scrolling
+    }, 16); // ~60fps for smoother scrolling
   }, [scrollContainerRef]);
 
   const stopAutoScroll = useCallback(() => {
@@ -70,7 +70,7 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
     isScrollingRef.current = false;
   }, []);
 
-  // Mouse position monitoring for auto-scroll with much wider detection area
+  // Mouse position monitoring for auto-scroll
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     if (!scrollContainerRef.current) return;
     
@@ -78,20 +78,20 @@ export function useScrollHandling(scrollContainerRef: React.RefObject<HTMLDivEle
     const containerRect = container.getBoundingClientRect();
     const mouseX = e.clientX;
     
-    // Much wider edge detection area for more responsive scrolling - 250px from edge
-    const leftEdgeThreshold = containerRect.left + 250; 
-    const rightEdgeThreshold = containerRect.right - 250;
+    // Edge detection area - 150px from edge
+    const leftEdgeThreshold = containerRect.left + 150; 
+    const rightEdgeThreshold = containerRect.right - 150;
     
     // Calculate how close to the edge (for variable speed)
-    let speed = 25; // Significantly increased base speed
+    let speed = 15; // Base speed
     
     if (mouseX < leftEdgeThreshold) {
       const distance = leftEdgeThreshold - mouseX;
-      speed = Math.min(60, 25 + Math.floor(distance / 3)); // Extremely increased max speed and sensitivity
+      speed = Math.min(40, 15 + Math.floor(distance / 5)); // Increase speed based on proximity to edge
       startAutoScroll('left', speed);
     } else if (mouseX > rightEdgeThreshold) {
       const distance = mouseX - rightEdgeThreshold;
-      speed = Math.min(60, 25 + Math.floor(distance / 3)); // Extremely increased max speed and sensitivity
+      speed = Math.min(40, 15 + Math.floor(distance / 5)); // Increase speed based on proximity to edge
       startAutoScroll('right', speed);
     } else {
       stopAutoScroll();
