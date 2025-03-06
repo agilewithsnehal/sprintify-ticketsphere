@@ -24,9 +24,8 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       // Show immediate feedback to the user
       toast.info(`Moving ticket from ${sourceColumn.replace(/-/g, ' ')} to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Call the parent's onTicketMove with the updateParent parameter
-      // Always pass the updateParent parameter explicitly (default to true if not provided)
-      onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent !== false);
+      // Always set updateParent to true to ensure parent tickets follow their children
+      onTicketMove(ticketId, sourceColumn, destinationColumn, true);
     } catch (error) {
       console.error('Error in handleTicketMove:', error);
       toast.error('Failed to move ticket');

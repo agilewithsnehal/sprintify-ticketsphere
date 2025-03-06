@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -83,28 +82,24 @@ export const useTicketOperations = (refetch: () => void) => {
             }
           }
           
-          // Only update parent if its status is different from the destination
-          if (parentTicket.status !== destinationColumn) {
-            // Update parent ticket status to match the child's new status
-            console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
-            
-            const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-              status: destinationColumn
+          // The critical fix: Always update parent status to match the child's status
+          // Only skip if moving to "done" and not all children are done (handled above)
+          console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
+          
+          const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
+            status: destinationColumn
+          });
+          
+          if (updatedParent) {
+            console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
+            toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`, {
+              id: 'parent-update-success'
             });
-            
-            if (updatedParent) {
-              console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
-              toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`, {
-                id: 'parent-update-success'
-              });
-            } else {
-              console.error('Failed to update parent ticket status');
-              toast.error('Failed to update parent ticket', {
-                id: 'parent-update-error'
-              });
-            }
           } else {
-            console.log(`Parent ticket already in ${destinationColumn} status, no update needed`);
+            console.error('Failed to update parent ticket status');
+            toast.error('Failed to update parent ticket', {
+              id: 'parent-update-error'
+            });
           }
         } catch (parentError) {
           console.error('Error handling parent ticket update:', parentError);

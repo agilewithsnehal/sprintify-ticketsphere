@@ -171,19 +171,15 @@ export function useDragAndDrop(
                 }
               }
               
-              // Only update if the parent status is different from destination
-              if (parentTicket.status !== destination.droppableId) {
-                const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-                  status: destination.droppableId as Status
-                });
-                
-                if (updatedParent) {
-                  toast.success(`Parent ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
-                } else {
-                  toast.error("Failed to update parent ticket");
-                }
+              // For all other statuses, always update the parent
+              const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
+                status: destination.droppableId as Status
+              });
+              
+              if (updatedParent) {
+                toast.success(`Parent ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
               } else {
-                console.log(`Parent already in ${destination.droppableId} status, no update needed`);
+                toast.error("Failed to update parent ticket");
               }
             }
           }

@@ -117,8 +117,8 @@ export function useKanbanBoard(
       console.log(`Ticket ${ticketId} successfully moved to ${destinationColumn} in database`);
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Check if this ticket has a parent and update it if needed
-      if (ticket.parentId && updateParent) {
+      // Check if this ticket has a parent and update it if needed - force this to always happen
+      if (ticket.parentId) {
         const parentTicket = await supabaseService.ticket.getTicketById(ticket.parentId);
         
         if (parentTicket) {
@@ -133,29 +133,27 @@ export function useKanbanBoard(
             }
           }
           
-          // Only update parent if its status differs from destination
-          if (parentTicket.status !== destinationColumn) {
-            const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-              status: destinationColumn
-            });
-            
-            if (updatedParent) {
-              console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
-              toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`);
-            } else {
-              console.error('Failed to update parent ticket status');
-              toast.error('Failed to update parent ticket');
-            }
+          // Always update the parent ticket status to match the child's new status
+          console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
+          
+          const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
+            status: destinationColumn
+          });
+          
+          if (updatedParent) {
+            console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
+            toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`);
           } else {
-            console.log(`Parent already in ${destinationColumn} status, no update needed`);
+            console.error('Failed to update parent ticket status');
+            toast.error('Failed to update parent ticket');
           }
         }
       }
       
-      // Call the parent callback if provided, making sure to pass the updateParent parameter
+      // Call the parent callback if provided, forcing updateParent to be true
       if (onTicketMove) {
-        console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
-        onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
+        console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: true`);
+        onTicketMove(ticketId, sourceColumn, destinationColumn, true);
       }
     } catch (error) {
       console.error('Error persisting ticket move:', error);
