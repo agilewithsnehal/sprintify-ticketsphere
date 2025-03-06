@@ -138,6 +138,18 @@ export function useDragAndDrop(
             const parentTicket = await supabaseService.ticket.getTicketById(ticket.parentId);
             
             if (parentTicket) {
+              // Special case for "done" status - need to check all children
+              if (destination.droppableId === 'done') {
+                const allChildTickets = await supabaseService.ticket.getChildTickets(parentTicket.id);
+                const nonDoneChildren = allChildTickets.filter(child => child.status !== 'done');
+                
+                if (nonDoneChildren.length > 0) {
+                  console.log('Not updating parent to done yet as some children are still not done');
+                  toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+                  return;
+                }
+              }
+              
               const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
                 status: destination.droppableId as Status
               });

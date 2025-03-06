@@ -52,7 +52,6 @@ export const useTicketOperations = (refetch: () => void) => {
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
       // If this ticket has a parent ID, always update the parent ticket
-      // regardless of the updateParent parameter
       if (ticketToMove.parentId) {
         console.log(`Ticket has parent ID: ${ticketToMove.parentId}, updating parent`);
         
@@ -68,6 +67,20 @@ export const useTicketOperations = (refetch: () => void) => {
           }
           
           console.log(`Parent ticket found: ${parentTicket.id}, current status: ${parentTicket.status}`);
+          
+          // For parent tickets, we have a special rule: they can only move to "done" when all children are done
+          // But for all other statuses, they should follow their children
+          if (destinationColumn === 'done') {
+            // If moving to "done", we need to verify all children are also done
+            const allChildTickets = await supabaseService.ticket.getChildTickets(parentTicket.id);
+            const nonDoneChildren = allChildTickets.filter(child => child.status !== 'done');
+            
+            if (nonDoneChildren.length > 0) {
+              console.log('Not updating parent to done yet as some children are still not done');
+              refetch();
+              return;
+            }
+          }
           
           // Update parent ticket status to match the child's new status
           console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
