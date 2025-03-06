@@ -51,8 +51,8 @@ export const useTicketOperations = (refetch: () => void) => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // If this ticket has a parent ID, always update the parent ticket
-      if (ticketToMove.parentId) {
+      // If this ticket has a parent ID and updateParent is true, update the parent ticket
+      if (ticketToMove.parentId && updateParent) {
         console.log(`Ticket has parent ID: ${ticketToMove.parentId}, updating parent`);
         
         try {
@@ -82,28 +82,35 @@ export const useTicketOperations = (refetch: () => void) => {
             }
           }
           
-          // Update parent ticket status to match the child's new status
-          console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
-          
-          const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-            status: destinationColumn
-          });
-          
-          if (updatedParent) {
-            console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
-            toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`, {
-              id: 'parent-update-success'
+          // Only update parent if its status is different from the destination
+          if (parentTicket.status !== destinationColumn) {
+            // Update parent ticket status to match the child's new status
+            console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
+            
+            const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
+              status: destinationColumn
             });
+            
+            if (updatedParent) {
+              console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
+              toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`, {
+                id: 'parent-update-success'
+              });
+            } else {
+              console.error('Failed to update parent ticket status');
+              toast.error('Failed to update parent ticket', {
+                id: 'parent-update-error'
+              });
+            }
           } else {
-            console.error('Failed to update parent ticket status');
-            toast.error('Failed to update parent ticket', {
-              id: 'parent-update-error'
-            });
+            console.log(`Parent ticket already in ${destinationColumn} status, no update needed`);
           }
         } catch (parentError) {
           console.error('Error handling parent ticket update:', parentError);
           toast.error('Error updating parent ticket');
         }
+      } else if (ticketToMove.parentId) {
+        console.log(`Ticket has parent but updateParent is false, skipping parent update`);
       }
     } catch (error) {
       console.error('Error moving ticket:', error);

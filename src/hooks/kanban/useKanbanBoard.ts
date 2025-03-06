@@ -86,6 +86,23 @@ export function useKanbanBoard(
     }
     
     try {
+      // Check if this is a parent ticket being moved to "done"
+      if (destinationColumn === 'done' && !ticket.parentId) {
+        // Get child tickets for this parent
+        const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
+        
+        if (childTickets && childTickets.length > 0) {
+          // Check if all children are in "done" status
+          const pendingChildren = childTickets.filter(child => child.status !== 'done');
+          
+          if (pendingChildren.length > 0) {
+            console.error('Cannot move parent to done: Some children are not done');
+            toast.error('All child tickets must be done before moving parent to done');
+            return;
+          }
+        }
+      }
+      
       // Update the ticket in the database
       const result = await supabaseService.updateTicket(ticketId, {
         ...ticket,
