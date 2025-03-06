@@ -103,8 +103,7 @@ export function useKanbanBoard(
       // Call the parent callback if provided, making sure to pass the updateParent parameter
       if (onTicketMove) {
         console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
-        // Always force updateParent to true to ensure parent tickets get updated
-        onTicketMove(ticketId, sourceColumn, destinationColumn, true);
+        onTicketMove(ticketId, sourceColumn, destinationColumn, updateParent);
       }
     } catch (error) {
       console.error('Error persisting ticket move:', error);
@@ -114,7 +113,7 @@ export function useKanbanBoard(
 
   const { onDragEnd } = useDragAndDrop(columns, setColumns, handleTicketMoveWithPersistence);
   
-  const { scrollLeft, scrollRight, handleDragOver } = useScrollHandling(scrollContainerRef);
+  const { scrollLeft, scrollRight } = useScrollHandling(scrollContainerRef);
 
   return {
     columns,
@@ -133,7 +132,6 @@ export function useKanbanBoard(
     handleTicketDelete,
     onDragEnd,
     scrollLeft,
-    scrollRight,
-    handleDragOver
+    scrollRight
   };
 }
