@@ -81,6 +81,7 @@ export function useKanbanBoard(
     const ticket = findTicketInColumns(ticketId);
     if (!ticket) {
       console.error('Cannot move ticket: Ticket not found in columns');
+      toast.error('Cannot move ticket: Ticket not found');
       return;
     }
     
@@ -97,6 +98,7 @@ export function useKanbanBoard(
       }
       
       console.log(`Ticket ${ticketId} successfully moved to ${destinationColumn} in database`);
+      toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
       // Call the parent callback if provided, making sure to pass the updateParent parameter
       if (onTicketMove) {
@@ -111,7 +113,7 @@ export function useKanbanBoard(
 
   const { onDragEnd } = useDragAndDrop(columns, setColumns, handleTicketMoveWithPersistence);
   
-  const { scrollLeft, scrollRight } = useScrollHandling(scrollContainerRef);
+  const { scrollLeft, scrollRight, handleDragOver } = useScrollHandling(scrollContainerRef);
 
   return {
     columns,
@@ -130,6 +132,7 @@ export function useKanbanBoard(
     handleTicketDelete,
     onDragEnd,
     scrollLeft,
-    scrollRight
+    scrollRight,
+    handleDragOver
   };
 }

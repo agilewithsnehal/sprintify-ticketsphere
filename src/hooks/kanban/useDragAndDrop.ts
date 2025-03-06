@@ -31,6 +31,7 @@ export function useDragAndDrop(
 
     if (!sourceColumn || !destColumn) {
       console.error('Source or destination column not found');
+      toast.error('Error: Column not found');
       return;
     }
 
@@ -70,6 +71,7 @@ export function useDragAndDrop(
       return col;
     }));
 
+    // Only update the database if the column changed
     if (source.droppableId !== destination.droppableId) {
       try {
         console.log(`Drag ended: Moving ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);

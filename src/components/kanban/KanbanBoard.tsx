@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useKanbanBoard } from '@/hooks/kanban/useKanbanBoard';
@@ -32,18 +32,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     handleTicketDelete,
     onDragEnd,
     scrollLeft,
-    scrollRight
+    scrollRight,
+    handleDragOver
   } = useKanbanBoard(board, onTicketMove);
 
   // For auto-scrolling during drag
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const edgeScrollThreshold = 150; // Increased from 100px for more responsive scrolling
+  const autoScrollIntervalRef = useRef<number | null>(null);
   
   // Handle drag start
   const handleDragStart = useCallback((initial: DragStart) => {
     console.log('Drag started');
     setIsDragging(true);
+    toast.info('Dragging started', { id: 'drag-start', duration: 1000 });
   }, []);
   
   // Handle drag update to get current position
@@ -60,6 +62,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
   useEffect(() => {
     if (!isDragging || !scrollContainerRef.current) return;
     
+    // Clean up any existing interval
+    if (autoScrollIntervalRef.current) {
+      window.clearInterval(autoScrollIntervalRef.current);
+    }
+    
     const checkForScroll = () => {
       const container = scrollContainerRef.current;
       if (!container) return;
@@ -68,39 +75,41 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
       const { x } = dragPosition;
       
       // Check if we're near the left or right edge
-      const leftEdge = rect.left + edgeScrollThreshold;
-      const rightEdge = rect.right - edgeScrollThreshold;
+      const edgeThreshold = 180; // Wider threshold for better sensitivity
+      const leftEdge = rect.left + edgeThreshold;
+      const rightEdge = rect.right - edgeThreshold;
       
       if (x < leftEdge) {
         // Near left edge, scroll left
-        const scrollAmount = Math.max(10, Math.ceil((leftEdge - x) / 8)); // Faster scrolling
+        const distance = leftEdge - x;
+        const scrollAmount = Math.max(8, Math.ceil(distance / 10)); // Faster scrolling
         container.scrollLeft -= scrollAmount;
       } else if (x > rightEdge) {
         // Near right edge, scroll right
-        const scrollAmount = Math.max(10, Math.ceil((x - rightEdge) / 8)); // Faster scrolling
+        const distance = x - rightEdge;
+        const scrollAmount = Math.max(8, Math.ceil(distance / 10)); // Faster scrolling
         container.scrollLeft += scrollAmount;
       }
     };
     
-    // Set up animation frame for smooth scrolling
-    let animationFrameId: number;
-    const scrollIfNeeded = () => {
-      checkForScroll();
-      animationFrameId = requestAnimationFrame(scrollIfNeeded);
-    };
-    
-    // Start the animation
-    animationFrameId = requestAnimationFrame(scrollIfNeeded);
+    // Set up interval for smooth scrolling (higher frequency)
+    autoScrollIntervalRef.current = window.setInterval(checkForScroll, 8);
     
     // Clean up
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (autoScrollIntervalRef.current) {
+        window.clearInterval(autoScrollIntervalRef.current);
+      }
     };
-  }, [isDragging, dragPosition, scrollContainerRef, edgeScrollThreshold]);
+  }, [isDragging, dragPosition, scrollContainerRef]);
   
   // Reset drag state when drag ends
   const handleDragEndWithReset = useCallback((result: DropResult) => {
     setIsDragging(false);
+    if (autoScrollIntervalRef.current) {
+      window.clearInterval(autoScrollIntervalRef.current);
+      autoScrollIntervalRef.current = null;
+    }
     onDragEnd(result);
   }, [onDragEnd]);
 
@@ -163,6 +172,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
             ref={scrollContainerRef}
             className="flex space-x-4 overflow-x-auto pb-4 pt-2 px-10 scrollbar-hide" 
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onDragOver={handleDragOver}
           >
             {columns.map((column) => (
               <KanbanColumn
