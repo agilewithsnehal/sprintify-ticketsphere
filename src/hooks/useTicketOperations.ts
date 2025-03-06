@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -30,8 +31,8 @@ export const useTicketOperations = (refetch: () => void) => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Always update parent regardless of updateParent parameter
-      // This ensures parent tickets always move with their children
+      // If this ticket has a parent ID, always update the parent ticket
+      // regardless of the updateParent parameter
       if (ticketToMove.parentId) {
         console.log(`Ticket has parent ID: ${ticketToMove.parentId}, updating parent`);
         

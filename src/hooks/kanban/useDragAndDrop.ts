@@ -83,12 +83,20 @@ export function useDragAndDrop(
             draggableId,
             source.droppableId as Status,
             destination.droppableId as Status,
-            true
+            true // Always force parent update to true
           );
         } else {
           console.warn('onTicketMove callback is not provided');
           
           // Fallback to direct database update if no callback is provided
+          const ticket = await supabaseService.ticket.getTicketById(draggableId);
+          
+          if (!ticket) {
+            toast.error("Could not find ticket details");
+            return;
+          }
+          
+          // First update the moved ticket
           const updatedInDb = await supabaseService.updateTicket(draggableId, {
             status: destination.droppableId as Status
           });
@@ -98,6 +106,24 @@ export function useDragAndDrop(
             // Revert the UI if the database update failed
             setColumns(prevColumns => [...prevColumns]);
             return;
+          }
+          
+          // Check if this ticket has a parent and update the parent if it does
+          if (ticket.parentId) {
+            console.log(`Ticket has parent ID: ${ticket.parentId}, updating parent status`);
+            const parentTicket = await supabaseService.ticket.getTicketById(ticket.parentId);
+            
+            if (parentTicket) {
+              const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
+                status: destination.droppableId as Status
+              });
+              
+              if (updatedParent) {
+                toast.success(`Parent ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
+              } else {
+                toast.error("Failed to update parent ticket");
+              }
+            }
           }
           
           toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
