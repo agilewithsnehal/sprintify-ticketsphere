@@ -17,7 +17,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
     }
   }, [board]);
 
-  // Make sure to pass the onTicketMove prop with all required parameters, ensuring updateParent is true by default
+  // Always force updateParent to true by default
   const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent = true) => {
     console.log(`KanbanBoardWrapper: Handling ticket move ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
     
@@ -25,8 +25,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       // Show immediate feedback to the user
       toast.info(`Moving ticket from ${sourceColumn.replace(/-/g, ' ')} to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Explicitly pass the updateParent parameter to ensure it's not lost in the component chain
-      // Always force updateParent to true to make sure parent updates are processed
+      // Always force updateParent to true to ensure parent updates properly
       onTicketMove(ticketId, sourceColumn, destinationColumn, true);
     } catch (error) {
       console.error('Error in handleTicketMove:', error);

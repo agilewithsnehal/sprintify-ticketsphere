@@ -8,6 +8,7 @@ import KanbanScrollButtons from './KanbanScrollButtons';
 import TicketModal from '../ticket-modal';
 import CreateTicketModal from '../CreateTicketModal';
 import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface KanbanBoardProps {
   board: BoardType;
@@ -36,7 +37,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     handleDragOver
   } = useKanbanBoard(board, onTicketMove);
 
-  // For auto-scrolling during drag
+  // For auto-scrolling during drag with increased sensitivity
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const autoScrollIntervalRef = useRef<number | null>(null);
@@ -58,7 +59,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     }
   }, []);
   
-  // Handle auto-scrolling during drag with improved performance
+  // Handle auto-scrolling during drag with dramatically improved performance
   useEffect(() => {
     if (!isDragging || !scrollContainerRef.current) return;
     
@@ -74,26 +75,26 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
       const rect = container.getBoundingClientRect();
       const { x } = dragPosition;
       
-      // Check if we're near the left or right edge
-      const edgeThreshold = 200; // Wider threshold for better sensitivity
+      // Check if we're near the left or right edge with much wider threshold
+      const edgeThreshold = 250; // Much wider threshold for better sensitivity
       const leftEdge = rect.left + edgeThreshold;
       const rightEdge = rect.right - edgeThreshold;
       
       if (x < leftEdge) {
-        // Near left edge, scroll left
+        // Near left edge, scroll left with much faster speed
         const distance = leftEdge - x;
-        const scrollAmount = Math.max(15, Math.ceil(distance / 5)); // Much faster scrolling
+        const scrollAmount = Math.max(25, Math.ceil(distance / 3)); // Dramatically faster scrolling
         container.scrollLeft -= scrollAmount;
       } else if (x > rightEdge) {
-        // Near right edge, scroll right
+        // Near right edge, scroll right with much faster speed
         const distance = x - rightEdge;
-        const scrollAmount = Math.max(15, Math.ceil(distance / 5)); // Much faster scrolling
+        const scrollAmount = Math.max(25, Math.ceil(distance / 3)); // Dramatically faster scrolling
         container.scrollLeft += scrollAmount;
       }
     };
     
-    // Set up interval for smooth scrolling with higher frequency
-    autoScrollIntervalRef.current = window.setInterval(checkForScroll, 5);
+    // Set up interval for smooth scrolling with much higher frequency
+    autoScrollIntervalRef.current = window.setInterval(checkForScroll, 1);
     
     // Clean up
     return () => {

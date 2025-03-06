@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -31,9 +30,10 @@ export const useTicketOperations = (refetch: () => void) => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Handle parent-child relationships if updateParent flag is true and ticket has a parent
-      if (updateParent && ticketToMove.parentId) {
-        console.log(`Ticket has parent ID: ${ticketToMove.parentId}, attempting to update parent`);
+      // Always update parent regardless of updateParent parameter
+      // This ensures parent tickets always move with their children
+      if (ticketToMove.parentId) {
+        console.log(`Ticket has parent ID: ${ticketToMove.parentId}, updating parent`);
         
         try {
           // Fetch the parent ticket details
@@ -48,11 +48,7 @@ export const useTicketOperations = (refetch: () => void) => {
           
           console.log(`Parent ticket found: ${parentTicket.id}, current status: ${parentTicket.status}`);
           
-          // Fetch all child tickets to make decisions
-          const childTickets = await supabaseService.getChildTickets(parentTicket.id);
-          console.log(`Found ${childTickets.length} child tickets for parent ${parentTicket.id}`);
-          
-          // Always update parent when child changes status (simplified approach)
+          // Update parent ticket status to match the child's new status
           console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
           
           const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
