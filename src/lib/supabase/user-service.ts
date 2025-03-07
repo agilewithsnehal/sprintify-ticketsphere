@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/lib/types";
+import { v4 as uuidv4 } from 'uuid';
 
 export const supabaseService = {
   async getCurrentUser(): Promise<User> {
@@ -30,7 +31,8 @@ export const supabaseService = {
         .update({
           name: updates.name,
           email: updates.email,
-          avatar_color: updates.avatarColor
+          avatar_color: updates.avatarColor,
+          avatar: updates.avatar
         })
         .eq('id', userId)
         .select()
@@ -57,7 +59,39 @@ export const supabaseService = {
   },
   
   async uploadProfileImage(file: File, userId: string): Promise<string | null> {
-    console.warn('uploadProfileImage is deprecated - using initials with colors instead');
-    return null;
+    try {
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}-${uuidv4()}.${fileExt}`;
+      const filePath = `profile-images/${fileName}`;
+
+      // Upload the file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        return null;
+      }
+
+      // Get the public URL for the uploaded file
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const publicUrl = data.publicUrl;
+
+      // Update user profile with the new avatar URL
+      await supabase
+        .from('users')
+        .update({ avatar: publicUrl })
+        .eq('id', userId);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error in uploadProfileImage:', error);
+      return null;
+    }
   }
 };

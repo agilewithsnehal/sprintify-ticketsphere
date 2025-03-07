@@ -36,8 +36,34 @@ const Profile = () => {
     }
   });
 
+  const uploadProfileImage = useMutation({
+    mutationFn: async (file: File) => {
+      if (!user) return null;
+      const avatarUrl = await supabaseService.uploadProfileImage(file, user.id);
+      
+      if (avatarUrl) {
+        // Update user object with new avatar URL
+        return await supabaseService.updateUserProfile(user.id, { avatar: avatarUrl });
+      }
+      return null;
+    },
+    onSuccess: (data) => {
+      if (data) {
+        queryClient.setQueryData(['currentUser'], data);
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to upload profile image');
+      console.error('Error uploading profile image:', error);
+    }
+  });
+
   const handleUpdateProfile = (formData: Partial<User>) => {
     updateProfile.mutate(formData);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    await uploadProfileImage.mutateAsync(file);
   };
 
   if (isLoading) {
@@ -66,7 +92,14 @@ const Profile = () => {
               <CardDescription>Update your profile information</CardDescription>
             </CardHeader>
             <CardContent>
-              {user && <ProfileForm user={user} onSubmit={handleUpdateProfile} isLoading={updateProfile.isPending} />}
+              {user && (
+                <ProfileForm 
+                  user={user} 
+                  onSubmit={handleUpdateProfile} 
+                  onImageUpload={handleImageUpload}
+                  isLoading={updateProfile.isPending} 
+                />
+              )}
             </CardContent>
           </Card>
         </div>

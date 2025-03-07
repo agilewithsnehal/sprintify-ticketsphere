@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { User } from '@/lib/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { UploadCloud } from 'lucide-react';
+import { toast } from 'sonner';
 
 const avatarColors = [
   'red', 'orange', 'amber', 'yellow', 'lime', 'green', 
@@ -31,10 +33,12 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 interface ProfileFormProps {
   user: User;
   onSubmit: (values: Partial<User>) => void;
+  onImageUpload: (file: File) => Promise<void>;
   isLoading: boolean;
 }
 
-const ProfileForm = ({ user, onSubmit, isLoading }: ProfileFormProps) => {
+const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormProps) => {
+  const [uploadLoading, setUploadLoading] = useState(false);
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -52,6 +56,27 @@ const ProfileForm = ({ user, onSubmit, isLoading }: ProfileFormProps) => {
     });
   };
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      await onImageUpload(file);
+      toast.success('Profile picture uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   const selectedColor = form.watch('avatarColor');
 
   return (
@@ -64,6 +89,23 @@ const ProfileForm = ({ user, onSubmit, isLoading }: ProfileFormProps) => {
               {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
             </AvatarFallback>
           </Avatar>
+          
+          <div className="mt-2">
+            <label htmlFor="profile-image" className="cursor-pointer">
+              <div className="flex items-center gap-2 text-sm text-primary p-2 border border-dashed border-gray-300 rounded-md hover:bg-accent">
+                <UploadCloud size={16} />
+                <span>{uploadLoading ? 'Uploading...' : 'Upload new picture'}</span>
+              </div>
+              <input 
+                id="profile-image" 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleImageChange}
+                disabled={uploadLoading}
+              />
+            </label>
+          </div>
         </div>
 
         <FormField
@@ -126,7 +168,7 @@ const ProfileForm = ({ user, onSubmit, isLoading }: ProfileFormProps) => {
           )}
         />
 
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading || uploadLoading}>
           {isLoading ? 'Updating...' : 'Update Profile'}
         </Button>
       </form>
