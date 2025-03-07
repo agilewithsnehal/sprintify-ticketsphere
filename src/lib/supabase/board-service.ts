@@ -57,9 +57,9 @@ export const supabaseService = {
       const validTickets = tickets.filter(Boolean) as any[];
       
       console.log(`Fetched ${validTickets.length} tickets for project ${projectId}`);
-      validTickets.forEach(ticket => {
-        console.log(`Ticket: ${ticket.key}, Status: ${ticket.status}, ID: ${ticket.id}`);
-      });
+      
+      // Use a Set to track processed ticket IDs and prevent duplicates
+      const processedTicketIds = new Set<string>();
       
       // Check if we have stored column configuration
       let storedColumns = getStoredColumns(projectId);
@@ -84,12 +84,9 @@ export const supabaseService = {
         };
       });
       
-      // Track processed ticket IDs to prevent duplicates
-      const processedTicketIds = new Set<string>();
-      
-      // Map tickets to their respective columns
+      // Map tickets to their respective columns, ensuring no duplicates
       const columns = validColumns.map(column => {
-        // Only include tickets that haven't been processed yet
+        // Only include tickets that haven't been processed yet and match this column's status
         const columnTickets = validTickets.filter(ticket => {
           if (ticket.status === column.id && !processedTicketIds.has(ticket.id)) {
             processedTicketIds.add(ticket.id);
@@ -99,6 +96,12 @@ export const supabaseService = {
         });
         
         console.log(`Column ${column.title} has ${columnTickets.length} tickets`);
+        
+        // Log each ticket for debugging
+        columnTickets.forEach(ticket => {
+          console.log(`- Ticket: ${ticket.key}, Status: ${ticket.status}, ID: ${ticket.id}`);
+        });
+        
         return {
           ...column,
           tickets: columnTickets

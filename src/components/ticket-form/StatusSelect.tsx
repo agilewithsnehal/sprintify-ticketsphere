@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Status } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,12 +43,41 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
     return false;
   };
 
+  const handleStatusChange = (newStatus: Status) => {
+    // If there's a child status and we're trying to move past it, show an error
+    if (childStatus) {
+      const childIndex = statusOrder.indexOf(childStatus);
+      const newStatusIndex = statusOrder.indexOf(newStatus);
+      
+      if (newStatusIndex > childIndex) {
+        console.log(`Cannot move parent past child status: ${childStatus}`);
+        onStatusChange(status); // Keep the current status
+        return;
+      }
+    }
+    
+    // If there's a parent status and we're trying to move before it, show an error
+    if (parentStatus) {
+      const parentIndex = statusOrder.indexOf(parentStatus);
+      const newStatusIndex = statusOrder.indexOf(newStatus);
+      
+      if (newStatusIndex < parentIndex) {
+        console.log(`Cannot move child before parent status: ${parentStatus}`);
+        onStatusChange(status); // Keep the current status
+        return;
+      }
+    }
+    
+    // Otherwise, proceed with the status change
+    onStatusChange(newStatus);
+  };
+
   return (
     <div className="space-y-2">
       <label htmlFor="status" className="text-sm font-medium">Status</label>
       <Select 
         value={status} 
-        onValueChange={(value: Status) => onStatusChange(value)}
+        onValueChange={(value: Status) => handleStatusChange(value)}
         disabled={disabled}
       >
         <SelectTrigger>

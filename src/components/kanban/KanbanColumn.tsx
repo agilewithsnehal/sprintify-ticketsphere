@@ -61,6 +61,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
     const ticketMap = new Map<string, TicketType>();
     
     tickets.forEach(ticket => {
+      if (!ticket.id) {
+        console.error('Ticket missing ID:', ticket);
+        return; // Skip tickets without IDs
+      }
+      
       if (!ticketMap.has(ticket.id)) {
         ticketMap.set(ticket.id, ticket);
       } else {
@@ -121,6 +126,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       ...provided.draggableProps.style,
                       opacity: snapshot.isDragging ? 0.8 : 1,
                     }}
+                    data-ticket-id={ticket.id}
+                    data-ticket-key={ticket.key}
                   >
                     <Ticket 
                       ticket={ticket} 

@@ -21,14 +21,7 @@ export function useDragAndDrop(
       return;
     }
 
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      console.log('Dropped in same position, no action needed');
-      return;
-    }
-
+    // Find the source and destination columns
     const sourceColumn = columns.find(col => col.id === source.droppableId);
     const destColumn = columns.find(col => col.id === destination.droppableId);
 
@@ -38,6 +31,7 @@ export function useDragAndDrop(
       return;
     }
 
+    // Create working copies of the ticket arrays to avoid direct state mutation
     const sourceTickets = [...sourceColumn.tickets];
     const destTickets = source.droppableId === destination.droppableId 
       ? sourceTickets 
@@ -50,6 +44,37 @@ export function useDragAndDrop(
       return;
     }
 
+    // Early return if nothing changed (dropped in exact same position)
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      console.log('Dropped in same position, no action needed');
+      return;
+    }
+
+    // Handle same column reordering
+    if (source.droppableId === destination.droppableId) {
+      // Remove from original position
+      const [removed] = sourceTickets.splice(source.index, 1);
+      
+      // Insert at new position
+      sourceTickets.splice(destination.index, 0, removed);
+      
+      // Update the columns with the reordered tickets
+      setColumns(prevColumns => prevColumns.map(col => {
+        if (col.id === source.droppableId) {
+          return { ...col, tickets: sourceTickets };
+        }
+        return col;
+      }));
+      
+      console.log(`Reordered ticket ${movedTicket.key} within ${source.droppableId}`);
+      return;
+    }
+
+    // If we're moving between columns, proceed with validation
+    
     // Get the index of the source and destination status in our ordered array
     const sourceStatusIndex = statusOrder.indexOf(source.droppableId as Status);
     const destStatusIndex = statusOrder.indexOf(destination.droppableId as Status);
@@ -81,7 +106,7 @@ export function useDragAndDrop(
           }
         }
         
-        // No validation for child tickets - they are allowed to move ahead of parents
+        // No validation needed for moving backward or for child tickets
       } catch (error) {
         console.error('Error validating ticket hierarchy:', error);
         toast.error('Failed to validate ticket hierarchy');
@@ -112,29 +137,27 @@ export function useDragAndDrop(
       return col;
     }));
 
-    // Only update the database if the column changed
-    if (source.droppableId !== destination.droppableId) {
-      try {
-        console.log(`Drag ended: Moving ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
-        
-        // Call the callback to update the database
-        if (onTicketMove) {
-          // Call onTicketMove with just the three needed parameters
-          onTicketMove(
-            draggableId,
-            source.droppableId as Status,
-            destination.droppableId as Status
-          );
-        } else {
-          console.warn('onTicketMove callback is not provided');
-        }
-      } catch (error) {
-        console.error('Error updating ticket status:', error);
-        toast.error("Failed to save ticket status change");
-        
-        // Revert the UI if there was an error
-        setColumns(prevColumns => [...prevColumns]);
+    // Only update the database if the column changed (already checked above)
+    try {
+      console.log(`Drag ended: Moving ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
+      
+      // Call the callback to update the database
+      if (onTicketMove) {
+        // Call onTicketMove with just the three needed parameters
+        onTicketMove(
+          draggableId,
+          source.droppableId as Status,
+          destination.droppableId as Status
+        );
+      } else {
+        console.warn('onTicketMove callback is not provided');
       }
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+      toast.error("Failed to save ticket status change");
+      
+      // Revert the UI if there was an error
+      setColumns(prevColumns => [...prevColumns]);
     }
   }, [columns, onTicketMove, setColumns]);
 
