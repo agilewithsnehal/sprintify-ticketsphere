@@ -43,6 +43,21 @@ const Navbar = () => {
     return colorMap[bgColor] || 'text-white';
   };
 
+  // Get user initials based on their name
+  const getUserInitials = (name: string | undefined) => {
+    if (!name) return 'U';
+    
+    // Split the name and take the first letter of each part
+    const nameParts = name.split(' ');
+    if (nameParts.length === 1) {
+      // If only one name part, take the first two letters or just the first letter
+      return name.substring(0, Math.min(2, name.length)).toUpperCase();
+    } else {
+      // If multiple name parts, take first letter of first and last parts
+      return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    }
+  };
+
   return (
     <nav className="border-b">
       <div className="h-16 flex items-center px-4 md:px-6 justify-between">
@@ -64,7 +79,7 @@ const Navbar = () => {
                   <AvatarFallback 
                     className={`bg-${currentUser?.avatarColor || 'purple'}-100 ${getTextColorClass(currentUser?.avatarColor)}`}
                   >
-                    {currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
+                    {getUserInitials(currentUser?.name)}
                   </AvatarFallback>
                 </Avatar>
               </button>
