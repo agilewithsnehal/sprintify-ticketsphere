@@ -29,30 +29,31 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
     // Clear the set when board changes to avoid stale data
     processedTicketIds.clear();
     
-    const deduplicatedColumns = board.columns.map(column => {
-      // Filter out duplicates for each column
-      const uniqueTickets = column.tickets.filter(ticket => {
-        // If we've seen this ID before, skip it
+    // Create a deep copy of the board to avoid modifying the original
+    const boardCopy = {
+      ...board,
+      columns: board.columns.map(column => ({
+        ...column,
+        tickets: [] // Will be filled with unique tickets below
+      }))
+    };
+    
+    // Process each column and add unique tickets
+    board.columns.forEach((column, colIndex) => {
+      column.tickets.forEach(ticket => {
+        // Skip if we've already seen this ticket
         if (processedTicketIds.has(ticket.id)) {
-          console.log(`Filtering out duplicate ticket: ${ticket.key} (${ticket.id})`);
-          return false;
+          console.log(`Deduplicating: Skipping duplicate ticket ${ticket.key} (${ticket.id}) in ${column.title}`);
+          return;
         }
         
-        // Mark this ID as seen
+        // Add ticket to the deduplicated board
         processedTicketIds.add(ticket.id);
-        return true;
+        boardCopy.columns[colIndex].tickets.push({...ticket});
       });
-      
-      return {
-        ...column,
-        tickets: uniqueTickets
-      };
     });
     
-    return {
-      ...board,
-      columns: deduplicatedColumns
-    };
+    return boardCopy;
   }, [board, processedTicketIds]);
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
@@ -37,30 +38,33 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     // Clear the set when board changes
     processedTicketIds.current.clear();
     
-    const processedColumns = board.columns.map(column => {
-      // Filter out duplicates from each column
-      const uniqueTickets = column.tickets.filter(ticket => {
+    // Create a deep copy to avoid modifying the original board
+    const boardCopy = {
+      ...board,
+      columns: board.columns.map(column => ({
+        ...column,
+        tickets: [] // Will be filled with unique tickets
+      }))
+    };
+    
+    // Process each column to find unique tickets
+    board.columns.forEach((column, colIndex) => {
+      column.tickets.forEach(ticket => {
+        // Skip if we've already seen this ticket
         if (processedTicketIds.current.has(ticket.id)) {
           console.log(`KanbanBoard: Filtering out duplicate ticket in ${column.id}: ${ticket.key} (${ticket.id})`);
-          return false;
+          return;
         }
         
+        // Add to processed set and to the column
         processedTicketIds.current.add(ticket.id);
-        return true;
+        boardCopy.columns[colIndex].tickets.push({...ticket});
       });
-      
-      return {
-        ...column,
-        tickets: uniqueTickets
-      };
     });
     
     console.log(`KanbanBoard: After deduplication: ${processedTicketIds.current.size} unique tickets`);
     
-    return {
-      ...board,
-      columns: processedColumns
-    };
+    return boardCopy;
   }, [board]);
   
   const {
