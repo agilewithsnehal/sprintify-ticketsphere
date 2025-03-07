@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -25,7 +26,7 @@ export const useTicketOperations = (refetch: () => void) => {
       const destStatusIndex = statusOrder.indexOf(destinationColumn);
       const isMovingForward = destStatusIndex > sourceStatusIndex;
       
-      if (isMovingForward) {
+      if (isMovingForward && !ticketToMove.parentId) {
         try {
           // Get any child tickets of this ticket (only relevant if it's a parent)
           const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
@@ -44,8 +45,6 @@ export const useTicketOperations = (refetch: () => void) => {
               return; // Exit without updating
             }
           }
-          
-          // Remove parent check - children are allowed to move ahead of parents
         } catch (error) {
           console.error('Error validating hierarchy:', error);
           toast.error('Failed to validate ticket hierarchy');

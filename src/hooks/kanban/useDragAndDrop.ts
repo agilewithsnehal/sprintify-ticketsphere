@@ -60,25 +60,28 @@ export function useDragAndDrop(
     // If moving a ticket forward in the workflow, validate against hierarchy
     if (isMovingForward) {
       try {
-        // Get any child tickets of this ticket (only relevant if it's a parent)
-        const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
-        
-        if (childTickets && childTickets.length > 0) {
-          // A parent cannot move ahead of any of its children
-          const childrenAhead = childTickets.filter(child => {
-            const childStatusIndex = statusOrder.indexOf(child.status as Status);
-            return childStatusIndex > sourceStatusIndex && childStatusIndex >= destStatusIndex;
-          });
+        // Only enforce validation for parent tickets (tickets without a parent)
+        if (!movedTicket.parentId) {
+          // Get any child tickets of this ticket (only relevant if it's a parent)
+          const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
           
-          if (childrenAhead.length > 0) {
-            console.error('Cannot move parent ahead of children:', 
-              childrenAhead.map(t => `${t.key} (${t.status})`));
-            toast.error('Cannot move parent ticket ahead of its children');
-            return; // Exit without updating
+          if (childTickets && childTickets.length > 0) {
+            // A parent cannot move ahead of any of its children
+            const childrenAhead = childTickets.filter(child => {
+              const childStatusIndex = statusOrder.indexOf(child.status as Status);
+              return childStatusIndex > sourceStatusIndex && childStatusIndex >= destStatusIndex;
+            });
+            
+            if (childrenAhead.length > 0) {
+              console.error('Cannot move parent ahead of children:', 
+                childrenAhead.map(t => `${t.key} (${t.status})`));
+              toast.error('Cannot move parent ticket ahead of its children');
+              return; // Exit without updating
+            }
           }
         }
         
-        // We're removing the parent check - children are allowed to move ahead of parents
+        // No validation for child tickets - they are allowed to move ahead of parents
       } catch (error) {
         console.error('Error validating ticket hierarchy:', error);
         toast.error('Failed to validate ticket hierarchy');

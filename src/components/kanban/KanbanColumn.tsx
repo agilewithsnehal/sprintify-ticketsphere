@@ -55,19 +55,22 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
     navigate(`/board/${ticketProjectId}/ticket/${ticket.id}`);
   };
 
-  // Ensure all tickets have unique draggedId values
+  // Ensure all tickets have unique IDs to avoid React key warnings and duplicates
   const uniqueTickets = React.useMemo(() => {
-    // Use a Map to deduplicate by ID
+    // Use a Map to deduplicate by ticket ID
     const ticketMap = new Map<string, TicketType>();
     
     tickets.forEach(ticket => {
       if (!ticketMap.has(ticket.id)) {
         ticketMap.set(ticket.id, ticket);
+      } else {
+        console.log(`Preventing duplicate ticket in column ${id}:`, ticket.key);
       }
     });
     
+    // Return the deduplicated array of tickets
     return Array.from(ticketMap.values());
-  }, [tickets]);
+  }, [tickets, id]);
 
   return (
     <div className="flex-shrink-0 w-72">

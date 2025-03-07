@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, Status } from "@/lib/types";
 import { mapDbTicketToTicket } from "../utils";
@@ -37,7 +38,7 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
       const isMovingForward = newStatusIndex > currentStatusIndex;
       
       // If moving forward, validate parent-child relationships
-      if (isMovingForward) {
+      if (isMovingForward && !ticket.parent_id) {
         // Get any child tickets (if this is a parent)
         const { data: childTickets, error: childError } = await supabase
           .from('tickets')
@@ -178,14 +179,14 @@ async function updateParentHierarchyStatus(parentId: string | null, newStatus: s
           return;
         }
         
-        // Check if ANY children would be behind the parent
-        const childrenBehind = childTickets.filter(child => {
+        // Check if ANY children would be ahead of the parent
+        const childrenAhead = childTickets.filter(child => {
           const childStatusIndex = statusOrder.indexOf(child.status as Status);
-          return childStatusIndex < newStatusIndex;
+          return childStatusIndex > newStatusIndex;
         });
         
-        if (childrenBehind.length > 0) {
-          console.log(`Not updating parent ${parentId} to ${newStatus} - some children would be left behind`);
+        if (childrenAhead.length > 0) {
+          console.log(`Not updating parent ${parentId} to ${newStatus} - some children would be ahead of parent`);
           return;
         }
       }
