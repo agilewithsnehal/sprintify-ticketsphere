@@ -8,7 +8,7 @@ import { mapDbTicketToTicket } from "../utils";
  */
 export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'>): Promise<Ticket | null> {
   try {
-    console.log('Creating new ticket in database:', newTicket.key);
+    console.log('Creating new ticket in database:', newTicket.key, 'with status:', newTicket.status);
     
     // First, check if a ticket with this key already exists
     const { data: existingTickets, error: checkError } = await supabase
@@ -61,9 +61,32 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
     
     console.log('Ticket inserted successfully with ID:', insertedTicket.id);
     
+    // Force a delay to ensure the database has time to fully process the insert
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Retrieve the ticket directly to ensure we get the latest data
+    const { data: freshTicket, error: fetchError } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', insertedTicket.id)
+      .single();
+      
+    if (fetchError || !freshTicket) {
+      console.error('Error fetching inserted ticket:', fetchError);
+      // Fall back to the inserted ticket data if we can't fetch the fresh data
+      const mappedTicket = await mapDbTicketToTicket(insertedTicket);
+      return mappedTicket;
+    }
+    
     // Map the database ticket to our application ticket type
-    const mappedTicket = await mapDbTicketToTicket(insertedTicket);
+    const mappedTicket = await mapDbTicketToTicket(freshTicket);
     console.log('Mapped ticket:', JSON.stringify(mappedTicket));
+    
+    // Broadcast a ticket creation event
+    document.dispatchEvent(new CustomEvent('ticket-created', {
+      detail: { ticket: mappedTicket }
+    }));
+    
     return mappedTicket;
   } catch (error) {
     console.error('Error creating ticket:', error);

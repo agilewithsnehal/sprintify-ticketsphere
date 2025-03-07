@@ -14,7 +14,7 @@ export function useTicketCreationOperations(
 ) {
   const handleTicketCreate = useCallback(async (newTicket: TicketType) => {
     try {
-      console.log('Handling ticket create:', newTicket.key, 'ID:', newTicket.id);
+      console.log('Handling ticket create:', newTicket.key, 'ID:', newTicket.id, 'Status:', newTicket.status);
       
       // Check if the ticket already exists in any column by ID or key
       if (ticketExistsInColumns(newTicket.id, newTicket.key)) {
@@ -61,7 +61,8 @@ export function useTicketCreationOperations(
               tickets: updatedTickets
             };
             
-            console.log('Added ticket to column:', updatedColumns[columnIndex].id);
+            console.log('Added ticket to column:', updatedColumns[columnIndex].id, 
+              'New count:', updatedTickets.length);
           }
         } else {
           console.error(`Column with id ${createdTicket.status} not found`);
@@ -71,6 +72,16 @@ export function useTicketCreationOperations(
       });
       
       console.log('Ticket added to board:', createdTicket.id);
+      
+      // Dispatch an event to notify other components about the ticket creation
+      document.dispatchEvent(new CustomEvent('ticket-notification', {
+        detail: { 
+          type: 'created',
+          ticketKey: createdTicket.key,
+          message: `Ticket ${createdTicket.key} created by ${createdTicket.reporter.name} `
+        }
+      }));
+      
       toast.success('Ticket created successfully');
       return true; // Return true to indicate success
       

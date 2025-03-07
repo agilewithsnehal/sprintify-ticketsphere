@@ -15,8 +15,32 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
     if (board && board.columns) {
       console.log('KanbanBoardWrapper: Rendering board with columns:', 
         board.columns.map(c => `${c.title} (${c.tickets.length})`).join(', '));
+      
+      // Calculate total tickets for debugging
+      const totalTickets = board.columns.reduce((sum, col) => sum + col.tickets.length, 0);
+      console.log(`KanbanBoardWrapper: Total tickets on board: ${totalTickets}`);
     }
   }, [board]);
+
+  // Add an effect to listen for ticket creation events
+  useEffect(() => {
+    const handleTicketEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('KanbanBoardWrapper: Detected ticket event:', customEvent.detail);
+      
+      // If we have a refresh callback, call it when a ticket is created
+      if (customEvent.detail?.type === 'created' && onRefresh) {
+        console.log('KanbanBoardWrapper: Triggering refresh after ticket event');
+        onRefresh();
+      }
+    };
+    
+    document.addEventListener('ticket-notification', handleTicketEvent);
+    
+    return () => {
+      document.removeEventListener('ticket-notification', handleTicketEvent);
+    };
+  }, [onRefresh]);
 
   const handleTicketMove = (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent = true) => {
     console.log(`KanbanBoardWrapper: Handling ticket move ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
@@ -27,6 +51,12 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       
       // Always set updateParent to true to ensure parent tickets follow their children
       onTicketMove(ticketId, sourceColumn, destinationColumn, true);
+      
+      // If we have a refresh callback, call it after moving the ticket
+      if (onRefresh) {
+        console.log('KanbanBoardWrapper: Triggering refresh after ticket move');
+        onRefresh();
+      }
     } catch (error) {
       console.error('Error in handleTicketMove:', error);
       toast.error('Failed to move ticket');

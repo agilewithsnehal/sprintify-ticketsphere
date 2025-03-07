@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabaseService } from '@/lib/supabase';
 import BoardSkeleton from './BoardSkeleton';
 import BoardNotFound from './BoardNotFound';
@@ -26,16 +26,17 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   const [error, setError] = useState<Error | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  const fetchBoard = async () => {
+  const fetchBoard = useCallback(async () => {
     try {
       setIsLoading(true);
       
-      console.log('BoardContainer: Fetching board data for project:', projectId);
-      // Force a fresh fetch by adding a timestamp to avoid cache issues
+      console.log('BoardContainer: Fetching board data for project:', projectId, 'Refresh #:', refreshTrigger);
       const boardData = await supabaseService.createBoard(projectId);
       
       if (boardData) {
-        console.log('Board fetched with columns:', boardData.columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
+        console.log('Board fetched with columns:', 
+          boardData.columns.map(c => `${c.title} (${c.tickets.length} tickets)`), 
+          'Total tickets:', boardData.columns.reduce((acc, col) => acc + col.tickets.length, 0));
         setBoard(boardData);
       } else {
         setError(new Error('Board not found'));
@@ -46,13 +47,13 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId, refreshTrigger]);
   
   // Initial fetch
   useEffect(() => {
     console.log('BoardContainer: Fetching board for project:', projectId);
     fetchBoard();
-  }, [projectId, refreshTrigger]);
+  }, [fetchBoard]);
 
   // Listen for ticket creation events to trigger a refresh
   useEffect(() => {
@@ -76,16 +77,17 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   }, []);
 
   // Manual refresh method that can be called from child components
-  const refreshBoard = () => {
+  const refreshBoard = useCallback(() => {
     console.log('BoardContainer: Manual refresh triggered');
     setRefreshTrigger(prev => prev + 1);
-  };
+  }, []);
 
   const handleColumnsUpdate = async (updatedColumns: Column[]) => {
     try {
       await supabaseService.updateBoardColumns(projectId, updatedColumns);
       
-      fetchBoard();
+      // Refresh the board to show the updated columns
+      refreshBoard();
       
       toast.success('Board columns updated');
     } catch (error) {

@@ -36,10 +36,28 @@ export const supabaseService = {
       // Force fresh data fetch by adding cache-busting timestamp parameter
       const timestamp = new Date().getTime();
       console.log(`Fetching tickets for project ${projectId} with timestamp ${timestamp}`);
-      const tickets = await ticketService.getTicketsByProjectId(projectId);
       
-      console.log(`Fetched ${tickets.length} tickets for project ${projectId}`);
-      tickets.forEach(ticket => {
+      // Use a direct query to ensure we get fresh data
+      const { data: freshTickets, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('project_id', projectId);
+        
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        return null;
+      }
+      
+      // Map the database tickets to our application ticket type
+      const tickets = await Promise.all(
+        freshTickets.map(dbTicket => ticketService.getTicketById(dbTicket.id))
+      );
+      
+      // Filter out any null values from the mapping
+      const validTickets = tickets.filter(Boolean) as any[];
+      
+      console.log(`Fetched ${validTickets.length} tickets for project ${projectId}`);
+      validTickets.forEach(ticket => {
         console.log(`Ticket: ${ticket.key}, Status: ${ticket.status}, ID: ${ticket.id}`);
       });
       
@@ -68,7 +86,7 @@ export const supabaseService = {
       
       // Map tickets to their respective columns
       const columns = validColumns.map(column => {
-        const columnTickets = tickets.filter(ticket => ticket.status === column.id);
+        const columnTickets = validTickets.filter(ticket => ticket.status === column.id);
         console.log(`Column ${column.title} has ${columnTickets.length} tickets`);
         return {
           ...column,
