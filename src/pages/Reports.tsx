@@ -8,9 +8,17 @@ import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart as RechartsLineChart, Line } from 'recharts';
 import { supabaseService } from '@/lib/supabase';
 import { Status, Priority, Ticket } from '@/lib/types';
-import { BarChart3, PieChartIcon, LineChart, Download, Clock, Timer } from 'lucide-react';
+import { BarChart3, PieChartIcon, LineChart, Download, Clock, Timer, GitPullRequestDraft, Workflow } from 'lucide-react';
 import { toast } from 'sonner';
-import { calculateCycleTime, calculateLeadTime } from '@/lib/metrics';
+import { 
+  calculateCycleTime, 
+  calculateLeadTime,
+  calculateWIP,
+  calculateThroughput,
+  calculateFlowEfficiency,
+  calculateFlowDistribution,
+  calculateWorkItemAge
+} from '@/lib/metrics';
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -123,6 +131,45 @@ const Reports = () => {
     };
   }).sort((a, b) => b.days - a.days).slice(0, 10);
   
+  const wipCount = calculateWIP(tickets);
+  const throughput = calculateThroughput(tickets, 7);
+  const flowEfficiency = calculateFlowEfficiency(tickets).toFixed(1);
+  const flowDistribution = calculateFlowDistribution(tickets);
+  
+  const flowDistributionData = Object.entries(flowDistribution).map(([status, percentage]) => ({
+    name: status.replace(/-/g, ' '),
+    value: parseFloat(percentage.toFixed(1))
+  }));
+  
+  const ticketsByStatus = tickets.reduce((acc, ticket) => {
+    const status = ticket.status;
+    if (!acc[status]) acc[status] = [];
+    acc[status].push(ticket);
+    return acc;
+  }, {} as Record<Status, Ticket[]>);
+  
+  const oldestByStatus = Object.entries(ticketsByStatus).reduce((acc, [status, statusTickets]) => {
+    if (statusTickets.length === 0 || status === 'done') return acc;
+    
+    statusTickets.sort((a, b) => 
+      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+    );
+    
+    acc[status as Status] = {
+      ticket: statusTickets[0],
+      age: calculateWorkItemAge(statusTickets[0])
+    };
+    
+    return acc;
+  }, {} as Record<Status, { ticket: Ticket, age: number }>);
+  
+  const oldestItemsData = Object.entries(oldestByStatus).map(([status, data]) => ({
+    status: status.replace(/-/g, ' '),
+    key: data.ticket.key,
+    age: data.age,
+    summary: data.ticket.summary
+  })).sort((a, b) => b.age - a.age);
+  
   const avgCycleTime = cycleTimeData.length > 0 
     ? (cycleTimeData.reduce((sum, item) => sum + item.days, 0) / cycleTimeData.length).toFixed(1)
     : 'N/A';
@@ -150,6 +197,16 @@ const Reports = () => {
         case 'project':
           dataToExport = projectData;
           filename = 'ticket-project-report.json';
+          break;
+        case 'flowmetrics':
+          dataToExport = {
+            wipCount,
+            throughput,
+            flowEfficiency,
+            flowDistribution: flowDistributionData,
+            oldestItems: oldestItemsData
+          };
+          filename = 'flow-metrics-report.json';
           break;
         case 'cycletime':
           dataToExport = cycleTimeData;
@@ -200,7 +257,7 @@ const Reports = () => {
         </div>
         
         <Tabs defaultValue="status" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="mb-6 grid grid-cols-5 sm:w-[600px]">
+          <TabsList className="mb-6 grid grid-cols-6 sm:w-[720px]">
             <TabsTrigger value="status" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Status
@@ -212,6 +269,10 @@ const Reports = () => {
             <TabsTrigger value="project" className="flex items-center gap-2">
               <LineChart className="h-4 w-4" />
               Projects
+            </TabsTrigger>
+            <TabsTrigger value="flowmetrics" className="flex items-center gap-2">
+              <Workflow className="h-4 w-4" />
+              Flow
             </TabsTrigger>
             <TabsTrigger value="cycletime" className="flex items-center gap-2">
               <Timer className="h-4 w-4" />
@@ -317,6 +378,100 @@ const Reports = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="flowmetrics">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Flow Metrics</CardTitle>
+                  <CardDescription>Key process metrics for workflow efficiency</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Work in Progress (WIP)</h3>
+                      <p className="text-xl font-bold">{wipCount} tickets</p>
+                      <p className="text-xs text-muted-foreground">Number of tickets currently being worked on</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Weekly Throughput</h3>
+                      <p className="text-xl font-bold">{throughput} tickets/week</p>
+                      <p className="text-xs text-muted-foreground">Number of tickets completed in the last 7 days</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Flow Efficiency</h3>
+                      <p className="text-xl font-bold">{flowEfficiency}%</p>
+                      <p className="text-xs text-muted-foreground">Ratio of value-adding time to total time</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Flow Distribution</CardTitle>
+                  <CardDescription>How work is distributed across status categories</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={flowDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={true}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, value }) => `${name}: ${value}%`}
+                        >
+                          {flowDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle>Work Item Age</CardTitle>
+                  <CardDescription>Age of oldest items in each status category</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={oldestItemsData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="status" />
+                        <YAxis label={{ value: 'Days', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip 
+                          formatter={(value) => [`${value} days`, 'Age']}
+                          labelFormatter={(label) => {
+                            const item = oldestItemsData.find(d => d.status === label);
+                            return item ? `${label}: ${item.key} - ${item.summary}` : label;
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="age" name="Age in days" fill="#FF8042" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="cycletime">
