@@ -1,9 +1,12 @@
 
 import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
-import { Status, Ticket as TicketType } from '@/lib/types';
+import { Status, Ticket as TicketType, IssueType } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
+
+// Status progression order
+const statusOrder: Status[] = ['backlog', 'todo', 'in-progress', 'review', 'done'];
 
 export function useDragAndDrop(
   columns: any[],
@@ -47,18 +50,43 @@ export function useDragAndDrop(
       return;
     }
 
-    // Special validation for parent tickets moving to "done"
-    if (destination.droppableId === 'done' && !movedTicket.parentId) {
+    // Get the index of the source and destination status in our ordered array
+    const sourceStatusIndex = statusOrder.indexOf(source.droppableId as Status);
+    const destStatusIndex = statusOrder.indexOf(destination.droppableId as Status);
+    
+    // Check if we're moving forward in the workflow
+    const isMovingForward = destStatusIndex > sourceStatusIndex;
+
+    // Special validation for parent tickets
+    if (isMovingForward && !movedTicket.parentId) {
       try {
         const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
         
         if (childTickets && childTickets.length > 0) {
-          const pendingChildren = childTickets.filter(child => child.status !== 'done');
-          
-          if (pendingChildren.length > 0) {
-            console.error('Cannot move parent to done: Some children are not done');
-            toast.error('All child tickets must be done before moving parent to done');
-            return; // Prevent the move entirely
+          // If moving to "done", all children must be done
+          if (destination.droppableId === 'done') {
+            const pendingChildren = childTickets.filter(child => child.status !== 'done');
+            
+            if (pendingChildren.length > 0) {
+              console.error('Cannot move parent to done: Some children are not done');
+              toast.error('All child tickets must be done before moving parent to done');
+              return; // Prevent the move entirely
+            }
+          } else {
+            // For other statuses, no child can be behind the parent
+            const destStatusIndexNum = statusOrder.indexOf(destination.droppableId as Status);
+            
+            // Check if any children are in earlier statuses than the destination
+            const childrenBehind = childTickets.filter(child => {
+              const childStatusIndex = statusOrder.indexOf(child.status as Status);
+              return childStatusIndex < destStatusIndexNum;
+            });
+            
+            if (childrenBehind.length > 0) {
+              console.error('Cannot move parent ahead of children');
+              toast.error('Cannot move parent ticket ahead of its children. All children must be at least in the same status.');
+              return; // Prevent the move
+            }
           }
         }
       } catch (error) {
@@ -116,27 +144,46 @@ export function useDragAndDrop(
             return;
           }
           
-          // Special validation for "done" status if this is a parent ticket
-          if (destination.droppableId === 'done' && !ticket.parentId) {
+          // Special validation for moving forward in workflow
+          if (isMovingForward && !ticket.parentId) {
             // Check if this ticket has children
             const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
             
             if (childTickets && childTickets.length > 0) {
-              // Check if all children are in "done" status
-              const pendingChildren = childTickets.filter(child => child.status !== 'done');
-              
-              if (pendingChildren.length > 0) {
-                console.log('Cannot move parent to done, some children are not done:', 
-                  pendingChildren.map(t => t.key).join(', '));
+              // For "done" status
+              if (destination.droppableId === 'done') {
+                // Check if all children are in "done" status
+                const pendingChildren = childTickets.filter(child => child.status !== 'done');
                 
-                toast.error('All child tickets must be done before moving parent to done');
+                if (pendingChildren.length > 0) {
+                  console.log('Cannot move parent to done, some children are not done:', 
+                    pendingChildren.map(t => t.key).join(', '));
+                  
+                  toast.error('All child tickets must be done before moving parent to done');
+                  
+                  // Revert the UI state since we're aborting the operation
+                  setColumns(prevColumns => [...prevColumns]);
+                  return;
+                }
+              } else {
+                // For other forward moves, no child can be behind
+                const destStatusIndexNum = statusOrder.indexOf(destination.droppableId as Status);
                 
-                // Revert the UI state since we're aborting the operation
-                setColumns(prevColumns => [...prevColumns]);
-                return;
+                // Check if any children are in earlier statuses
+                const childrenBehind = childTickets.filter(child => {
+                  const childStatusIndex = statusOrder.indexOf(child.status as Status);
+                  return childStatusIndex < destStatusIndexNum;
+                });
+                
+                if (childrenBehind.length > 0) {
+                  console.error('Cannot move parent ahead of children');
+                  toast.error('Cannot move parent ticket ahead of its children');
+                  
+                  // Revert the UI state
+                  setColumns(prevColumns => [...prevColumns]);
+                  return;
+                }
               }
-              
-              console.log('All children are done, parent can be moved to done');
             }
           }
           

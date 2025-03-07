@@ -1,7 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Ticket } from "@/lib/types";
+import { Ticket, Status } from "@/lib/types";
 import { mapDbTicketToTicket } from "../utils";
+
+// Status progression order for validation
+const statusOrder: Status[] = ['backlog', 'todo', 'in-progress', 'review', 'done'];
 
 /**
  * Updates an existing ticket in the database
@@ -15,6 +18,62 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
         summary: updates.summary ? updates.summary.substring(0, 20) + '...' : undefined
       })
     );
+    
+    // If status is changing, perform additional validation
+    if (updates.status && !updates.fromParentUpdate) {
+      const { data: ticket, error: ticketError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', ticketId)
+        .single();
+      
+      if (ticketError || !ticket) {
+        console.error('Error fetching ticket for validation:', ticketError);
+        return null;
+      }
+      
+      // Check if we're moving forward in the workflow
+      const currentStatusIndex = statusOrder.indexOf(ticket.status as Status);
+      const newStatusIndex = statusOrder.indexOf(updates.status as Status);
+      const isMovingForward = newStatusIndex > currentStatusIndex;
+      
+      // If this is a parent ticket (no parent_id) and moving forward
+      if (!ticket.parent_id && isMovingForward) {
+        // Get all children of this parent
+        const { data: childTickets, error: childError } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('parent_id', ticketId);
+        
+        if (childError) {
+          console.error('Error fetching child tickets for validation:', childError);
+          return null;
+        }
+        
+        if (childTickets && childTickets.length > 0) {
+          // For "done" status, all children must be done
+          if (updates.status === 'done') {
+            const pendingChildren = childTickets.filter(child => child.status !== 'done');
+            
+            if (pendingChildren.length > 0) {
+              console.error('Cannot move parent to done: Some children are not done');
+              throw new Error('All child tickets must be done before moving parent to done');
+            }
+          } else {
+            // For other statuses, no child can be in an earlier status
+            const childrenBehind = childTickets.filter(child => {
+              const childStatusIndex = statusOrder.indexOf(child.status as Status);
+              return childStatusIndex < newStatusIndex;
+            });
+            
+            if (childrenBehind.length > 0) {
+              console.error('Cannot move parent ahead of children');
+              throw new Error('Cannot move parent ticket ahead of its children');
+            }
+          }
+        }
+      }
+    }
     
     const updateData: any = {};
     
@@ -109,6 +168,38 @@ async function updateParentHierarchyStatus(parentId: string | null, newStatus: s
       }
       
       console.log(`All children of ${parentId} are done, updating parent to done`);
+    } else {
+      // For other statuses, make sure no child would be ahead of the parent
+      const currentStatusIndex = statusOrder.indexOf(parentTicket.status as Status);
+      const newStatusIndex = statusOrder.indexOf(newStatus as Status);
+      
+      // If we're moving the parent backward in the workflow (e.g., from review to in-progress)
+      // This is always allowed since it won't place any children ahead of the parent
+      if (newStatusIndex <= currentStatusIndex) {
+        console.log(`Moving parent ${parentId} backward from ${parentTicket.status} to ${newStatus}`);
+      } else {
+        // If moving forward, validate no children are behind
+        const { data: childTickets, error: childrenError } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('parent_id', parentId);
+        
+        if (childrenError) {
+          console.error('Error fetching child tickets:', childrenError);
+          return;
+        }
+        
+        // Check if ANY children would be behind the parent
+        const childrenBehind = childTickets.filter(child => {
+          const childStatusIndex = statusOrder.indexOf(child.status as Status);
+          return childStatusIndex < newStatusIndex;
+        });
+        
+        if (childrenBehind.length > 0) {
+          console.log(`Not updating parent ${parentId} to ${newStatus} - some children would be left behind`);
+          return;
+        }
+      }
     }
     
     // For all other statuses (or 'done' when all children are done),

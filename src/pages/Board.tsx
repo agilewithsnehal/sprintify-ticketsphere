@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import BoardNotFound from '@/components/board/BoardNotFound';
@@ -11,6 +11,7 @@ import { useTicketOperations } from '@/hooks/useTicketOperations';
 
 const Board = () => {
   const { projectId } = useParams<{ projectId: string }>();
+  const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
   
   const {
     board,
@@ -60,6 +61,10 @@ const Board = () => {
     };
   }, [projectId, refetch, debouncedRefetch]);
 
+  const handleIssueTypeChange = (type: string | null) => {
+    setSelectedIssueType(type);
+  };
+
   if (!projectId || !isValidUuid(projectId)) {
     return (
       <Layout>
@@ -93,6 +98,8 @@ const Board = () => {
         onCreateTicket={handleCreateTicket}
         isCreateModalOpen={isCreateModalOpen}
         onCloseCreateModal={() => setIsCreateModalOpen(false)}
+        selectedIssueType={selectedIssueType}
+        onIssueTypeChange={handleIssueTypeChange}
       />
     </Layout>
   );

@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
+import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
 import { useTicketManagement } from './useTicketManagement';
 import { useModalManagement } from './useModalManagement';
 import { useDragAndDrop } from './useDragAndDrop';
@@ -13,6 +13,7 @@ export function useKanbanBoard(
   onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void
 ) {
   const [columns, setColumns] = useState(board.columns || []);
+  const [filteredColumns, setFilteredColumns] = useState(board.columns || []);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef(columns);
@@ -29,6 +30,7 @@ export function useKanbanBoard(
       }));
       
       setColumns(columnsCopy);
+      setFilteredColumns(columnsCopy);
       columnsRef.current = columnsCopy;
     }
   }, [board]);
@@ -184,6 +186,8 @@ export function useKanbanBoard(
 
   return {
     columns,
+    filteredColumns,
+    setFilteredColumns,
     selectedTicket,
     isTicketModalOpen,
     createModalStatus,

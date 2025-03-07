@@ -1,7 +1,7 @@
 
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
-import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
+import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
 import { useKanbanBoard } from '@/hooks/kanban/useKanbanBoard';
 import KanbanColumn from './KanbanColumn';
 import KanbanScrollButtons from './KanbanScrollButtons';
@@ -17,8 +17,11 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefresh }) => {
+  const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
+  
   const {
     columns,
+    setFilteredColumns,
     selectedTicket,
     isTicketModalOpen,
     createModalStatus,
@@ -36,6 +39,23 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
     scrollLeft,
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
+
+  // Filter tickets based on selected issue type
+  useEffect(() => {
+    if (!selectedIssueType) {
+      // If no issue type is selected, show all tickets
+      setFilteredColumns(columns);
+      return;
+    }
+    
+    // Filter the columns to only include tickets of the selected issue type
+    const filtered = columns.map(column => ({
+      ...column,
+      tickets: column.tickets.filter(ticket => ticket.issueType === selectedIssueType)
+    }));
+    
+    setFilteredColumns(filtered);
+  }, [selectedIssueType, columns, setFilteredColumns]);
 
   // Add an effect to log when board data changes
   useEffect(() => {
@@ -127,7 +147,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
                 key={column.id}
                 id={column.id}
                 title={column.title}
-                tickets={column.tickets || []} 
+                tickets={selectedIssueType 
+                  ? column.tickets.filter(t => t.issueType === selectedIssueType)
+                  : column.tickets || []
+                } 
                 onOpenTicket={handleOpenTicket}
                 onAddTicket={handleOpenCreateModal}
                 projectId={board.project.id}

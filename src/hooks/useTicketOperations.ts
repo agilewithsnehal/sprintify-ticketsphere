@@ -4,6 +4,9 @@ import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+// Status progression order for validation
+const statusOrder: Status[] = ['backlog', 'todo', 'in-progress', 'review', 'done'];
+
 export const useTicketOperations = (refetch: () => void) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
@@ -18,23 +21,47 @@ export const useTicketOperations = (refetch: () => void) => {
         return;
       }
       
-      // Special validation: if moving a parent ticket to "done"
-      if (destinationColumn === 'done' && !ticketToMove.parentId) {
+      // Check if we're moving forward in the workflow
+      const sourceStatusIndex = statusOrder.indexOf(sourceColumn);
+      const destStatusIndex = statusOrder.indexOf(destinationColumn);
+      const isMovingForward = destStatusIndex > sourceStatusIndex;
+      
+      // Special validation for parent tickets moving forward in workflow
+      if (isMovingForward && !ticketToMove.parentId) {
         // Check if this ticket has children
         const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
         
         if (childTickets && childTickets.length > 0) {
-          // Check if all children are in "done" status
-          const pendingChildren = childTickets.filter(child => child.status !== 'done');
-          
-          if (pendingChildren.length > 0) {
-            console.log('Cannot move parent to done, some children are not done:', pendingChildren.map(t => t.key));
-            toast.error('All child tickets must be done before moving parent to done');
-            refetch();
-            return;
+          // For "done" status
+          if (destinationColumn === 'done') {
+            // Check if all children are in "done" status
+            const pendingChildren = childTickets.filter(child => child.status !== 'done');
+            
+            if (pendingChildren.length > 0) {
+              console.log('Cannot move parent to done, some children are not done:', pendingChildren.map(t => t.key));
+              toast.error('All child tickets must be done before moving parent to done');
+              refetch();
+              return;
+            }
+            
+            console.log('All children are done, parent can be moved to done');
+          } else {
+            // For other forward moves, no child can be behind
+            const destStatusIndexNum = statusOrder.indexOf(destinationColumn);
+            
+            // Check if any children are in earlier statuses
+            const childrenBehind = childTickets.filter(child => {
+              const childStatusIndex = statusOrder.indexOf(child.status as Status);
+              return childStatusIndex < destStatusIndexNum;
+            });
+            
+            if (childrenBehind.length > 0) {
+              console.log('Cannot move parent ahead of children:', childrenBehind.map(t => t.key));
+              toast.error('Cannot move parent ticket ahead of its children');
+              refetch();
+              return;
+            }
           }
-          
-          console.log('All children are done, parent can be moved to done');
         }
       }
       

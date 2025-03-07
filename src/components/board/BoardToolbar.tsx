@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Filter, StarIcon, ListFilter, ChevronDown, TicketPlus, BarChart3, ArrowLeft, Columns } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import ColumnConfigurationModal from './ColumnConfigurationModal';
+import IssueTypeFilter from './IssueTypeFilter';
 import { toast } from 'sonner';
 import { supabaseService } from '@/lib/supabase';
-import { Column } from '@/lib/types';
+import { Column, IssueType } from '@/lib/types';
 
 interface BoardToolbarProps {
   boardName: string;
@@ -16,6 +17,8 @@ interface BoardToolbarProps {
   onCreateTicket: () => void;
   onFilterClick: () => void;
   onGroupClick: () => void;
+  onIssueTypeChange: (type: string | null) => void;
+  selectedIssueType: string | null;
 }
 
 const BoardToolbar: React.FC<BoardToolbarProps> = ({ 
@@ -25,7 +28,9 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
   onColumnsUpdate,
   onCreateTicket,
   onFilterClick,
-  onGroupClick
+  onGroupClick,
+  onIssueTypeChange,
+  selectedIssueType
 }) => {
   const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -82,7 +87,7 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
         </h2>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button 
           variant="default" 
           size="sm" 
@@ -92,6 +97,11 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
           <TicketPlus className="h-4 w-4" />
           <span>Create Ticket</span>
         </Button>
+        
+        <IssueTypeFilter 
+          selectedType={selectedIssueType}
+          onTypeChange={onIssueTypeChange}
+        />
         
         <Button 
           variant="outline" 

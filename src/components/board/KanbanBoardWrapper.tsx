@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import KanbanBoard from '@/components/kanban/KanbanBoard';
 import { Board, Status } from '@/lib/types';
 import { toast } from 'sonner';
@@ -8,9 +8,17 @@ interface KanbanBoardWrapperProps {
   board: Board;
   onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
+  selectedIssueType: string | null;
+  onIssueTypeChange: (type: string | null) => void;
 }
 
-const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicketMove, onRefresh }) => {
+const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ 
+  board, 
+  onTicketMove, 
+  onRefresh,
+  selectedIssueType,
+  onIssueTypeChange
+}) => {
   useEffect(() => {
     if (board && board.columns) {
       console.log('KanbanBoardWrapper: Rendering board with columns:', 
@@ -19,8 +27,15 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       // Calculate total tickets for debugging
       const totalTickets = board.columns.reduce((sum, col) => sum + col.tickets.length, 0);
       console.log(`KanbanBoardWrapper: Total tickets on board: ${totalTickets}`);
+      
+      // If filtering is active, also log filtered tickets count
+      if (selectedIssueType) {
+        const filteredTickets = board.columns.reduce((sum, col) => 
+          sum + col.tickets.filter(t => t.issueType === selectedIssueType).length, 0);
+        console.log(`KanbanBoardWrapper: Filtered tickets (${selectedIssueType}): ${filteredTickets}`);
+      }
     }
-  }, [board]);
+  }, [board, selectedIssueType]);
 
   // Add an effect to listen for any ticket update events
   useEffect(() => {
@@ -67,7 +82,11 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
     }
   };
 
-  return <KanbanBoard board={board} onTicketMove={handleTicketMove} onRefresh={onRefresh} />;
+  return <KanbanBoard 
+    board={board} 
+    onTicketMove={handleTicketMove} 
+    onRefresh={onRefresh} 
+  />;
 };
 
 export default KanbanBoardWrapper;
