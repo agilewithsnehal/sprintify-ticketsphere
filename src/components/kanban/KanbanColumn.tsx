@@ -55,13 +55,27 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
     navigate(`/board/${ticketProjectId}/ticket/${ticket.id}`);
   };
 
+  // Ensure all tickets have unique draggedId values
+  const uniqueTickets = React.useMemo(() => {
+    // Use a Map to deduplicate by ID
+    const ticketMap = new Map<string, TicketType>();
+    
+    tickets.forEach(ticket => {
+      if (!ticketMap.has(ticket.id)) {
+        ticketMap.set(ticket.id, ticket);
+      }
+    });
+    
+    return Array.from(ticketMap.values());
+  }, [tickets]);
+
   return (
     <div className="flex-shrink-0 w-72">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center">
           <h3 className="font-medium text-sm">{title}</h3>
           <div className="ml-2 bg-secondary text-secondary-foreground text-xs px-2 py-0.5 rounded-full">
-            {tickets.length}
+            {uniqueTickets.length}
           </div>
         </div>
         <Button 
@@ -88,10 +102,10 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             }}
             transition={{ duration: 0.2 }}
           >
-            {tickets.map((ticket, index) => (
+            {uniqueTickets.map((ticket, index) => (
               <Draggable 
-                key={ticket.id || `temp-${index}`} 
-                draggableId={ticket.id || `temp-${index}`} 
+                key={ticket.id}
+                draggableId={ticket.id}
                 index={index}
               >
                 {(provided, snapshot) => (
@@ -115,7 +129,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
             ))}
             {provided.placeholder}
             
-            {tickets.length === 0 && (
+            {uniqueTickets.length === 0 && (
               <div className="flex items-center justify-center h-20 border border-dashed border-secondary-foreground/20 rounded-lg mt-2">
                 <p className="text-sm text-muted-foreground">No tickets</p>
               </div>

@@ -1,18 +1,16 @@
-
 import React, { useEffect, useCallback, useState, useRef } from 'react';
-import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
-import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
+import { DragDropContext, DropResult } from 'react-beautiful-dnd';
+import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useKanbanBoard } from '@/hooks/kanban/useKanbanBoard';
 import KanbanColumn from './KanbanColumn';
 import KanbanScrollButtons from './KanbanScrollButtons';
 import TicketModal from '../ticket-modal';
 import CreateTicketModal from '../CreateTicketModal';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface KanbanBoardProps {
   board: BoardType;
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
   selectedIssueType: string | null;
   onIssueTypeChange: (type: string | null) => void;
@@ -25,18 +23,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   selectedIssueType,
   onIssueTypeChange 
 }) => {
-  // Track processed ticket IDs to prevent duplicates
-  const processedTicketIds = useRef(new Set<string>());
+  // Keep a map of ticket IDs to ensure uniqueness
+  const processedTickets = useRef(new Map<string, TicketType>());
   
   // Local state to track the selectedIssueType from props
   const [selectedIssueTypeState, setSelectedIssueTypeState] = useState<string | null>(selectedIssueType);
   
-  // Process board data to deduplicate tickets and ensure no duplicates in the drag and drop
+  // Ensure board data is processed to remove duplicate tickets
   const processedBoard = React.useMemo(() => {
     if (!board || !board.columns) return board;
     
-    // Clear the set when board changes
-    processedTicketIds.current.clear();
+    // Clear the map when board changes
+    processedTickets.current.clear();
     
     // Create a deep copy to avoid modifying the original board
     const boardCopy = {
@@ -49,20 +47,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     
     // Process each column to find unique tickets
     board.columns.forEach((column, colIndex) => {
+      if (!column.tickets) return;
+      
       column.tickets.forEach(ticket => {
-        // Skip if we've already seen this ticket
-        if (processedTicketIds.current.has(ticket.id)) {
-          console.log(`KanbanBoard: Filtering out duplicate ticket in ${column.id}: ${ticket.key} (${ticket.id})`);
+        // Skip if we've already processed this ticket ID
+        if (processedTickets.current.has(ticket.id)) {
+          console.log(`KanbanBoard: Skipping duplicate ticket ${ticket.key} (${ticket.id}) in ${column.id}`);
           return;
         }
         
-        // Add to processed set and to the column
-        processedTicketIds.current.add(ticket.id);
+        // Add to processed map and to the column
+        processedTickets.current.set(ticket.id, ticket);
         boardCopy.columns[colIndex].tickets.push({...ticket});
       });
     });
     
-    console.log(`KanbanBoard: After deduplication: ${processedTicketIds.current.size} unique tickets`);
+    console.log(`KanbanBoard: After deduplication: ${processedTickets.current.size} unique tickets`);
     
     return boardCopy;
   }, [board]);
@@ -180,14 +180,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // The selected column tickets need to respect the issue type filter
+  // Apply issue type filtering if a filter is selected
   const filteredColumns = columns.map(column => {
-    // Apply issue type filtering if a filter is selected
     const columnTickets = selectedIssueTypeState 
       ? column.tickets.filter(t => t.issueType === selectedIssueTypeState)
       : column.tickets;
     
-    // Keep the original column but with filtered tickets
     return {
       ...column,
       tickets: columnTickets

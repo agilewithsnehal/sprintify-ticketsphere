@@ -41,7 +41,8 @@ export const supabaseService = {
       const { data: freshTickets, error } = await supabase
         .from('tickets')
         .select('*')
-        .eq('project_id', projectId);
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
         
       if (error) {
         console.error('Error fetching tickets:', error);
@@ -49,9 +50,8 @@ export const supabaseService = {
       }
       
       // Map the database tickets to our application ticket type
-      const tickets = await Promise.all(
-        freshTickets.map(dbTicket => ticketService.getTicketById(dbTicket.id))
-      );
+      const ticketsPromises = freshTickets.map(dbTicket => ticketService.getTicketById(dbTicket.id));
+      const tickets = await Promise.all(ticketsPromises);
       
       // Filter out any null values from the mapping
       const validTickets = tickets.filter(Boolean) as any[];
@@ -84,9 +84,20 @@ export const supabaseService = {
         };
       });
       
+      // Track processed ticket IDs to prevent duplicates
+      const processedTicketIds = new Set<string>();
+      
       // Map tickets to their respective columns
       const columns = validColumns.map(column => {
-        const columnTickets = validTickets.filter(ticket => ticket.status === column.id);
+        // Only include tickets that haven't been processed yet
+        const columnTickets = validTickets.filter(ticket => {
+          if (ticket.status === column.id && !processedTicketIds.has(ticket.id)) {
+            processedTicketIds.add(ticket.id);
+            return true;
+          }
+          return false;
+        });
+        
         console.log(`Column ${column.title} has ${columnTickets.length} tickets`);
         return {
           ...column,

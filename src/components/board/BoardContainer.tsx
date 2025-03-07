@@ -37,13 +37,19 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
       setIsLoading(true);
       
       console.log('BoardContainer: Fetching board data for project:', projectId, 'Refresh #:', refreshTrigger);
+      
+      // Add a cache-busting timestamp to ensure fresh data
+      const timestamp = new Date().getTime();
       const boardData = await supabaseService.createBoard(projectId);
       
       if (boardData) {
         console.log('Board fetched with columns:', 
           boardData.columns.map(c => `${c.title} (${c.tickets.length} tickets)`), 
           'Total tickets:', boardData.columns.reduce((acc, col) => acc + col.tickets.length, 0));
-        setBoard(boardData);
+          
+        // Process board data to deduplicate tickets before setting state
+        const processedBoard = processBoardData(boardData);
+        setBoard(processedBoard);
       } else {
         setError(new Error('Board not found'));
       }
@@ -54,6 +60,42 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
       setIsLoading(false);
     }
   }, [projectId, refreshTrigger]);
+  
+  // Helper function to deduplicate tickets in board data
+  const processBoardData = (boardData: Board): Board => {
+    if (!boardData || !boardData.columns) return boardData;
+    
+    // Use a Set to track seen ticket IDs
+    const seenTicketIds = new Set<string>();
+    
+    // Create a deep copy of the board to avoid modifying the original
+    const processedBoard = {
+      ...boardData,
+      columns: boardData.columns.map(column => ({
+        ...column,
+        tickets: [] // Will be filled with unique tickets
+      }))
+    };
+    
+    // Process each column to find unique tickets
+    boardData.columns.forEach((column, colIndex) => {
+      if (!column.tickets) return;
+      
+      column.tickets.forEach(ticket => {
+        // Skip if we've already seen this ticket ID
+        if (seenTicketIds.has(ticket.id)) {
+          console.log(`BoardContainer: Skipping duplicate ticket ${ticket.key} (${ticket.id}) in ${column.title}`);
+          return;
+        }
+        
+        // Add ticket ID to seen set and add ticket to processed board
+        seenTicketIds.add(ticket.id);
+        processedBoard.columns[colIndex].tickets.push({...ticket});
+      });
+    });
+    
+    return processedBoard;
+  };
   
   // Initial fetch
   useEffect(() => {

@@ -19,42 +19,44 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
   selectedIssueType,
   onIssueTypeChange
 }) => {
-  // Track already seen ticket IDs to prevent duplicates in the UI
-  const [processedTicketIds] = useState(new Set<string>());
+  // Use a persistent Set to track seen ticket IDs
+  const [seenTicketIds] = useState(() => new Set<string>());
   
-  // Deduplicate tickets in the board before passing to KanbanBoard
+  // Process the board to remove duplicate tickets before passing to KanbanBoard
   const deduplicatedBoard = React.useMemo(() => {
     if (!board || !board.columns) return board;
     
     // Clear the set when board changes to avoid stale data
-    processedTicketIds.clear();
+    seenTicketIds.clear();
     
-    // Create a deep copy of the board to avoid modifying the original
+    // Create a deep copy of the board
     const boardCopy = {
       ...board,
       columns: board.columns.map(column => ({
         ...column,
-        tickets: [] // Will be filled with unique tickets below
+        tickets: [] // Will be filled with unique tickets
       }))
     };
     
-    // Process each column and add unique tickets
+    // Process each column and add only unseen tickets
     board.columns.forEach((column, colIndex) => {
+      if (!column.tickets) return;
+      
       column.tickets.forEach(ticket => {
-        // Skip if we've already seen this ticket
-        if (processedTicketIds.has(ticket.id)) {
+        // Skip if we've already seen this ticket ID
+        if (seenTicketIds.has(ticket.id)) {
           console.log(`Deduplicating: Skipping duplicate ticket ${ticket.key} (${ticket.id}) in ${column.title}`);
           return;
         }
         
-        // Add ticket to the deduplicated board
-        processedTicketIds.add(ticket.id);
+        // Add ticket ID to seen set and add ticket to deduplicated board
+        seenTicketIds.add(ticket.id);
         boardCopy.columns[colIndex].tickets.push({...ticket});
       });
     });
     
     return boardCopy;
-  }, [board, processedTicketIds]);
+  }, [board, seenTicketIds]);
 
   useEffect(() => {
     if (board && board.columns) {
@@ -77,12 +79,12 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
     }
   }, [board, selectedIssueType, deduplicatedBoard]);
 
-  // Only listen for creation events and parent updates, NEVER for moves
+  // Listen for ticket events that should trigger a refresh
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       
-      // Only refresh for created tickets (not moves or updates)
+      // Only refresh for created tickets, not for moves or updates
       if (customEvent.detail?.type === 'created' && onRefresh) {
         console.log('KanbanBoardWrapper: Triggering refresh after ticket creation');
         setTimeout(() => onRefresh(), 100);
@@ -103,7 +105,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
       // Show immediate feedback to the user
       toast.info(`Moving ticket from ${sourceColumn.replace(/-/g, ' ')} to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // Call the parent handler to update the database without refreshing the board
+      // Call the parent handler to update the database
       onTicketMove(ticketId, sourceColumn, destinationColumn);
     } catch (error) {
       console.error('Error in handleTicketMove:', error);

@@ -137,30 +137,3 @@ export function useDragAndDrop(
 
   return { onDragEnd };
 }
-
-// Helper function to recursively get all descendants of a ticket
-// This includes children, grandchildren, etc.
-async function getAllDescendantTickets(ticketId: string): Promise<TicketType[]> {
-  try {
-    // Get immediate children first
-    const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
-    
-    if (!childTickets || childTickets.length === 0) {
-      return [];
-    }
-    
-    // Start with the immediate children
-    let allDescendants = [...childTickets];
-    
-    // Recursively get descendants for each child
-    for (const child of childTickets) {
-      const childDescendants = await getAllDescendantTickets(child.id);
-      allDescendants = [...allDescendants, ...childDescendants];
-    }
-    
-    return allDescendants;
-  } catch (error) {
-    console.error('Error fetching descendants:', error);
-    return [];
-  }
-}
