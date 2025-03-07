@@ -41,6 +41,7 @@ export type Ticket = {
   comments: Comment[];
   parentId?: string; // ID of the parent ticket (epic -> feature -> story -> task)
   children?: Ticket[]; // Child tickets
+  fromParentUpdate?: boolean; // Flag to prevent recursive updates
 };
 
 export type Comment = {

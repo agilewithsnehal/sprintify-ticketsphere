@@ -49,11 +49,80 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
     
     console.log(`Successfully updated ticket ${ticketId} in database`);
     
+    // If status is changing and we're not updating a parent ticket already (to prevent recursion)
+    if (updates.status !== undefined && !updates.fromParentUpdate) {
+      await updateParentTicketStatus(ticket.parent_id, updates.status as string);
+    }
+    
     // Map the database ticket to our application ticket type and return it
     return await mapDbTicketToTicket(ticket);
   } catch (error) {
     console.error('Error updating ticket:', error);
     return null;
+  }
+}
+
+/**
+ * Recursively updates parent ticket statuses
+ * This ensures the parent status changes when children status changes
+ */
+async function updateParentTicketStatus(parentId: string | null, newStatus: string): Promise<void> {
+  if (!parentId) return;
+  
+  try {
+    console.log(`Checking if parent ticket ${parentId} should be updated to status ${newStatus}`);
+    
+    // First, get the parent ticket
+    const { data: parentTicket, error: parentError } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', parentId)
+      .single();
+    
+    if (parentError || !parentTicket) {
+      console.error('Error fetching parent ticket:', parentError);
+      return;
+    }
+    
+    // If moving to 'done', verify all children are done
+    if (newStatus === 'done') {
+      const { data: childTickets, error: childrenError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('parent_id', parentId);
+      
+      if (childrenError) {
+        console.error('Error fetching child tickets:', childrenError);
+        return;
+      }
+      
+      // Check if ALL children are done
+      const allChildrenDone = childTickets.every(child => child.status === 'done');
+      
+      if (!allChildrenDone) {
+        console.log(`Not updating parent ${parentId} to done - some children are not done yet`);
+        return;
+      }
+      
+      console.log(`All children of ${parentId} are done, updating parent to done`);
+    }
+    
+    // Always update parent status to match the latest child status
+    // For 'done' status, we only reach here if all children are done
+    console.log(`Updating parent ticket ${parentId} status to ${newStatus}`);
+    
+    // Set fromParentUpdate flag to prevent infinite recursion
+    await updateTicket(parentId, { 
+      status: newStatus as any, 
+      fromParentUpdate: true 
+    });
+    
+    // If this parent has its own parent, continue the chain
+    if (parentTicket.parent_id) {
+      await updateParentTicketStatus(parentTicket.parent_id, newStatus);
+    }
+  } catch (error) {
+    console.error('Error updating parent status:', error);
   }
 }
 

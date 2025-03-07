@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -38,6 +39,7 @@ export const useTicketOperations = (refetch: () => void) => {
       }
       
       // Update the moved ticket status in the database
+      // The parent status update will be handled automatically by the updateTicket function
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
       });
@@ -59,84 +61,16 @@ export const useTicketOperations = (refetch: () => void) => {
         }
       }));
       
-      // If this ticket has a parent ID and updateParent is true, update the parent ticket
-      if (ticketToMove.parentId && updateParent) {
-        console.log(`Ticket has parent ID: ${ticketToMove.parentId}, updating parent`);
-        
-        try {
-          // Fetch the parent ticket details
-          const parentTicket = await supabaseService.ticket.getTicketById(ticketToMove.parentId);
-          
-          if (!parentTicket) {
-            console.error(`Parent ticket with ID ${ticketToMove.parentId} not found`);
-            toast.error('Could not find parent ticket');
-            refetch();
-            return;
-          }
-          
-          console.log(`Parent ticket found: ${parentTicket.id}, current status: ${parentTicket.status}`);
-          
-          // For parent tickets, we have special rules:
-          // 1. They can only move to "done" when all children are done
-          // 2. For all other statuses, they should follow their children
-          if (destinationColumn === 'done') {
-            // If moving to "done", we need to verify all children are also done
-            const allChildTickets = await supabaseService.ticket.getChildTickets(parentTicket.id);
-            const nonDoneChildren = allChildTickets.filter(child => child.status !== 'done');
-            
-            if (nonDoneChildren.length > 0) {
-              console.log('Not updating parent to done yet as some children are still not done');
-              return;
-            }
-          }
-          
-          // The critical fix: Always update parent status to match the child's status
-          // Only skip if moving to "done" and not all children are done (handled above)
-          console.log(`Updating parent ticket ${parentTicket.id} status from ${parentTicket.status} to ${destinationColumn}`);
-          
-          const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-            status: destinationColumn
-          });
-          
-          if (updatedParent) {
-            console.log(`Successfully updated parent ticket status to ${destinationColumn}`);
-            toast.success(`Parent ticket updated to ${destinationColumn.replace(/-/g, ' ')}`, {
-              id: 'parent-update-success'
-            });
-            
-            // Force an immediate local UI update for the parent ticket
-            // This ensures the UI updates without needing a refetch
-            document.dispatchEvent(new CustomEvent('ticket-parent-updated', {
-              detail: { parentId: parentTicket.id, newStatus: destinationColumn }
-            }));
-            
-            // Notify about the parent ticket movement
-            document.dispatchEvent(new CustomEvent('ticket-notification', {
-              detail: { 
-                type: 'moved',
-                ticketKey: parentTicket.key,
-                message: `Parent ticket ${parentTicket.key} moved to ${destinationColumn.replace(/-/g, ' ')}`
-              }
-            }));
-          } else {
-            console.error('Failed to update parent ticket status');
-            toast.error('Failed to update parent ticket', {
-              id: 'parent-update-error'
-            });
-          }
-        } catch (parentError) {
-          console.error('Error handling parent ticket update:', parentError);
-          toast.error('Error updating parent ticket');
-        }
-      } else if (ticketToMove.parentId) {
-        console.log(`Ticket has parent but updateParent is false, skipping parent update`);
-      }
+      // We no longer need explicit parent updating here since it's handled in the updateTicket function
+      // Just trigger a refetch to update the UI
+      setTimeout(() => {
+        refetch();
+      }, 500);
     } catch (error) {
       console.error('Error moving ticket:', error);
       toast.error('Failed to move ticket');
       refetch();
     }
-    // Remove the automatic refetch from here - we'll only refresh when needed
   };
 
   const handleCreateTicket = async (ticket: Ticket): Promise<boolean> => {
