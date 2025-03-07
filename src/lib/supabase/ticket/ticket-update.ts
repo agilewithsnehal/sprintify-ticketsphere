@@ -37,9 +37,9 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
       const newStatusIndex = statusOrder.indexOf(updates.status as Status);
       const isMovingForward = newStatusIndex > currentStatusIndex;
       
-      // If this is a parent ticket (no parent_id) and moving forward
-      if (!ticket.parent_id && isMovingForward) {
-        // Get all children of this parent
+      // If moving forward, validate parent-child relationships
+      if (isMovingForward) {
+        // Get any child tickets (if this is a parent)
         const { data: childTickets, error: childError } = await supabase
           .from('tickets')
           .select('*')
@@ -51,24 +51,36 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
         }
         
         if (childTickets && childTickets.length > 0) {
-          // For "done" status, all children must be done
-          if (updates.status === 'done') {
-            const pendingChildren = childTickets.filter(child => child.status !== 'done');
-            
-            if (pendingChildren.length > 0) {
-              console.error('Cannot move parent to done: Some children are not done');
-              throw new Error('All child tickets must be done before moving parent to done');
-            }
+          // A parent cannot move ahead of any of its children
+          const childrenAhead = childTickets.filter(child => {
+            const childStatusIndex = statusOrder.indexOf(child.status as Status);
+            return childStatusIndex > currentStatusIndex && childStatusIndex >= newStatusIndex;
+          });
+          
+          if (childrenAhead.length > 0) {
+            console.error('Cannot move parent ahead of children');
+            throw new Error('Cannot move parent ticket ahead of its children');
+          }
+        }
+        
+        // Check if this is a child ticket (has parent_id)
+        if (ticket.parent_id) {
+          // Get the parent ticket
+          const { data: parentTicket, error: parentError } = await supabase
+            .from('tickets')
+            .select('*')
+            .eq('id', ticket.parent_id)
+            .single();
+          
+          if (parentError || !parentTicket) {
+            console.error('Error fetching parent ticket:', parentError);
           } else {
-            // For other statuses, no child can be in an earlier status
-            const childrenBehind = childTickets.filter(child => {
-              const childStatusIndex = statusOrder.indexOf(child.status as Status);
-              return childStatusIndex < newStatusIndex;
-            });
+            const parentStatusIndex = statusOrder.indexOf(parentTicket.status as Status);
             
-            if (childrenBehind.length > 0) {
-              console.error('Cannot move parent ahead of children');
-              throw new Error('Cannot move parent ticket ahead of its children');
+            // Child cannot move ahead of parent in workflow
+            if (newStatusIndex > parentStatusIndex) {
+              console.error('Cannot move child ahead of parent');
+              throw new Error('Cannot move child ticket ahead of its parent');
             }
           }
         }

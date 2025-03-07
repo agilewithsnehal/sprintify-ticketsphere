@@ -60,39 +60,28 @@ export function useDragAndDrop(
     // If moving a ticket forward in the workflow, validate against hierarchy
     if (isMovingForward) {
       try {
-        // Check if this is a parent ticket (no parentId)
-        if (!movedTicket.parentId) {
-          // Recursively check all descendants (not just immediate children)
-          const allDescendants = await getAllDescendantTickets(draggableId);
+        // We need to check both parent-child and child-parent relationships
+        // First, get any child tickets of this ticket (only relevant if it's a parent)
+        const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
+        
+        if (childTickets && childTickets.length > 0) {
+          // A parent cannot move ahead of any of its children
+          const childrenAhead = childTickets.filter(child => {
+            const childStatusIndex = statusOrder.indexOf(child.status as Status);
+            return childStatusIndex > sourceStatusIndex && childStatusIndex >= destStatusIndex;
+          });
           
-          if (allDescendants && allDescendants.length > 0) {
-            // For "done" status, all descendants must be done
-            if (destination.droppableId === 'done') {
-              const pendingDescendants = allDescendants.filter(descendant => descendant.status !== 'done');
-              
-              if (pendingDescendants.length > 0) {
-                console.error('Cannot move parent to done: Descendants not done:', 
-                  pendingDescendants.map(t => `${t.key} (${t.status})`));
-                toast.error('All child tickets must be done before moving parent to done');
-                return; // Exit without updating
-              }
-            }
-            
-            // For any forward move, no descendant can be behind the new status
-            const descendantsBehind = allDescendants.filter(descendant => {
-              const descendantStatusIndex = statusOrder.indexOf(descendant.status as Status);
-              return descendantStatusIndex < destStatusIndex;
-            });
-            
-            if (descendantsBehind.length > 0) {
-              console.error('Cannot move parent ahead of descendants:', 
-                descendantsBehind.map(t => `${t.key} (${t.status})`));
-              toast.error('Cannot move parent ticket ahead of its descendants');
-              return; // Exit without updating
-            }
+          if (childrenAhead.length > 0) {
+            console.error('Cannot move parent behind children:', 
+              childrenAhead.map(t => `${t.key} (${t.status})`));
+            toast.error('Cannot move parent ticket ahead of its children');
+            return; // Exit without updating
           }
-        } else {
-          // This is a child ticket, check if we're moving ahead of parent
+        }
+        
+        // Now check if this is a child ticket (has parentId)
+        if (movedTicket.parentId) {
+          // This is a child ticket, check if parent exists and its status
           const parentTicket = await supabaseService.ticket.getTicketById(movedTicket.parentId);
           
           if (parentTicket) {

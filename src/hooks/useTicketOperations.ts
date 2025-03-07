@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -26,42 +25,29 @@ export const useTicketOperations = (refetch: () => void) => {
       const destStatusIndex = statusOrder.indexOf(destinationColumn);
       const isMovingForward = destStatusIndex > sourceStatusIndex;
       
-      // For parent tickets (no parentId) moving forward in workflow
       if (isMovingForward) {
         try {
-          // If this is a parent ticket (no parentId)
-          if (!ticketToMove.parentId) {
-            // Recursively check all descendants (not just immediate children)
-            const allDescendants = await getAllDescendantTickets(ticketId);
+          // Get any child tickets of this ticket (only relevant if it's a parent)
+          const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
+          
+          if (childTickets && childTickets.length > 0) {
+            // A parent cannot move ahead of any of its children
+            const childrenAhead = childTickets.filter(child => {
+              const childStatusIndex = statusOrder.indexOf(child.status as Status);
+              return childStatusIndex > sourceStatusIndex && childStatusIndex >= destStatusIndex;
+            });
             
-            if (allDescendants && allDescendants.length > 0) {
-              // For "done" status, all descendants must be done
-              if (destinationColumn === 'done') {
-                const pendingDescendants = allDescendants.filter(descendant => descendant.status !== 'done');
-                
-                if (pendingDescendants.length > 0) {
-                  console.error('Cannot move parent to done: Some descendants are not done:', 
-                    pendingDescendants.map(t => `${t.key} (${t.status})`).join(', '));
-                  toast.error('All child tickets must be done before moving parent to done');
-                  return; // Exit without updating
-                }
-              }
-              
-              // For any forward move, no descendant can be in an earlier status
-              const descendantsBehind = allDescendants.filter(descendant => {
-                const descendantStatusIndex = statusOrder.indexOf(descendant.status as Status);
-                return descendantStatusIndex < destStatusIndex;
-              });
-              
-              if (descendantsBehind.length > 0) {
-                console.error('Cannot move parent ahead of descendants:', 
-                  descendantsBehind.map(t => `${t.key} (${t.status})`).join(', '));
-                toast.error('Cannot move parent ticket ahead of its descendants');
-                return; // Exit without updating
-              }
+            if (childrenAhead.length > 0) {
+              console.error('Cannot move parent ahead of children:', 
+                childrenAhead.map(t => `${t.key} (${t.status})`).join(', '));
+              toast.error('Cannot move parent ticket ahead of its children');
+              return; // Exit without updating
             }
-          } else {
-            // This is a child ticket, check if we're moving ahead of parent
+          }
+          
+          // Now check if this is a child ticket (has parentId)
+          if (ticketToMove.parentId) {
+            // This is a child ticket, check if parent exists and its status
             const parentTicket = await supabaseService.ticket.getTicketById(ticketToMove.parentId);
             
             if (parentTicket) {
@@ -77,7 +63,7 @@ export const useTicketOperations = (refetch: () => void) => {
             }
           }
         } catch (error) {
-          console.error('Error validating descendants:', error);
+          console.error('Error validating hierarchy:', error);
           toast.error('Failed to validate ticket hierarchy');
           return;
         }
