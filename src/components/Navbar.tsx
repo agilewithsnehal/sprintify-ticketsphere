@@ -24,7 +24,24 @@ const Navbar = () => {
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => await supabaseService.getCurrentUser(),
+    staleTime: 0, // Force refetch every time to ensure we have the latest data
   });
+  
+  // Determine the appropriate text color based on the avatar color
+  const getTextColorClass = (bgColor: string | undefined) => {
+    if (!bgColor) return 'text-white';
+    
+    const colorMap: Record<string, string> = {
+      'cyan': 'text-cyan-700',
+      'blue': 'text-blue-700',
+      'indigo': 'text-indigo-700',
+      'purple': 'text-purple-700',
+      'pink': 'text-pink-700',
+      'rose': 'text-rose-700'
+    };
+    
+    return colorMap[bgColor] || 'text-white';
+  };
 
   return (
     <nav className="border-b">
@@ -40,8 +57,13 @@ const Navbar = () => {
             <DropdownMenuTrigger asChild>
               <button className="focus:outline-none">
                 <Avatar className="h-8 w-8 cursor-pointer">
-                  <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
-                  <AvatarFallback className={`bg-${currentUser?.avatarColor || 'purple'}-500 text-white`}>
+                  <AvatarImage 
+                    src={currentUser?.avatar || ''} 
+                    alt={currentUser?.name || 'User'} 
+                  />
+                  <AvatarFallback 
+                    className={`bg-${currentUser?.avatarColor || 'purple'}-100 ${getTextColorClass(currentUser?.avatarColor)}`}
+                  >
                     {currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
                   </AvatarFallback>
                 </Avatar>
