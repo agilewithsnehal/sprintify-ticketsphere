@@ -53,7 +53,7 @@ export function useDragAndDrop(
       return;
     }
 
-    // Handle same column reordering
+    // Handle same column reordering - THIS IS THE FIX FOR DISAPPEARING CARDS
     if (source.droppableId === destination.droppableId) {
       // Remove from original position
       const [removed] = sourceTickets.splice(source.index, 1);
@@ -62,12 +62,13 @@ export function useDragAndDrop(
       sourceTickets.splice(destination.index, 0, removed);
       
       // Update the columns with the reordered tickets
-      setColumns(prevColumns => prevColumns.map(col => {
-        if (col.id === source.droppableId) {
-          return { ...col, tickets: sourceTickets };
-        }
-        return col;
-      }));
+      setColumns(prevColumns => 
+        prevColumns.map(col => 
+          col.id === source.droppableId 
+            ? { ...col, tickets: sourceTickets }
+            : col
+        )
+      );
       
       console.log(`Reordered ticket ${movedTicket.key} within ${source.droppableId}`);
       return;
@@ -85,28 +86,28 @@ export function useDragAndDrop(
     // If moving a ticket forward in the workflow, validate against hierarchy
     if (isMovingForward) {
       try {
-        // Only enforce validation for parent tickets (tickets without a parent)
+        // Check if this is a parent ticket (tickets without a parent)
         if (!movedTicket.parentId) {
-          // Get any child tickets of this ticket (only relevant if it's a parent)
+          // Get any child tickets of this ticket
           const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
           
           if (childTickets && childTickets.length > 0) {
-            // A parent cannot move ahead of any of its children
-            const childrenAhead = childTickets.filter(child => {
+            // Check if any child is in an earlier status than the requested destination
+            // This prevents a parent from moving ahead of any of its children
+            const childrenBehind = childTickets.filter(child => {
               const childStatusIndex = statusOrder.indexOf(child.status as Status);
-              return childStatusIndex > sourceStatusIndex && childStatusIndex >= destStatusIndex;
+              return childStatusIndex < destStatusIndex;
             });
             
-            if (childrenAhead.length > 0) {
+            if (childrenBehind.length > 0) {
               console.error('Cannot move parent ahead of children:', 
-                childrenAhead.map(t => `${t.key} (${t.status})`));
+                childrenBehind.map(t => `${t.key} (${t.status})`));
+              
               toast.error('Cannot move parent ticket ahead of its children');
               return; // Exit without updating
             }
           }
         }
-        
-        // No validation needed for moving backward or for child tickets
       } catch (error) {
         console.error('Error validating ticket hierarchy:', error);
         toast.error('Failed to validate ticket hierarchy');
@@ -137,7 +138,7 @@ export function useDragAndDrop(
       return col;
     }));
 
-    // Only update the database if the column changed (already checked above)
+    // Only update the database if the column changed
     try {
       console.log(`Drag ended: Moving ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
       

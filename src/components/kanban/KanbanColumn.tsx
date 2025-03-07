@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
@@ -57,25 +56,24 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
   // Ensure all tickets have unique IDs to avoid React key warnings and duplicates
   const uniqueTickets = React.useMemo(() => {
+    if (!tickets || tickets.length === 0) return [];
+    
     // Use a Map to deduplicate by ticket ID
     const ticketMap = new Map<string, TicketType>();
     
     tickets.forEach(ticket => {
-      if (!ticket.id) {
+      if (!ticket || !ticket.id) {
         console.error('Ticket missing ID:', ticket);
         return; // Skip tickets without IDs
       }
       
-      if (!ticketMap.has(ticket.id)) {
-        ticketMap.set(ticket.id, ticket);
-      } else {
-        console.log(`Preventing duplicate ticket in column ${id}:`, ticket.key);
-      }
+      // Always keep the most recent instance of a ticket if duplicates exist
+      ticketMap.set(ticket.id, ticket);
     });
     
     // Return the deduplicated array of tickets
     return Array.from(ticketMap.values());
-  }, [tickets, id]);
+  }, [tickets]);
 
   return (
     <div className="flex-shrink-0 w-72">

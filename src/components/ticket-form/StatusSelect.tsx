@@ -1,6 +1,7 @@
 import React from 'react';
 import { Status } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 interface StatusSelectProps {
   status: Status;
@@ -51,7 +52,7 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
       
       if (newStatusIndex > childIndex) {
         console.log(`Cannot move parent past child status: ${childStatus}`);
-        onStatusChange(status); // Keep the current status
+        toast.error(`Cannot move parent past child status: ${childStatus}`);
         return;
       }
     }
@@ -63,7 +64,7 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
       
       if (newStatusIndex < parentIndex) {
         console.log(`Cannot move child before parent status: ${parentStatus}`);
-        onStatusChange(status); // Keep the current status
+        toast.error(`Cannot move child before parent status: ${parentStatus}`);
         return;
       }
     }

@@ -26,22 +26,24 @@ export const useTicketOperations = (refetch: () => void) => {
       const destStatusIndex = statusOrder.indexOf(destinationColumn);
       const isMovingForward = destStatusIndex > sourceStatusIndex;
       
+      // Only validate if we're moving a parent ticket forward
       if (isMovingForward && !ticketToMove.parentId) {
         try {
-          // Get any child tickets of this ticket (only relevant if it's a parent)
+          // Get any child tickets of this ticket
           const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
           
           if (childTickets && childTickets.length > 0) {
-            // A parent cannot move ahead of any of its children
-            const childrenAhead = childTickets.filter(child => {
+            // Check if any child tickets are in an earlier status than our destination
+            // This prevents a parent from moving ahead of any of its children
+            const childrenBehind = childTickets.filter(child => {
               const childStatusIndex = statusOrder.indexOf(child.status as Status);
-              return childStatusIndex > sourceStatusIndex && childStatusIndex >= destStatusIndex;
+              return childStatusIndex < destStatusIndex;
             });
             
-            if (childrenAhead.length > 0) {
-              console.error('Cannot move parent ahead of children:', 
-                childrenAhead.map(t => `${t.key} (${t.status})`).join(', '));
-              toast.error('Cannot move parent ticket ahead of its children');
+            if (childrenBehind.length > 0) {
+              const childKeys = childrenBehind.map(t => t.key).join(', ');
+              console.error(`Cannot move parent ahead of children: ${childKeys}`);
+              toast.error(`Cannot move parent ticket ahead of its children: ${childKeys}`);
               return; // Exit without updating
             }
           }
@@ -138,30 +140,3 @@ export const useTicketOperations = (refetch: () => void) => {
     handleCreateTicket
   };
 };
-
-// Helper function to recursively get all descendants of a ticket
-// This includes children, grandchildren, etc.
-async function getAllDescendantTickets(ticketId: string): Promise<Ticket[]> {
-  try {
-    // Get immediate children first
-    const childTickets = await supabaseService.ticket.getChildTickets(ticketId);
-    
-    if (!childTickets || childTickets.length === 0) {
-      return [];
-    }
-    
-    // Start with the immediate children
-    let allDescendants = [...childTickets];
-    
-    // Recursively get descendants for each child
-    for (const child of childTickets) {
-      const childDescendants = await getAllDescendantTickets(child.id);
-      allDescendants = [...allDescendants, ...childDescendants];
-    }
-    
-    return allDescendants;
-  } catch (error) {
-    console.error('Error fetching descendants:', error);
-    return [];
-  }
-}
