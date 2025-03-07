@@ -96,7 +96,6 @@ export function useDragAndDrop(
       }
     }
 
-    // Update UI first for immediate response
     // Remove from source column
     const newSourceTickets = sourceTickets.filter(t => t.id !== draggableId);
 

@@ -30,7 +30,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Local state to track the selectedIssueType from props
   const [selectedIssueTypeState, setSelectedIssueTypeState] = useState<string | null>(selectedIssueType);
   
-  // Process board data to deduplicate tickets
+  // Process board data to deduplicate tickets and ensure no duplicates in the drag and drop
   const processedBoard = React.useMemo(() => {
     if (!board || !board.columns) return board;
     
@@ -41,7 +41,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       // Filter out duplicates from each column
       const uniqueTickets = column.tickets.filter(ticket => {
         if (processedTicketIds.current.has(ticket.id)) {
-          console.log(`Filtering out duplicate ticket in ${column.id}: ${ticket.key} (${ticket.id})`);
+          console.log(`KanbanBoard: Filtering out duplicate ticket in ${column.id}: ${ticket.key} (${ticket.id})`);
           return false;
         }
         
@@ -54,6 +54,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         tickets: uniqueTickets
       };
     });
+    
+    console.log(`KanbanBoard: After deduplication: ${processedTicketIds.current.size} unique tickets`);
     
     return {
       ...board,
@@ -207,11 +209,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 key={column.id}
                 id={column.id}
                 title={column.title}
-                tickets={column.tickets.map((ticket, index) => ({
-                  ...ticket,
-                  // Add a unique display key to prevent React key issues
-                  _displayKey: `${ticket.id}-${index}`
-                }))} 
+                tickets={column.tickets} 
                 onOpenTicket={handleOpenTicket}
                 onAddTicket={handleOpenCreateModal}
                 projectId={board.project.id}

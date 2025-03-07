@@ -64,6 +64,9 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
       const totalTickets = board.columns.reduce((sum, col) => sum + col.tickets.length, 0);
       console.log(`KanbanBoardWrapper: Total tickets on board: ${totalTickets}`);
       
+      const deduplicatedTickets = deduplicatedBoard.columns.reduce((sum, col) => sum + col.tickets.length, 0);
+      console.log(`KanbanBoardWrapper: After deduplication: ${deduplicatedTickets} tickets`);
+      
       // If filtering is active, also log filtered tickets count
       if (selectedIssueType) {
         const filteredTickets = board.columns.reduce((sum, col) => 
@@ -71,7 +74,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
         console.log(`KanbanBoardWrapper: Filtered tickets (${selectedIssueType}): ${filteredTickets}`);
       }
     }
-  }, [board, selectedIssueType]);
+  }, [board, selectedIssueType, deduplicatedBoard]);
 
   // Only listen for creation events and parent updates, NEVER for moves
   useEffect(() => {
