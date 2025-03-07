@@ -15,7 +15,7 @@ interface ProjectTabsProps {
   activeTab: string;
   setActiveTab: (value: string) => void;
   onCreateTicket: () => void;
-  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
 }
 
@@ -31,7 +31,6 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Handle URL tab parameter
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const tabParam = searchParams.get('tab');
@@ -43,7 +42,6 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
     }
   }, [location.search, setActiveTab]);
   
-  // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     navigate(`/project/${project.id}?tab=${value}`, { replace: true });

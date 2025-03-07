@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 interface KanbanBoardWrapperProps {
   board: Board;
-  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
 }
 
@@ -51,7 +51,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       toast.info(`Moving ticket from ${sourceColumn.replace(/-/g, ' ')} to ${destinationColumn.replace(/-/g, ' ')}`);
       
       // The updateParent flag is no longer needed as parent updates are handled automatically
-      // in the ticket-update.ts file
+      // in the ticket-update.ts file through the entire hierarchy chain
       onTicketMove(ticketId, sourceColumn, destinationColumn);
     } catch (error) {
       console.error('Error in handleTicketMove:', error);

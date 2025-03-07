@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 export function useDragAndDrop(
   columns: any[],
   setColumns: React.Dispatch<React.SetStateAction<any[]>>,
-  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void
+  onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void
 ) {
   const onDragEnd = useCallback(async (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -97,14 +97,13 @@ export function useDragAndDrop(
       try {
         console.log(`Drag ended: Moving ticket ${draggableId} from ${source.droppableId} to ${destination.droppableId}`);
         
-        // Call the callback ensuring the updateParent flag is explicitly set to true
+        // Call the callback to update the database
         if (onTicketMove) {
-          // Always force updateParent to true to ensure parent tickets get updated
+          // Call onTicketMove with just the three needed parameters
           onTicketMove(
             draggableId,
             source.droppableId as Status,
-            destination.droppableId as Status,
-            true // Always force parent update to true
+            destination.droppableId as Status
           );
         } else {
           console.warn('onTicketMove callback is not provided');
@@ -141,7 +140,8 @@ export function useDragAndDrop(
             }
           }
           
-          // First update the moved ticket
+          // Update the moved ticket in the database
+          // Parent updates will happen automatically in the updateTicket function
           const updatedInDb = await supabaseService.updateTicket(draggableId, {
             status: destination.droppableId as Status
           });
@@ -151,45 +151,6 @@ export function useDragAndDrop(
             // Revert the UI if the database update failed
             setColumns(prevColumns => [...prevColumns]);
             return;
-          }
-          
-          // Check if this ticket has a parent and update the parent if it does
-          if (ticket.parentId) {
-            console.log(`Ticket has parent ID: ${ticket.parentId}, updating parent status`);
-            const parentTicket = await supabaseService.ticket.getTicketById(ticket.parentId);
-            
-            if (parentTicket) {
-              // Special case for "done" status - need to check all children
-              if (destination.droppableId === 'done') {
-                const allChildTickets = await supabaseService.ticket.getChildTickets(parentTicket.id);
-                const nonDoneChildren = allChildTickets.filter(child => child.status !== 'done');
-                
-                if (nonDoneChildren.length > 0) {
-                  console.log('Not updating parent to done yet as some children are still not done');
-                  toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
-                  return;
-                }
-              }
-              
-              // For all other statuses, always update the parent
-              const updatedParent = await supabaseService.updateTicket(parentTicket.id, {
-                status: destination.droppableId as Status
-              });
-              
-              if (updatedParent) {
-                toast.success(`Parent ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
-                
-                // Dispatch custom event to trigger UI update for the parent ticket
-                document.dispatchEvent(new CustomEvent('ticket-parent-updated', {
-                  detail: { 
-                    parentId: parentTicket.id, 
-                    newStatus: destination.droppableId as Status 
-                  }
-                }));
-              } else {
-                toast.error("Failed to update parent ticket");
-              }
-            }
           }
           
           toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);

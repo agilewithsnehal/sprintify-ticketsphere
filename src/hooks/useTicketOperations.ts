@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -7,9 +6,9 @@ import { toast } from 'sonner';
 export const useTicketOperations = (refetch: () => void) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent = true) => {
+  const handleTicketMove = async (ticketId: string, sourceColumn: Status, destinationColumn: Status) => {
     try {
-      console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}, updateParent: ${updateParent}`);
+      console.log(`Moving ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
       
       // First get the ticket we're moving to verify if it has a parent
       const ticketToMove = await supabaseService.ticket.getTicketById(ticketId);
@@ -39,7 +38,7 @@ export const useTicketOperations = (refetch: () => void) => {
       }
       
       // Update the moved ticket status in the database
-      // The parent status update will be handled automatically by the updateTicket function
+      // Parent updates will be handled automatically by the updateTicket function
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
       });
@@ -61,8 +60,7 @@ export const useTicketOperations = (refetch: () => void) => {
         }
       }));
       
-      // We no longer need explicit parent updating here since it's handled in the updateTicket function
-      // Just trigger a refetch to update the UI
+      // Trigger a refetch to update the UI
       setTimeout(() => {
         refetch();
       }, 500);

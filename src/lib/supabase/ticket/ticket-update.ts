@@ -49,9 +49,11 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
     
     console.log(`Successfully updated ticket ${ticketId} in database`);
     
-    // If status is changing and we're not updating a parent ticket already (to prevent recursion)
+    // If status is changing and we're not already in the middle of a parent update cascade
+    // (to prevent recursion)
     if (updates.status !== undefined && !updates.fromParentUpdate) {
-      await updateParentTicketStatus(ticket.parent_id, updates.status as string);
+      // Always update all ancestors in the hierarchy when a status changes
+      await updateParentHierarchyStatus(ticket.parent_id, updates.status as string);
     }
     
     // Map the database ticket to our application ticket type and return it
@@ -63,10 +65,10 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
 }
 
 /**
- * Recursively updates parent ticket statuses
- * This ensures the parent status changes when children status changes
+ * Recursively updates parent ticket statuses through the entire hierarchy chain
+ * This ensures ALL parent tickets (epic, feature, story) change status when children change
  */
-async function updateParentTicketStatus(parentId: string | null, newStatus: string): Promise<void> {
+async function updateParentHierarchyStatus(parentId: string | null, newStatus: string): Promise<void> {
   if (!parentId) return;
   
   try {
@@ -84,8 +86,10 @@ async function updateParentTicketStatus(parentId: string | null, newStatus: stri
       return;
     }
     
-    // If moving to 'done', verify all children are done
+    // For 'done' status, we need to verify all children are done
+    // For other statuses, we can immediately update the parent
     if (newStatus === 'done') {
+      // Get all immediate children of this parent
       const { data: childTickets, error: childrenError } = await supabase
         .from('tickets')
         .select('*')
@@ -107,8 +111,8 @@ async function updateParentTicketStatus(parentId: string | null, newStatus: stri
       console.log(`All children of ${parentId} are done, updating parent to done`);
     }
     
-    // Always update parent status to match the latest child status
-    // For 'done' status, we only reach here if all children are done
+    // Always update parent status to match the child's new status (except for 'done' which
+    // requires the all-children-done check above)
     console.log(`Updating parent ticket ${parentId} status to ${newStatus}`);
     
     // Set fromParentUpdate flag to prevent infinite recursion
@@ -117,12 +121,13 @@ async function updateParentTicketStatus(parentId: string | null, newStatus: stri
       fromParentUpdate: true 
     });
     
-    // If this parent has its own parent, continue the chain
+    // Continue the chain by updating this parent's parent (if any)
+    // This ensures the entire hierarchy gets updated (task → story → feature → epic)
     if (parentTicket.parent_id) {
-      await updateParentTicketStatus(parentTicket.parent_id, newStatus);
+      await updateParentHierarchyStatus(parentTicket.parent_id, newStatus);
     }
   } catch (error) {
-    console.error('Error updating parent status:', error);
+    console.error('Error updating parent hierarchy status:', error);
   }
 }
 
