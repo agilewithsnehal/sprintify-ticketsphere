@@ -28,11 +28,29 @@ const Board = () => {
   } = useTicketOperations(refetch);
 
   // Add an effect to refetch board data when returning to the board
+  // and when a ticket creation event is detected
   useEffect(() => {
     if (projectId) {
       console.log('Board: Refetching data for project:', projectId);
       refetch();
     }
+    
+    // Listen for ticket creation events to trigger a refresh
+    const handleTicketEvent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('Board: Detected ticket event:', customEvent.detail);
+      
+      if (customEvent.detail?.type === 'created') {
+        console.log('Board: Refreshing after ticket creation event');
+        refetch();
+      }
+    };
+    
+    document.addEventListener('ticket-notification', handleTicketEvent);
+    
+    return () => {
+      document.removeEventListener('ticket-notification', handleTicketEvent);
+    };
   }, [projectId, refetch]);
 
   if (!projectId || !isValidUuid(projectId)) {

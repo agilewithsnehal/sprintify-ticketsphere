@@ -21,6 +21,13 @@ const BoardContent: React.FC<BoardContentProps> = ({
   isCreateModalOpen,
   onCloseCreateModal
 }) => {
+  // Callback to handle refresh
+  const handleRefresh = () => {
+    console.log('BoardContent: Refresh requested from child component');
+    // This component doesn't need to do anything special for refresh
+    // The parent components have their own refresh handlers
+  };
+
   return (
     <div className="container mx-auto p-4">
       <BoardContainer 
@@ -28,6 +35,7 @@ const BoardContent: React.FC<BoardContentProps> = ({
         boardName={board.name}
         onCreateTicket={() => onCloseCreateModal()}
         onTicketMove={onTicketMove}
+        onRefresh={handleRefresh}
       />
       
       {isCreateModalOpen && (

@@ -75,6 +75,17 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
       console.error('Error fetching inserted ticket:', fetchError);
       // Fall back to the inserted ticket data if we can't fetch the fresh data
       const mappedTicket = await mapDbTicketToTicket(insertedTicket);
+      
+      // Broadcast standard ticket creation event with consistent format
+      document.dispatchEvent(new CustomEvent('ticket-notification', {
+        detail: { 
+          type: 'created',
+          ticketKey: mappedTicket.key,
+          ticketId: mappedTicket.id,
+          message: `Ticket ${mappedTicket.key} created by ${mappedTicket.reporter.name}`
+        }
+      }));
+      
       return mappedTicket;
     }
     
@@ -82,9 +93,14 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
     const mappedTicket = await mapDbTicketToTicket(freshTicket);
     console.log('Mapped ticket:', JSON.stringify(mappedTicket));
     
-    // Broadcast a ticket creation event
-    document.dispatchEvent(new CustomEvent('ticket-created', {
-      detail: { ticket: mappedTicket }
+    // Broadcast standard ticket creation event with consistent format
+    document.dispatchEvent(new CustomEvent('ticket-notification', {
+      detail: { 
+        type: 'created',
+        ticketKey: mappedTicket.key,
+        ticketId: mappedTicket.id,
+        message: `Ticket ${mappedTicket.key} created by ${mappedTicket.reporter.name}`
+      }
     }));
     
     return mappedTicket;

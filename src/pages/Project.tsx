@@ -32,7 +32,7 @@ const Project = () => {
     }
   }, [tabParam]);
   
-  const { data: project, isLoading: isLoadingProject, error } = useQuery({
+  const { data: project, isLoading: isLoadingProject, error, refetch: refetchProject } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
       if (!projectId) throw new Error('Project ID is required');
@@ -41,7 +41,11 @@ const Project = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  const { data: tickets = [], isLoading: isLoadingTickets } = useQuery({
+  const { 
+    data: tickets = [], 
+    isLoading: isLoadingTickets, 
+    refetch: refetchTickets 
+  } = useQuery({
     queryKey: ['project-tickets', projectId],
     queryFn: async () => {
       if (!projectId) return [];
@@ -50,6 +54,15 @@ const Project = () => {
     enabled: !!projectId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Function to handle refreshing both project and tickets data
+  const handleRefresh = async () => {
+    console.log('Project page: Refreshing project and tickets data');
+    await Promise.all([
+      refetchProject(),
+      refetchTickets()
+    ]);
+  };
 
   if (error) {
     toast.error('Error loading project data');
@@ -79,6 +92,7 @@ const Project = () => {
         project={project} 
         tickets={tickets} 
         onConfigureClick={() => setConfigOpen(true)}
+        onRefresh={handleRefresh}
       />
       
       {project && (

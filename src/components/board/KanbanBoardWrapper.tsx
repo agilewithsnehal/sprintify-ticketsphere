@@ -28,10 +28,11 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       const customEvent = event as CustomEvent;
       console.log('KanbanBoardWrapper: Detected ticket event:', customEvent.detail);
       
-      // If we have a refresh callback, call it when a ticket is created
-      if (customEvent.detail?.type === 'created' && onRefresh) {
+      // If we have a refresh callback, call it when a ticket is created or moved
+      if ((customEvent.detail?.type === 'created' || customEvent.detail?.type === 'moved') && onRefresh) {
         console.log('KanbanBoardWrapper: Triggering refresh after ticket event');
-        onRefresh();
+        // Add a small delay to ensure database has updated
+        setTimeout(() => onRefresh(), 100);
       }
     };
     
@@ -55,7 +56,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       // If we have a refresh callback, call it after moving the ticket
       if (onRefresh) {
         console.log('KanbanBoardWrapper: Triggering refresh after ticket move');
-        onRefresh();
+        setTimeout(() => onRefresh(), 100);
       }
     } catch (error) {
       console.error('Error in handleTicketMove:', error);

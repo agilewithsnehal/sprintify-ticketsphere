@@ -142,7 +142,7 @@ export const useTicketOperations = (refetch: () => void) => {
     }
   };
 
-  const handleCreateTicket = async (ticket: Ticket) => {
+  const handleCreateTicket = async (ticket: Ticket): Promise<boolean> => {
     try {
       console.log('Creating new ticket:', ticket);
       
@@ -159,7 +159,7 @@ export const useTicketOperations = (refetch: () => void) => {
         console.log('Ticket created successfully:', result);
         toast.success('Ticket created successfully');
         
-        // Notify about the ticket creation
+        // Notify about the ticket creation with a standard event name and format
         document.dispatchEvent(new CustomEvent('ticket-notification', {
           detail: { 
             type: 'created',
@@ -173,7 +173,7 @@ export const useTicketOperations = (refetch: () => void) => {
         setTimeout(() => {
           console.log('Triggering refetch after ticket creation');
           refetch();
-        }, 500); // Small delay to ensure database has time to update
+        }, 100); // Small delay to ensure database has time to update
         
         return true;
       } else {

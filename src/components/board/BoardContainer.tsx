@@ -13,13 +13,15 @@ interface BoardContainerProps {
   boardName: string;
   onCreateTicket: () => void;
   onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
+  onRefresh?: () => void;
 }
 
 const BoardContainer: React.FC<BoardContainerProps> = ({
   projectId,
   boardName,
   onCreateTicket,
-  onTicketMove
+  onTicketMove,
+  onRefresh
 }) => {
   const [board, setBoard] = useState<Board | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,6 +68,12 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
         console.log('BoardContainer: Refreshing board data due to ticket event:', customEvent.detail.type);
         // Use refreshTrigger to force a re-fetch
         setRefreshTrigger(prev => prev + 1);
+        
+        // Also call the parent refresh if available
+        if (onRefresh) {
+          console.log('BoardContainer: Calling parent refresh');
+          onRefresh();
+        }
       }
     };
     
@@ -74,13 +82,19 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
     return () => {
       document.removeEventListener('ticket-notification', handleTicketCreated);
     };
-  }, []);
+  }, [onRefresh]);
 
   // Manual refresh method that can be called from child components
   const refreshBoard = useCallback(() => {
     console.log('BoardContainer: Manual refresh triggered');
     setRefreshTrigger(prev => prev + 1);
-  }, []);
+    
+    // Also call the parent refresh if available
+    if (onRefresh) {
+      console.log('BoardContainer: Calling parent refresh from manual refresh');
+      onRefresh();
+    }
+  }, [onRefresh]);
 
   const handleColumnsUpdate = async (updatedColumns: Column[]) => {
     try {

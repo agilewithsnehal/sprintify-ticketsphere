@@ -51,7 +51,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
 
   // Add an effect to listen for ticket creation events
   useEffect(() => {
-    const handleTicketCreated = (event: Event) => {
+    const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('KanbanBoard: Detected ticket creation event:', customEvent.detail);
       
@@ -62,10 +62,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
       }
     };
     
-    document.addEventListener('ticket-notification', handleTicketCreated);
+    document.addEventListener('ticket-notification', handleTicketEvent);
     
     return () => {
-      document.removeEventListener('ticket-notification', handleTicketCreated);
+      document.removeEventListener('ticket-notification', handleTicketEvent);
     };
   }, [onRefresh]);
 

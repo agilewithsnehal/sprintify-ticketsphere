@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListTodo, Users, BarChart3, Settings, GitBranch } from 'lucide-react';
@@ -17,6 +16,7 @@ interface ProjectTabsProps {
   setActiveTab: (value: string) => void;
   onCreateTicket: () => void;
   onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onRefresh?: () => void;
 }
 
 const ProjectTabs: React.FC<ProjectTabsProps> = ({
@@ -26,6 +26,7 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
   setActiveTab,
   onCreateTicket,
   onTicketMove,
+  onRefresh
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -83,6 +84,7 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
           boardName={project.name}
           onCreateTicket={onCreateTicket}
           onTicketMove={onTicketMove}
+          onRefresh={onRefresh}
         />
       </TabsContent>
       
