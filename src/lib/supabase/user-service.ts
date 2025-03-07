@@ -63,17 +63,24 @@ export const supabaseService = {
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${uuidv4()}.${fileExt}`;
-      const filePath = `profile-images/${fileName}`;
+      const filePath = `${fileName}`;
+
+      console.log('Uploading profile image:', filePath);
 
       // Upload the file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (uploadError) {
         console.error('Error uploading image:', uploadError);
         return null;
       }
+
+      console.log('Upload successful, data:', uploadData);
 
       // Get the public URL for the uploaded file
       const { data } = supabase.storage
@@ -81,6 +88,7 @@ export const supabaseService = {
         .getPublicUrl(filePath);
 
       const publicUrl = data.publicUrl;
+      console.log('Public URL:', publicUrl);
 
       // Update user profile with the new avatar URL
       await supabase

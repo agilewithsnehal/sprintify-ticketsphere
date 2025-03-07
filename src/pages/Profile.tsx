@@ -42,15 +42,15 @@ const Profile = () => {
       const avatarUrl = await supabaseService.uploadProfileImage(file, user.id);
       
       if (avatarUrl) {
-        // Update user object with new avatar URL
-        return await supabaseService.updateUserProfile(user.id, { avatar: avatarUrl });
+        // After successful upload, update the query data directly to show the new avatar
+        queryClient.setQueryData(['currentUser'], (oldData: User) => ({
+          ...oldData,
+          avatar: avatarUrl
+        }));
+        toast.success('Profile picture updated successfully');
+        return avatarUrl;
       }
       return null;
-    },
-    onSuccess: (data) => {
-      if (data) {
-        queryClient.setQueryData(['currentUser'], data);
-      }
     },
     onError: (error) => {
       toast.error('Failed to upload profile image');
@@ -97,7 +97,7 @@ const Profile = () => {
                   user={user} 
                   onSubmit={handleUpdateProfile} 
                   onImageUpload={handleImageUpload}
-                  isLoading={updateProfile.isPending} 
+                  isLoading={updateProfile.isPending || uploadProfileImage.isPending} 
                 />
               )}
             </CardContent>
