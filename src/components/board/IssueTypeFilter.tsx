@@ -2,7 +2,7 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bug, CircleDot, Flag, Layers, Blocks } from 'lucide-react';
+import { Bug, CircleDot, Flag, Layers, Blocks, FileText } from 'lucide-react';
 
 interface IssueTypeFilterProps {
   selectedIssueType: string | null;
@@ -19,6 +19,7 @@ const IssueTypeFilter: React.FC<IssueTypeFilterProps> = ({
     { value: null, label: 'All Types' },
     { value: 'epic', label: 'Epic', icon: <Layers className="h-4 w-4 text-purple-500" /> },
     { value: 'feature', label: 'Feature', icon: <Flag className="h-4 w-4 text-blue-500" /> },
+    { value: 'story', label: 'Story', icon: <FileText className="h-4 w-4 text-indigo-500" /> },
     { value: 'task', label: 'Task', icon: <CircleDot className="h-4 w-4 text-green-500" /> },
     { value: 'bug', label: 'Bug', icon: <Bug className="h-4 w-4 text-red-500" /> },
     { value: 'subtask', label: 'Subtask', icon: <Blocks className="h-4 w-4 text-orange-500" /> }

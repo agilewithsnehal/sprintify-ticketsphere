@@ -38,21 +38,21 @@ export const useTicketOperations = (refetch: () => void) => {
               const pendingChildren = childTickets.filter(child => child.status !== 'done');
               
               if (pendingChildren.length > 0) {
-                console.log('Cannot move parent to done, some children are not done:', 
+                console.error('Cannot move parent to done: Some children are not done:', 
                   pendingChildren.map(t => `${t.key} (${t.status})`).join(', '));
                 toast.error('All child tickets must be done before moving parent to done');
                 return; // Exit without updating
               }
             }
             
-            // For other forward moves, no child can be in an earlier status
+            // For any forward move, no child can be in an earlier status
             const childrenBehind = childTickets.filter(child => {
               const childStatusIndex = statusOrder.indexOf(child.status as Status);
               return childStatusIndex < destStatusIndex;
             });
             
             if (childrenBehind.length > 0) {
-              console.log('Cannot move parent ahead of children:', 
+              console.error('Cannot move parent ahead of children:', 
                 childrenBehind.map(t => `${t.key} (${t.status})`).join(', '));
               toast.error('Cannot move parent ticket ahead of its children');
               return; // Exit without updating

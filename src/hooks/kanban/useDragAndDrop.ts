@@ -57,7 +57,7 @@ export function useDragAndDrop(
     // Check if we're moving forward in the workflow
     const isMovingForward = destStatusIndex > sourceStatusIndex;
 
-    // If moving a parent ticket forward, validate against child tickets
+    // If moving a parent ticket forward in the workflow, validate against child tickets
     if (isMovingForward && !movedTicket.parentId) {
       try {
         // Fetch child tickets to verify if move is allowed
@@ -69,6 +69,7 @@ export function useDragAndDrop(
             const pendingChildren = childTickets.filter(child => child.status !== 'done');
             
             if (pendingChildren.length > 0) {
+              console.error('Cannot move parent to done: Children not done');
               toast.error('All child tickets must be done before moving parent to done');
               return; // Exit without updating
             }
@@ -81,10 +82,12 @@ export function useDragAndDrop(
           });
           
           if (childrenBehind.length > 0) {
-            console.log('Children behind:', childrenBehind.map(t => `${t.key} (${t.status})`));
+            console.error('Cannot move parent ahead of children:', childrenBehind.map(t => `${t.key} (${t.status})`));
             toast.error('Cannot move parent ticket ahead of its children');
             return; // Exit without updating
           }
+        } else {
+          console.log('No child tickets found for parent ticket:', draggableId);
         }
       } catch (error) {
         console.error('Error validating child tickets:', error);

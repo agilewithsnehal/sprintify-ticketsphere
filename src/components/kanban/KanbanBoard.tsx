@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
@@ -175,6 +174,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
+  // The selected column tickets need to respect the issue type filter
+  const filteredColumns = columns.map(column => {
+    // Apply issue type filtering if a filter is selected
+    const columnTickets = selectedIssueTypeState 
+      ? column.tickets.filter(t => t.issueType === selectedIssueTypeState)
+      : column.tickets;
+    
+    // Keep the original column but with filtered tickets
+    return {
+      ...column,
+      tickets: columnTickets
+    };
+  });
+
   return (
     <>
       <div className="relative">
@@ -189,34 +202,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             className="flex space-x-4 overflow-x-auto pb-4 pt-2 px-10 scrollbar-hide" 
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {columns.map((column) => {
-              // Ensure each ticket has a unique key before passing to KanbanColumn
-              const columnTickets = selectedIssueTypeState 
-                ? column.tickets
-                    .filter(t => t.issueType === selectedIssueTypeState)
-                    .map((ticket, index) => ({
-                      ...ticket,
-                      // Add a unique display key to prevent React key issues
-                      _displayKey: `${ticket.id}-${index}`
-                    }))
-                : column.tickets.map((ticket, index) => ({
-                    ...ticket,
-                    // Add a unique display key to prevent React key issues
-                    _displayKey: `${ticket.id}-${index}`
-                  }));
-                
-              return (
-                <KanbanColumn
-                  key={column.id}
-                  id={column.id}
-                  title={column.title}
-                  tickets={columnTickets} 
-                  onOpenTicket={handleOpenTicket}
-                  onAddTicket={handleOpenCreateModal}
-                  projectId={board.project.id}
-                />
-              );
-            })}
+            {filteredColumns.map((column) => (
+              <KanbanColumn
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                tickets={column.tickets.map((ticket, index) => ({
+                  ...ticket,
+                  // Add a unique display key to prevent React key issues
+                  _displayKey: `${ticket.id}-${index}`
+                }))} 
+                onOpenTicket={handleOpenTicket}
+                onAddTicket={handleOpenCreateModal}
+                projectId={board.project.id}
+              />
+            ))}
           </div>
         </DragDropContext>
       </div>

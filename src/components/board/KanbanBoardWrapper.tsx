@@ -26,6 +26,9 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
   const deduplicatedBoard = React.useMemo(() => {
     if (!board || !board.columns) return board;
     
+    // Clear the set when board changes to avoid stale data
+    processedTicketIds.clear();
+    
     const deduplicatedColumns = board.columns.map(column => {
       // Filter out duplicates for each column
       const uniqueTickets = column.tickets.filter(ticket => {
