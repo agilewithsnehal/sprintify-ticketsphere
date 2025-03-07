@@ -33,7 +33,15 @@ export const supabaseService = {
       const project = await projectService.getProjectById(projectId);
       if (!project) return null;
       
+      // Force fresh data fetch by adding cache-busting timestamp parameter
+      const timestamp = new Date().getTime();
+      console.log(`Fetching tickets for project ${projectId} with timestamp ${timestamp}`);
       const tickets = await ticketService.getTicketsByProjectId(projectId);
+      
+      console.log(`Fetched ${tickets.length} tickets for project ${projectId}`);
+      tickets.forEach(ticket => {
+        console.log(`Ticket: ${ticket.key}, Status: ${ticket.status}, ID: ${ticket.id}`);
+      });
       
       // Check if we have stored column configuration
       let storedColumns = getStoredColumns(projectId);
@@ -61,13 +69,14 @@ export const supabaseService = {
       // Map tickets to their respective columns
       const columns = validColumns.map(column => {
         const columnTickets = tickets.filter(ticket => ticket.status === column.id);
+        console.log(`Column ${column.title} has ${columnTickets.length} tickets`);
         return {
           ...column,
           tickets: columnTickets
         };
       });
       
-      console.log('Board created with columns:', columns.map(c => c.title));
+      console.log('Board created with columns:', columns.map(c => `${c.title} (${c.tickets.length})`));
       
       return {
         id: `board-${projectId}`,

@@ -40,7 +40,7 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
       parent_id: newTicket.parentId
     };
     
-    console.log('Inserting ticket with data:', ticketData);
+    console.log('Inserting ticket with data:', JSON.stringify(ticketData));
     
     // Insert the new ticket
     const { data: insertedTicket, error: insertError } = await supabase
@@ -59,10 +59,12 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
       return null;
     }
     
-    console.log('Ticket inserted successfully:', insertedTicket.id);
+    console.log('Ticket inserted successfully with ID:', insertedTicket.id);
     
     // Map the database ticket to our application ticket type
-    return await mapDbTicketToTicket(insertedTicket);
+    const mappedTicket = await mapDbTicketToTicket(insertedTicket);
+    console.log('Mapped ticket:', JSON.stringify(mappedTicket));
+    return mappedTicket;
   } catch (error) {
     console.error('Error creating ticket:', error);
     return null;

@@ -7,13 +7,14 @@ import { toast } from 'sonner';
 interface KanbanBoardWrapperProps {
   board: Board;
   onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onRefresh?: () => void;
 }
 
-const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicketMove }) => {
+const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicketMove, onRefresh }) => {
   useEffect(() => {
     if (board && board.columns) {
       console.log('KanbanBoardWrapper: Rendering board with columns:', 
-        board.columns.map(c => c.title).join(', '));
+        board.columns.map(c => `${c.title} (${c.tickets.length})`).join(', '));
     }
   }, [board]);
 
@@ -32,7 +33,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
     }
   };
 
-  return <KanbanBoard board={board} onTicketMove={handleTicketMove} />;
+  return <KanbanBoard board={board} onTicketMove={handleTicketMove} onRefresh={onRefresh} />;
 };
 
 export default KanbanBoardWrapper;

@@ -164,12 +164,17 @@ export const useTicketOperations = (refetch: () => void) => {
           detail: { 
             type: 'created',
             ticketKey: ticket.key,
+            ticketId: result.id,
             message: `Ticket ${ticket.key} created by ${ticket.reporter.name}`
           }
         }));
         
         // Force a refetch to update the board with the new ticket
-        refetch();
+        setTimeout(() => {
+          console.log('Triggering refetch after ticket creation');
+          refetch();
+        }, 500); // Small delay to ensure database has time to update
+        
         return true;
       } else {
         console.error('Failed to create ticket');

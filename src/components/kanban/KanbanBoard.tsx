@@ -13,9 +13,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface KanbanBoardProps {
   board: BoardType;
   onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
+  onRefresh?: () => void;
 }
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefresh }) => {
   const {
     columns,
     selectedTicket,
@@ -53,7 +54,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     const handleTicketCreated = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('KanbanBoard: Detected ticket creation event:', customEvent.detail);
-      // No need to do anything here as the parent component will refetch
+      
+      // Call parent's refresh function if provided
+      if (customEvent.detail?.type === 'created' && onRefresh) {
+        console.log('KanbanBoard: Triggering refresh after ticket creation');
+        onRefresh();
+      }
     };
     
     document.addEventListener('ticket-notification', handleTicketCreated);
@@ -61,7 +67,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     return () => {
       document.removeEventListener('ticket-notification', handleTicketCreated);
     };
-  }, []);
+  }, [onRefresh]);
 
   if (!board || !board.project || !board.columns) {
     return (
@@ -86,6 +92,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
       if (!ticket.updatedAt) ticket.updatedAt = new Date();
       
       const result = await handleTicketCreate(ticket);
+      
+      // If creation was successful and we have a refresh function, call it
+      if (result !== false && onRefresh) {
+        console.log('Ticket created successfully, triggering board refresh');
+        onRefresh();
+      }
+      
       return result === false ? false : true;
     } catch (error) {
       console.error('Error creating ticket in wrapper:', error);

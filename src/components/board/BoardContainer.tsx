@@ -24,16 +24,18 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   const [board, setBoard] = useState<Board | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const fetchBoard = async () => {
     try {
       setIsLoading(true);
       
       console.log('BoardContainer: Fetching board data for project:', projectId);
+      // Force a fresh fetch by adding a timestamp to avoid cache issues
       const boardData = await supabaseService.createBoard(projectId);
       
       if (boardData) {
-        console.log('Board fetched with columns:', boardData.columns.map(c => c.title));
+        console.log('Board fetched with columns:', boardData.columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
         setBoard(boardData);
       } else {
         setError(new Error('Board not found'));
@@ -50,15 +52,19 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   useEffect(() => {
     console.log('BoardContainer: Fetching board for project:', projectId);
     fetchBoard();
-  }, [projectId]);
+  }, [projectId, refreshTrigger]);
 
   // Listen for ticket creation events to trigger a refresh
   useEffect(() => {
     const handleTicketCreated = (event: Event) => {
       const customEvent = event as CustomEvent;
-      if (customEvent.detail?.type === 'created') {
-        console.log('BoardContainer: Detected ticket creation, refreshing board data');
-        fetchBoard();
+      console.log('BoardContainer: Detected ticket event:', customEvent.detail);
+      
+      // Refresh the board for any ticket-related event
+      if (customEvent.detail?.type) {
+        console.log('BoardContainer: Refreshing board data due to ticket event:', customEvent.detail.type);
+        // Use refreshTrigger to force a re-fetch
+        setRefreshTrigger(prev => prev + 1);
       }
     };
     
@@ -68,6 +74,12 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
       document.removeEventListener('ticket-notification', handleTicketCreated);
     };
   }, []);
+
+  // Manual refresh method that can be called from child components
+  const refreshBoard = () => {
+    console.log('BoardContainer: Manual refresh triggered');
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   const handleColumnsUpdate = async (updatedColumns: Column[]) => {
     try {
@@ -114,7 +126,8 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
       
       <KanbanBoardWrapper 
         board={board} 
-        onTicketMove={onTicketMove} 
+        onTicketMove={onTicketMove}
+        onRefresh={refreshBoard}
       />
     </div>
   );
