@@ -51,6 +51,15 @@ export const useTicketOperations = (refetch: () => void) => {
       
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
+      // Notify about the ticket movement
+      document.dispatchEvent(new CustomEvent('ticket-notification', {
+        detail: { 
+          type: 'moved',
+          ticketKey: ticketToMove.key,
+          message: `Ticket ${ticketToMove.key} moved to ${destinationColumn.replace(/-/g, ' ')}`
+        }
+      }));
+      
       // If this ticket has a parent ID and updateParent is true, update the parent ticket
       if (ticketToMove.parentId && updateParent) {
         console.log(`Ticket has parent ID: ${ticketToMove.parentId}, updating parent`);
@@ -102,6 +111,15 @@ export const useTicketOperations = (refetch: () => void) => {
             document.dispatchEvent(new CustomEvent('ticket-parent-updated', {
               detail: { parentId: parentTicket.id, newStatus: destinationColumn }
             }));
+            
+            // Notify about the parent ticket movement
+            document.dispatchEvent(new CustomEvent('ticket-notification', {
+              detail: { 
+                type: 'moved',
+                ticketKey: parentTicket.key,
+                message: `Parent ticket ${parentTicket.key} moved to ${destinationColumn.replace(/-/g, ' ')}`
+              }
+            }));
           } else {
             console.error('Failed to update parent ticket status');
             toast.error('Failed to update parent ticket', {
@@ -138,6 +156,16 @@ export const useTicketOperations = (refetch: () => void) => {
       if (result) {
         console.log('Ticket created successfully:', result);
         toast.success('Ticket created successfully');
+        
+        // Notify about the ticket creation
+        document.dispatchEvent(new CustomEvent('ticket-notification', {
+          detail: { 
+            type: 'created',
+            ticketKey: ticket.key,
+            message: `Ticket ${ticket.key} created by ${ticket.reporter.name}`
+          }
+        }));
+        
         refetch();
         return true;
       } else {

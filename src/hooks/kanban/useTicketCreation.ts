@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Project, Status, Priority, IssueType, Ticket, User } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -158,7 +159,8 @@ export function useTicketCreation({
         }
       }
       
-      // Generate key in format "PRJ-123"
+      // Generate key in format "PRJ-123" using the project's key
+      console.log(`Generating ticket key with project key: ${project.key}`);
       return `${project.key}-${ticketNumber}`;
     } catch (error) {
       console.error('Error generating ticket key:', error);
@@ -204,7 +206,7 @@ export function useTicketCreation({
         ? [...project.members, reporter].find(user => user.id === assigneeId)
         : undefined;
       
-      // Generate ticket key
+      // Generate ticket key using the project's key
       const ticketKey = await generateTicketKey(project);
       console.log(`Generated ticket key: ${ticketKey}`);
       
@@ -238,6 +240,15 @@ export function useTicketCreation({
       const success = await onTicketCreate(newTicket);
       
       if (success) {
+        // Notify other users that a ticket was created
+        document.dispatchEvent(new CustomEvent('ticket-notification', {
+          detail: { 
+            type: 'created',
+            ticketKey: ticketKey,
+            message: `Ticket ${ticketKey} created by ${reporter.name}`
+          }
+        }));
+        
         resetForm();
         onClose();
       }
