@@ -14,6 +14,8 @@ interface BoardContainerProps {
   onCreateTicket: () => void;
   onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
+  selectedIssueType: string | null;
+  onIssueTypeChange: (type: string | null) => void;
 }
 
 const BoardContainer: React.FC<BoardContainerProps> = ({
@@ -21,7 +23,9 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
   boardName,
   onCreateTicket,
   onTicketMove,
-  onRefresh
+  onRefresh,
+  selectedIssueType,
+  onIssueTypeChange
 }) => {
   const [board, setBoard] = useState<Board | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,12 +142,16 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
         onCreateTicket={onCreateTicket}
         onFilterClick={handleFilterClick}
         onGroupClick={handleGroupClick}
+        onIssueTypeChange={onIssueTypeChange}
+        selectedIssueType={selectedIssueType}
       />
       
       <KanbanBoardWrapper 
         board={board} 
         onTicketMove={onTicketMove}
         onRefresh={refreshBoard}
+        selectedIssueType={selectedIssueType}
+        onIssueTypeChange={onIssueTypeChange}
       />
     </div>
   );

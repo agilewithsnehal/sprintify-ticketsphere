@@ -85,7 +85,9 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
   return <KanbanBoard 
     board={board} 
     onTicketMove={handleTicketMove} 
-    onRefresh={onRefresh} 
+    onRefresh={onRefresh}
+    selectedIssueType={selectedIssueType}
+    onIssueTypeChange={onIssueTypeChange}
   />;
 };
 

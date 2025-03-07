@@ -11,6 +11,8 @@ interface BoardContentProps {
   onCreateTicket: (ticket: any) => Promise<boolean>;
   isCreateModalOpen: boolean;
   onCloseCreateModal: () => void;
+  selectedIssueType: string | null;
+  onIssueTypeChange: (type: string | null) => void;
 }
 
 const BoardContent: React.FC<BoardContentProps> = ({
@@ -19,7 +21,9 @@ const BoardContent: React.FC<BoardContentProps> = ({
   onTicketMove,
   onCreateTicket,
   isCreateModalOpen,
-  onCloseCreateModal
+  onCloseCreateModal,
+  selectedIssueType,
+  onIssueTypeChange
 }) => {
   // Callback to handle refresh
   const handleRefresh = () => {
@@ -36,6 +40,8 @@ const BoardContent: React.FC<BoardContentProps> = ({
         onCreateTicket={() => onCloseCreateModal()}
         onTicketMove={onTicketMove}
         onRefresh={handleRefresh}
+        selectedIssueType={selectedIssueType}
+        onIssueTypeChange={onIssueTypeChange}
       />
       
       {isCreateModalOpen && (

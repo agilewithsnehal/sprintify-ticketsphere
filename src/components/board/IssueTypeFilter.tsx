@@ -2,7 +2,7 @@
 import React from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Ticket, IssueType } from '@/lib/types';
-import { PuzzlePiece, Layers, TicketIcon, Bug, Lightbulb } from 'lucide-react';
+import { Blocks, Layers, TicketIcon, Bug, Lightbulb } from 'lucide-react';
 
 interface IssueTypeFilterProps {
   selectedType: string | null;
@@ -28,7 +28,7 @@ const IssueTypeFilter: React.FC<IssueTypeFilterProps> = ({ selectedType, onTypeC
             </SelectItem>
             <SelectItem value="epic" className="flex items-center gap-2">
               <span className="flex items-center gap-2">
-                <PuzzlePiece className="h-4 w-4 text-purple-500" />
+                <Blocks className="h-4 w-4 text-purple-500" />
                 Epic
               </span>
             </SelectItem>
