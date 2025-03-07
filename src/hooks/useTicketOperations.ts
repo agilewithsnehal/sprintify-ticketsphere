@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -87,7 +86,6 @@ export const useTicketOperations = (refetch: () => void) => {
             
             if (nonDoneChildren.length > 0) {
               console.log('Not updating parent to done yet as some children are still not done');
-              refetch();
               return;
             }
           }
@@ -136,10 +134,9 @@ export const useTicketOperations = (refetch: () => void) => {
     } catch (error) {
       console.error('Error moving ticket:', error);
       toast.error('Failed to move ticket');
-    } finally {
-      // Always refetch to ensure UI reflects current state
       refetch();
     }
+    // Remove the automatic refetch from here - we'll only refresh when needed
   };
 
   const handleCreateTicket = async (ticket: Ticket): Promise<boolean> => {

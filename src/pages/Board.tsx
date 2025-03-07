@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import BoardNotFound from '@/components/board/BoardNotFound';
@@ -27,11 +27,17 @@ const Board = () => {
     handleCreateTicket
   } = useTicketOperations(refetch);
 
+  // Add a debounced refetch to avoid too many refreshes
+  const debouncedRefetch = useCallback(() => {
+    console.log('Board: Debounced refetch triggered');
+    refetch();
+  }, [refetch]);
+
   // Add an effect to refetch board data when returning to the board
-  // and when a ticket creation event is detected
+  // and only for ticket creation events, not move events
   useEffect(() => {
     if (projectId) {
-      console.log('Board: Refetching data for project:', projectId);
+      console.log('Board: Initial data fetch for project:', projectId);
       refetch();
     }
     
@@ -40,9 +46,10 @@ const Board = () => {
       const customEvent = event as CustomEvent;
       console.log('Board: Detected ticket event:', customEvent.detail);
       
+      // Only refresh for ticket creation, not for moves
       if (customEvent.detail?.type === 'created') {
         console.log('Board: Refreshing after ticket creation event');
-        refetch();
+        debouncedRefetch();
       }
     };
     
@@ -51,7 +58,7 @@ const Board = () => {
     return () => {
       document.removeEventListener('ticket-notification', handleTicketEvent);
     };
-  }, [projectId, refetch]);
+  }, [projectId, refetch, debouncedRefetch]);
 
   if (!projectId || !isValidUuid(projectId)) {
     return (

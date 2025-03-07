@@ -59,13 +59,13 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
 
   // Listen for ticket creation events to trigger a refresh
   useEffect(() => {
-    const handleTicketCreated = (event: Event) => {
+    const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('BoardContainer: Detected ticket event:', customEvent.detail);
       
-      // Refresh the board for any ticket-related event
-      if (customEvent.detail?.type) {
-        console.log('BoardContainer: Refreshing board data due to ticket event:', customEvent.detail.type);
+      // Only refresh board for specific events that require a refresh
+      if (customEvent.detail?.type === 'created') {
+        console.log('BoardContainer: Refreshing board data due to ticket creation event');
         // Use refreshTrigger to force a re-fetch
         setRefreshTrigger(prev => prev + 1);
         
@@ -77,10 +77,10 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
       }
     };
     
-    document.addEventListener('ticket-notification', handleTicketCreated);
+    document.addEventListener('ticket-notification', handleTicketEvent);
     
     return () => {
-      document.removeEventListener('ticket-notification', handleTicketCreated);
+      document.removeEventListener('ticket-notification', handleTicketEvent);
     };
   }, [onRefresh]);
 
