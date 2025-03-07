@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
 import { useTicketManagement } from './useTicketManagement';
@@ -32,15 +33,18 @@ export function useKanbanBoard(
     }
   }, [board]);
 
+  // Listen for parent ticket update events to update the UI immediately
   useEffect(() => {
     const handleParentTicketUpdated = (event: CustomEvent<{ parentId: string, newStatus: Status }>) => {
       const { parentId, newStatus } = event.detail;
       console.log(`Handling parent ticket update event: ${parentId} to ${newStatus}`);
       
+      // Update our local columns state to move the parent ticket to the new column
       setColumns(prevColumns => {
         let parentTicket: TicketType | null = null;
         let sourceColumnId: Status | null = null;
         
+        // Find the parent ticket and its current column
         prevColumns.forEach(column => {
           const foundTicket = column.tickets.find(t => t.id === parentId);
           if (foundTicket) {
@@ -49,6 +53,7 @@ export function useKanbanBoard(
           }
         });
         
+        // If ticket not found or already in correct column, no update needed
         if (!parentTicket || !sourceColumnId || sourceColumnId === newStatus) {
           console.log('No UI update needed - parent ticket not found or already in correct column');
           return prevColumns;
@@ -56,7 +61,9 @@ export function useKanbanBoard(
         
         console.log(`Moving parent ${parentId} in UI from ${sourceColumnId} to ${newStatus}`);
         
+        // Move the ticket between columns in the UI
         return prevColumns.map(column => {
+          // Remove from source column
           if (column.id === sourceColumnId) {
             return {
               ...column,
@@ -64,6 +71,7 @@ export function useKanbanBoard(
             };
           }
           
+          // Add to destination column
           if (column.id === newStatus) {
             return {
               ...column,
@@ -76,6 +84,7 @@ export function useKanbanBoard(
       });
     };
     
+    // Add event listener for parent ticket updates
     document.addEventListener('ticket-parent-updated', 
       handleParentTicketUpdated as EventListener);
       
@@ -145,6 +154,7 @@ export function useKanbanBoard(
         }
       }
       
+      // Update the ticket status - parent updates will happen automatically in the backend
       const result = await supabaseService.updateTicket(ticketId, {
         ...ticket,
         status: destinationColumn

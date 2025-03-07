@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Ticket, Status } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
@@ -37,8 +38,8 @@ export const useTicketOperations = (refetch: () => void) => {
         }
       }
       
-      // Update the moved ticket status in the database
-      // Parent updates will be handled automatically by the updateTicket function
+      // Update the ticket status in the database
+      // The parent updates will be handled automatically in the ticket-update.ts
       const updatedTicket = await supabaseService.updateTicket(ticketId, { 
         status: destinationColumn 
       });

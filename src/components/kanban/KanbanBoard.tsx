@@ -49,23 +49,25 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
     console.log("KanbanBoard: Columns:", columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
   }, [board, columns]);
 
-  // Add an effect to listen for ticket creation events
+  // Add an effect to listen for ticket creation and parent update events
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('KanbanBoard: Detected ticket creation event:', customEvent.detail);
+      console.log('KanbanBoard: Detected ticket event:', customEvent.detail);
       
-      // Call parent's refresh function if provided
-      if (customEvent.detail?.type === 'created' && onRefresh) {
-        console.log('KanbanBoard: Triggering refresh after ticket creation');
+      // Call parent's refresh function for ticket creation events and parent updates
+      if ((customEvent.detail?.type === 'created' || event.type === 'ticket-parent-updated') && onRefresh) {
+        console.log('KanbanBoard: Triggering refresh after ticket event');
         onRefresh();
       }
     };
     
     document.addEventListener('ticket-notification', handleTicketEvent);
+    document.addEventListener('ticket-parent-updated', handleTicketEvent);
     
     return () => {
       document.removeEventListener('ticket-notification', handleTicketEvent);
+      document.removeEventListener('ticket-parent-updated', handleTicketEvent);
     };
   }, [onRefresh]);
 

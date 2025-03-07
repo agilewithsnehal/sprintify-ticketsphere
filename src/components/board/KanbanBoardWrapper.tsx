@@ -22,24 +22,27 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
     }
   }, [board]);
 
-  // Add an effect to listen for ticket creation events
+  // Add an effect to listen for any ticket update events
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('KanbanBoardWrapper: Detected ticket event:', customEvent.detail);
       
-      // Only refresh for ticket creation events, not for move events
-      if (customEvent.detail?.type === 'created' && onRefresh) {
+      // Refresh for any ticket event (created, moved, parent-updated, etc.)
+      if (onRefresh) {
         console.log('KanbanBoardWrapper: Triggering refresh after ticket event');
         // Add a small delay to ensure database has updated
         setTimeout(() => onRefresh(), 100);
       }
     };
     
+    // Listen for both regular ticket notifications and parent update events
     document.addEventListener('ticket-notification', handleTicketEvent);
+    document.addEventListener('ticket-parent-updated', handleTicketEvent);
     
     return () => {
       document.removeEventListener('ticket-notification', handleTicketEvent);
+      document.removeEventListener('ticket-parent-updated', handleTicketEvent);
     };
   }, [onRefresh]);
 
@@ -50,8 +53,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ board, onTicket
       // Show immediate feedback to the user
       toast.info(`Moving ticket from ${sourceColumn.replace(/-/g, ' ')} to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // The updateParent flag is no longer needed as parent updates are handled automatically
-      // in the ticket-update.ts file through the entire hierarchy chain
+      // The parent status updates are now handled automatically by the ticket-update.ts file
       onTicketMove(ticketId, sourceColumn, destinationColumn);
     } catch (error) {
       console.error('Error in handleTicketMove:', error);
