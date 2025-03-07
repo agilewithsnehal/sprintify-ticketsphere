@@ -142,34 +142,33 @@ export function useKanbanBoard(
     }
     
     try {
-      // Special validation for parent tickets moving to done
-      if (destinationColumn === 'done' && !ticket.parentId) {
-        const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
-        
-        if (childTickets && childTickets.length > 0) {
-          const pendingChildren = childTickets.filter(child => child.status !== 'done');
-          
-          if (pendingChildren.length > 0) {
-            console.error('Cannot move parent to done: Some children are not done');
-            toast.error('All child tickets must be done before moving parent to done');
-            return;
-          }
-        }
-      }
-      
-      // For any forward move of a parent ticket, check if children would be left behind
+      // For any forward move of a parent ticket
       if (sourceColumn !== destinationColumn) {
         // Get the status indices to determine if moving forward
-        const sourceStatusIndex = ['backlog', 'todo', 'in-progress', 'review', 'done'].indexOf(sourceColumn);
-        const destStatusIndex = ['backlog', 'todo', 'in-progress', 'review', 'done'].indexOf(destinationColumn);
+        const sourceStatusIndex = statusOrder.indexOf(sourceColumn);
+        const destStatusIndex = statusOrder.indexOf(destinationColumn);
+        const isMovingForward = destStatusIndex > sourceStatusIndex;
         
-        if (destStatusIndex > sourceStatusIndex && !ticket.parentId) {
+        // Special validation for parent tickets
+        if (isMovingForward && !ticket.parentId) {
+          // Check for children tickets
           const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
           
           if (childTickets && childTickets.length > 0) {
-            // Check if any children would be left behind
+            // For "done" status, all children must be done
+            if (destinationColumn === 'done') {
+              const pendingChildren = childTickets.filter(child => child.status !== 'done');
+              
+              if (pendingChildren.length > 0) {
+                console.error('Cannot move parent to done: Some children are not done');
+                toast.error('All child tickets must be done before moving parent to done');
+                return;
+              }
+            }
+            
+            // For any forward move, no child can be in an earlier status
             const childrenBehind = childTickets.filter(child => {
-              const childStatusIndex = ['backlog', 'todo', 'in-progress', 'review', 'done'].indexOf(child.status as Status);
+              const childStatusIndex = statusOrder.indexOf(child.status as Status);
               return childStatusIndex < destStatusIndex;
             });
             
@@ -182,13 +181,36 @@ export function useKanbanBoard(
         }
       }
       
-      // Update the ticket status - parent updates will happen automatically in the backend
+      // Move the ticket in the UI immediately
+      setColumns(prevColumns => prevColumns.map(column => {
+        // Remove from source column
+        if (column.id === sourceColumn) {
+          return {
+            ...column,
+            tickets: column.tickets.filter(t => t.id !== ticketId)
+          };
+        }
+        
+        // Add to destination column
+        if (column.id === destinationColumn) {
+          return {
+            ...column,
+            tickets: [...column.tickets, { ...ticket, status: destinationColumn }]
+          };
+        }
+        
+        return column;
+      }));
+      
+      // Update the ticket status in the database
       const result = await supabaseService.updateTicket(ticketId, {
         ...ticket,
         status: destinationColumn
       });
       
       if (!result) {
+        // If database update fails, revert the UI change
+        setColumns(columnsRef.current);
         toast.error('Failed to update ticket status in database');
         return;
       }
@@ -196,19 +218,25 @@ export function useKanbanBoard(
       console.log(`Ticket ${ticketId} successfully moved to ${destinationColumn} in database`);
       toast.success(`Ticket moved to ${destinationColumn.replace(/-/g, ' ')}`);
       
+      // Call the onTicketMove callback if provided
       if (onTicketMove) {
-        console.log(`About to call onTicketMove for ticket ${ticketId} from ${sourceColumn} to ${destinationColumn}`);
         onTicketMove(ticketId, sourceColumn, destinationColumn);
       }
     } catch (error) {
       console.error('Error persisting ticket move:', error);
       toast.error('Failed to save ticket status');
+      
+      // Revert UI to previous state on error
+      setColumns(columnsRef.current);
     }
   };
 
   const { onDragEnd } = useDragAndDrop(columns, setColumns, handleTicketMoveWithPersistence);
   
   const { scrollLeft, scrollRight } = useScrollHandling(scrollContainerRef);
+
+  // Define the statusOrder for validation
+  const statusOrder: Status[] = ['backlog', 'todo', 'in-progress', 'review', 'done'];
 
   return {
     columns,

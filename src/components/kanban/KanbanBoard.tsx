@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
@@ -86,24 +85,22 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     console.log("KanbanBoard: Columns:", columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
   }, [board, columns]);
 
+  // Only listen for ticket creation events, not moves or status updates
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('KanbanBoard: Detected ticket event:', customEvent.detail);
       
-      // Only refresh for created tickets, not for moves
-      if ((customEvent.detail?.type === 'created' || event.type === 'ticket-parent-updated') && onRefresh) {
-        console.log('KanbanBoard: Triggering refresh after ticket event');
+      // Only refresh for created tickets, never for moves
+      if (customEvent.detail?.type === 'created' && onRefresh) {
+        console.log('KanbanBoard: Triggering refresh after ticket creation');
         onRefresh();
       }
     };
     
     document.addEventListener('ticket-notification', handleTicketEvent);
-    document.addEventListener('ticket-parent-updated', handleTicketEvent);
     
     return () => {
       document.removeEventListener('ticket-notification', handleTicketEvent);
-      document.removeEventListener('ticket-parent-updated', handleTicketEvent);
     };
   }, [onRefresh]);
 

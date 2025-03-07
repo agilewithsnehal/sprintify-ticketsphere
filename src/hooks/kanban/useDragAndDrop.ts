@@ -57,45 +57,7 @@ export function useDragAndDrop(
     // Check if we're moving forward in the workflow
     const isMovingForward = destStatusIndex > sourceStatusIndex;
 
-    // Special validation for parent tickets
-    if (isMovingForward && !movedTicket.parentId) {
-      try {
-        const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
-        
-        if (childTickets && childTickets.length > 0) {
-          // If moving to "done", all children must be done
-          if (destination.droppableId === 'done') {
-            const pendingChildren = childTickets.filter(child => child.status !== 'done');
-            
-            if (pendingChildren.length > 0) {
-              console.error('Cannot move parent to done: Some children are not done');
-              toast.error('All child tickets must be done before moving parent to done');
-              return; // Prevent the move entirely
-            }
-          } else {
-            // For other statuses, no child can be behind the parent
-            const destStatusIndexNum = statusOrder.indexOf(destination.droppableId as Status);
-            
-            // Check if any children are in earlier statuses than the destination
-            const childrenBehind = childTickets.filter(child => {
-              const childStatusIndex = statusOrder.indexOf(child.status as Status);
-              return childStatusIndex < destStatusIndexNum;
-            });
-            
-            if (childrenBehind.length > 0) {
-              console.error('Cannot move parent ahead of children');
-              toast.error('Cannot move parent ticket ahead of its children. All children must be at least in the same status.');
-              return; // Prevent the move
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking child tickets:', error);
-        toast.error('Error checking child tickets');
-        return;
-      }
-    }
-
+    // Update UI first for immediate response
     // Remove from source column
     const newSourceTickets = sourceTickets.filter(t => t.id !== draggableId);
 
@@ -103,7 +65,6 @@ export function useDragAndDrop(
     const updatedTicket = { 
       ...movedTicket,
       status: destination.droppableId as Status,
-      updatedAt: new Date()
     };
 
     // Add to destination column
@@ -135,34 +96,12 @@ export function useDragAndDrop(
           );
         } else {
           console.warn('onTicketMove callback is not provided');
-          
-          // Fallback to direct database update if no callback is provided
-          const ticket = await supabaseService.ticket.getTicketById(draggableId);
-          
-          if (!ticket) {
-            toast.error("Could not find ticket details");
-            return;
-          }
-          
-          // Validation logic is already handled above, so we can proceed with the update
-          // Parent updates will happen automatically in the updateTicket function
-          const updatedInDb = await supabaseService.updateTicket(draggableId, {
-            status: destination.droppableId as Status
-          });
-          
-          if (!updatedInDb) {
-            toast.error("Failed to save ticket status change");
-            // Revert the UI if the database update failed
-            setColumns(prevColumns => [...prevColumns]);
-            return;
-          }
-          
-          toast.success(`Ticket moved to ${destination.droppableId.replace(/-/g, ' ')}`);
         }
       } catch (error) {
         console.error('Error updating ticket status:', error);
         toast.error("Failed to save ticket status change");
-        // Revert the UI if the database update failed
+        
+        // Revert the UI if there was an error
         setColumns(prevColumns => [...prevColumns]);
       }
     }

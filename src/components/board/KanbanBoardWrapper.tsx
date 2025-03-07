@@ -37,27 +37,22 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
     }
   }, [board, selectedIssueType]);
 
-  // Add an effect to listen for ticket creation events ONLY (not moves)
+  // Only listen for creation events and parent updates, NEVER for moves
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('KanbanBoardWrapper: Detected ticket event:', customEvent.detail);
       
-      // Only refresh for created tickets or parent updates, NOT for moves
-      if ((customEvent.detail?.type === 'created' || event.type === 'ticket-parent-updated') && onRefresh) {
-        console.log('KanbanBoardWrapper: Triggering refresh after ticket creation or parent update');
-        // Add a small delay to ensure database has updated
+      // Only refresh for created tickets (not moves or updates)
+      if (customEvent.detail?.type === 'created' && onRefresh) {
+        console.log('KanbanBoardWrapper: Triggering refresh after ticket creation');
         setTimeout(() => onRefresh(), 100);
       }
     };
     
-    // Listen for both regular ticket notifications and parent update events
     document.addEventListener('ticket-notification', handleTicketEvent);
-    document.addEventListener('ticket-parent-updated', handleTicketEvent);
     
     return () => {
       document.removeEventListener('ticket-notification', handleTicketEvent);
-      document.removeEventListener('ticket-parent-updated', handleTicketEvent);
     };
   }, [onRefresh]);
 
@@ -68,8 +63,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
       // Show immediate feedback to the user
       toast.info(`Moving ticket from ${sourceColumn.replace(/-/g, ' ')} to ${destinationColumn.replace(/-/g, ' ')}`);
       
-      // The parent status updates are now handled automatically by the ticket-update.ts file
-      // This will update the database but won't trigger a full board refresh
+      // Call the parent handler to update the database without refreshing the board
       onTicketMove(ticketId, sourceColumn, destinationColumn);
     } catch (error) {
       console.error('Error in handleTicketMove:', error);
