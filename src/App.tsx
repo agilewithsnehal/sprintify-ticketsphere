@@ -8,6 +8,8 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 import Index from "./pages/Index";
 import Board from "./pages/Board";
 import Project from "./pages/Project";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import TicketPage from "./pages/TicketPage";
 import Reports from "./pages/Reports";
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/board/:projectId/ticket/:ticketId" element={<TicketPage />} />
             <Route path="/ticket/:ticketId" element={<TicketPage />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

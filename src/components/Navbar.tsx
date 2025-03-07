@@ -41,7 +41,7 @@ const Navbar = () => {
               <button className="focus:outline-none">
                 <Avatar className="h-8 w-8 cursor-pointer">
                   <AvatarImage src={currentUser?.avatar} alt={currentUser?.name || 'User'} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
+                  <AvatarFallback className={`bg-${currentUser?.avatarColor || 'purple'}-500 text-white`}>
                     {currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -66,7 +66,7 @@ const Navbar = () => {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/')}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
