@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Ticket, Status } from "@/lib/types";
 import { mapDbTicketToTicket } from "../utils";
@@ -60,28 +59,6 @@ export async function updateTicket(ticketId: string, updates: Partial<Ticket>): 
           if (childrenAhead.length > 0) {
             console.error('Cannot move parent ahead of children');
             throw new Error('Cannot move parent ticket ahead of its children');
-          }
-        }
-        
-        // Check if this is a child ticket (has parent_id)
-        if (ticket.parent_id) {
-          // Get the parent ticket
-          const { data: parentTicket, error: parentError } = await supabase
-            .from('tickets')
-            .select('*')
-            .eq('id', ticket.parent_id)
-            .single();
-          
-          if (parentError || !parentTicket) {
-            console.error('Error fetching parent ticket:', parentError);
-          } else {
-            const parentStatusIndex = statusOrder.indexOf(parentTicket.status as Status);
-            
-            // Child cannot move ahead of parent in workflow
-            if (newStatusIndex > parentStatusIndex) {
-              console.error('Cannot move child ahead of parent');
-              throw new Error('Cannot move child ticket ahead of its parent');
-            }
           }
         }
       }

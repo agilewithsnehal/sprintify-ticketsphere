@@ -60,8 +60,7 @@ export function useDragAndDrop(
     // If moving a ticket forward in the workflow, validate against hierarchy
     if (isMovingForward) {
       try {
-        // We need to check both parent-child and child-parent relationships
-        // First, get any child tickets of this ticket (only relevant if it's a parent)
+        // Get any child tickets of this ticket (only relevant if it's a parent)
         const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
         
         if (childTickets && childTickets.length > 0) {
@@ -72,30 +71,14 @@ export function useDragAndDrop(
           });
           
           if (childrenAhead.length > 0) {
-            console.error('Cannot move parent behind children:', 
+            console.error('Cannot move parent ahead of children:', 
               childrenAhead.map(t => `${t.key} (${t.status})`));
             toast.error('Cannot move parent ticket ahead of its children');
             return; // Exit without updating
           }
         }
         
-        // Now check if this is a child ticket (has parentId)
-        if (movedTicket.parentId) {
-          // This is a child ticket, check if parent exists and its status
-          const parentTicket = await supabaseService.ticket.getTicketById(movedTicket.parentId);
-          
-          if (parentTicket) {
-            const parentStatusIndex = statusOrder.indexOf(parentTicket.status as Status);
-            
-            // Child cannot move ahead of parent in workflow
-            if (destStatusIndex > parentStatusIndex) {
-              console.error('Cannot move child ahead of parent:', 
-                `Child: ${movedTicket.key} (${destination.droppableId}), Parent: ${parentTicket.key} (${parentTicket.status})`);
-              toast.error('Cannot move child ticket ahead of its parent');
-              return; // Exit without updating
-            }
-          }
-        }
+        // We're removing the parent check - children are allowed to move ahead of parents
       } catch (error) {
         console.error('Error validating ticket hierarchy:', error);
         toast.error('Failed to validate ticket hierarchy');

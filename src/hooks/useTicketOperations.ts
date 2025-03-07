@@ -45,23 +45,7 @@ export const useTicketOperations = (refetch: () => void) => {
             }
           }
           
-          // Now check if this is a child ticket (has parentId)
-          if (ticketToMove.parentId) {
-            // This is a child ticket, check if parent exists and its status
-            const parentTicket = await supabaseService.ticket.getTicketById(ticketToMove.parentId);
-            
-            if (parentTicket) {
-              const parentStatusIndex = statusOrder.indexOf(parentTicket.status as Status);
-              
-              // Child cannot move ahead of parent in workflow
-              if (destStatusIndex > parentStatusIndex) {
-                console.error('Cannot move child ahead of parent:', 
-                  `Child: ${ticketToMove.key} (${destinationColumn}), Parent: ${parentTicket.key} (${parentTicket.status})`);
-                toast.error('Cannot move child ticket ahead of its parent');
-                return; // Exit without updating
-              }
-            }
-          }
+          // Remove parent check - children are allowed to move ahead of parents
         } catch (error) {
           console.error('Error validating hierarchy:', error);
           toast.error('Failed to validate ticket hierarchy');
