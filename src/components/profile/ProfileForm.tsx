@@ -39,6 +39,8 @@ interface ProfileFormProps {
 
 const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormProps) => {
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [currentAvatar, setCurrentAvatar] = useState<string | null>(user.avatar || null);
+  
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -68,7 +70,9 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
     try {
       setUploadLoading(true);
       await onImageUpload(file);
-      toast.success('Profile picture uploaded successfully');
+      // Update local state to show the avatar immediately
+      // The actual URL will be updated by the parent component
+      setCurrentAvatar(URL.createObjectURL(file)); 
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload profile picture');
@@ -78,13 +82,14 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
   };
 
   const selectedColor = form.watch('avatarColor');
+  const hasAvatar = !!currentAvatar;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="flex flex-col items-center mb-6">
           <Avatar className="h-24 w-24 mb-4">
-            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarImage src={currentAvatar || ''} alt={user.name} />
             <AvatarFallback className={`bg-${selectedColor}-500 text-white text-xl`}>
               {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
             </AvatarFallback>
@@ -136,37 +141,39 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="avatarColor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Avatar Color</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-wrap gap-2"
-                >
-                  {avatarColors.map((color) => (
-                    <div key={color} className="flex items-center">
-                      <RadioGroupItem
-                        value={color}
-                        id={`color-${color}`}
-                        className="peer sr-only"
-                      />
-                      <label
-                        htmlFor={`color-${color}`}
-                        className={`h-8 w-8 rounded-full cursor-pointer ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white bg-${color}-500`}
-                      />
-                    </div>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {!hasAvatar && (
+          <FormField
+            control={form.control}
+            name="avatarColor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Avatar Color</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-wrap gap-2"
+                  >
+                    {avatarColors.map((color) => (
+                      <div key={color} className="flex items-center">
+                        <RadioGroupItem
+                          value={color}
+                          id={`color-${color}`}
+                          className="peer sr-only"
+                        />
+                        <label
+                          htmlFor={`color-${color}`}
+                          className={`h-8 w-8 rounded-full cursor-pointer ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white bg-${color}-500`}
+                        />
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <Button type="submit" disabled={isLoading || uploadLoading}>
           {isLoading ? 'Updating...' : 'Update Profile'}

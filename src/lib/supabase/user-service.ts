@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -25,15 +24,22 @@ export const supabaseService = {
     try {
       console.log('Updating user profile:', updates);
       
+      // If there's an avatar and no avatarColor provided, keep the existing avatarColor
+      const updateData: any = {
+        name: updates.name,
+        email: updates.email,
+        avatar: updates.avatar
+      };
+      
+      // Only update avatar_color if there's no avatar or if avatarColor is explicitly set
+      if (!updates.avatar || updates.avatarColor) {
+        updateData.avatar_color = updates.avatarColor;
+      }
+      
       // Update the database record with the correct field name (snake_case)
       const { data, error } = await supabase
         .from('users')
-        .update({
-          name: updates.name,
-          email: updates.email,
-          avatar_color: updates.avatarColor,
-          avatar: updates.avatar
-        })
+        .update(updateData)
         .eq('id', userId)
         .select()
         .single();
@@ -91,10 +97,19 @@ export const supabaseService = {
       console.log('Public URL:', publicUrl);
 
       // Update user profile with the new avatar URL
-      await supabase
+      const { error: updateError } = await supabase
         .from('users')
-        .update({ avatar: publicUrl })
+        .update({ 
+          avatar: publicUrl,
+          // Clear the avatar_color when an avatar is set
+          avatar_color: null 
+        })
         .eq('id', userId);
+        
+      if (updateError) {
+        console.error('Error updating user with avatar:', updateError);
+        return null;
+      }
 
       return publicUrl;
     } catch (error) {

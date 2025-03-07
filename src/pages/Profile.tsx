@@ -39,18 +39,25 @@ const Profile = () => {
   const uploadProfileImage = useMutation({
     mutationFn: async (file: File) => {
       if (!user) return null;
-      const avatarUrl = await supabaseService.uploadProfileImage(file, user.id);
-      
+      return await supabaseService.uploadProfileImage(file, user.id);
+    },
+    onSuccess: (avatarUrl) => {
       if (avatarUrl) {
         // After successful upload, update the query data directly to show the new avatar
+        // and remove the avatar color since we now have an image
         queryClient.setQueryData(['currentUser'], (oldData: User) => ({
           ...oldData,
-          avatar: avatarUrl
+          avatar: avatarUrl,
+          avatarColor: null
         }));
+        
         toast.success('Profile picture updated successfully');
-        return avatarUrl;
+        
+        // Refetch the user to ensure we have the latest data
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      } else {
+        toast.error('Failed to update profile image');
       }
-      return null;
     },
     onError: (error) => {
       toast.error('Failed to upload profile image');
