@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
@@ -24,6 +25,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   selectedIssueType,
   onIssueTypeChange 
 }) => {
+  // Local state to track the selectedIssueType from props
   const [selectedIssueTypeState, setSelectedIssueTypeState] = useState<string | null>(selectedIssueType);
   
   const {
@@ -47,10 +49,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
 
+  // Update the local state when the prop changes
   useEffect(() => {
     setSelectedIssueTypeState(selectedIssueType);
   }, [selectedIssueType]);
 
+  // Apply filter when selectedIssueType or columns change
   useEffect(() => {
     if (!selectedIssueTypeState) {
       setFilteredColumns(columns);
@@ -64,6 +68,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     
     setFilteredColumns(filtered);
   }, [selectedIssueTypeState, columns, setFilteredColumns]);
+
+  // Handle issue type changes locally and propagate to parent
+  const handleIssueTypeChange = (type: string | null) => {
+    setSelectedIssueTypeState(type);
+    onIssueTypeChange(type);
+  };
 
   useEffect(() => {
     if (!board || !board.project) {
@@ -81,6 +91,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       const customEvent = event as CustomEvent;
       console.log('KanbanBoard: Detected ticket event:', customEvent.detail);
       
+      // Only refresh for created tickets, not for moves
       if ((customEvent.detail?.type === 'created' || event.type === 'ticket-parent-updated') && onRefresh) {
         console.log('KanbanBoard: Triggering refresh after ticket event');
         onRefresh();

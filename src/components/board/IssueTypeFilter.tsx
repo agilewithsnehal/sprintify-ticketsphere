@@ -1,65 +1,54 @@
 
 import React from 'react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Ticket, IssueType } from '@/lib/types';
-import { Blocks, Layers, TicketIcon, Bug, Lightbulb } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Bug, CircleDot, Flag, Layers, Blocks } from 'lucide-react';
 
 interface IssueTypeFilterProps {
-  selectedType: string | null;
-  onTypeChange: (type: string | null) => void;
+  selectedIssueType: string | null;
+  onIssueTypeChange: (type: string | null) => void;
+  className?: string;
 }
 
-const IssueTypeFilter: React.FC<IssueTypeFilterProps> = ({ selectedType, onTypeChange }) => {
+const IssueTypeFilter: React.FC<IssueTypeFilterProps> = ({ 
+  selectedIssueType, 
+  onIssueTypeChange,
+  className = ""
+}) => {
+  const issueTypes = [
+    { value: null, label: 'All Types' },
+    { value: 'epic', label: 'Epic', icon: <Layers className="h-4 w-4 text-purple-500" /> },
+    { value: 'feature', label: 'Feature', icon: <Flag className="h-4 w-4 text-blue-500" /> },
+    { value: 'task', label: 'Task', icon: <CircleDot className="h-4 w-4 text-green-500" /> },
+    { value: 'bug', label: 'Bug', icon: <Bug className="h-4 w-4 text-red-500" /> },
+    { value: 'subtask', label: 'Subtask', icon: <Blocks className="h-4 w-4 text-orange-500" /> }
+  ];
+
   return (
-    <div className="flex items-center gap-2">
-      <Select
-        value={selectedType || 'all'}
-        onValueChange={(value) => onTypeChange(value === 'all' ? null : value)}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Filter by issue type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem value="all" className="flex items-center gap-2">
-              <span className="flex items-center gap-2">
-                All Types
-              </span>
+    <Select 
+      value={selectedIssueType || 'null'} 
+      onValueChange={(value) => onIssueTypeChange(value === 'null' ? null : value)}
+    >
+      <SelectTrigger className={`h-8 ${className}`}>
+        <SelectValue placeholder="Filter by type" />
+      </SelectTrigger>
+      <SelectContent>
+        <ScrollArea className="h-56">
+          {issueTypes.map((type) => (
+            <SelectItem 
+              key={type.value === null ? 'null' : type.value} 
+              value={type.value === null ? 'null' : type.value}
+              className="flex items-center space-x-2"
+            >
+              <div className="flex items-center space-x-2">
+                {type.icon}
+                <span>{type.label}</span>
+              </div>
             </SelectItem>
-            <SelectItem value="epic" className="flex items-center gap-2">
-              <span className="flex items-center gap-2">
-                <Blocks className="h-4 w-4 text-purple-500" />
-                Epic
-              </span>
-            </SelectItem>
-            <SelectItem value="feature" className="flex items-center gap-2">
-              <span className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-green-500" />
-                Feature
-              </span>
-            </SelectItem>
-            <SelectItem value="story" className="flex items-center gap-2">
-              <span className="flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-blue-500" />
-                Story
-              </span>
-            </SelectItem>
-            <SelectItem value="task" className="flex items-center gap-2">
-              <span className="flex items-center gap-2">
-                <TicketIcon className="h-4 w-4 text-gray-500" />
-                Task
-              </span>
-            </SelectItem>
-            <SelectItem value="bug" className="flex items-center gap-2">
-              <span className="flex items-center gap-2">
-                <Bug className="h-4 w-4 text-red-500" />
-                Bug
-              </span>
-            </SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
+          ))}
+        </ScrollArea>
+      </SelectContent>
+    </Select>
   );
 };
 

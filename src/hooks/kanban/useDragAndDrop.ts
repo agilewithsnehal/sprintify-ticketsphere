@@ -144,50 +144,7 @@ export function useDragAndDrop(
             return;
           }
           
-          // Special validation for moving forward in workflow
-          if (isMovingForward && !ticket.parentId) {
-            // Check if this ticket has children
-            const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
-            
-            if (childTickets && childTickets.length > 0) {
-              // For "done" status
-              if (destination.droppableId === 'done') {
-                // Check if all children are in "done" status
-                const pendingChildren = childTickets.filter(child => child.status !== 'done');
-                
-                if (pendingChildren.length > 0) {
-                  console.log('Cannot move parent to done, some children are not done:', 
-                    pendingChildren.map(t => t.key).join(', '));
-                  
-                  toast.error('All child tickets must be done before moving parent to done');
-                  
-                  // Revert the UI state since we're aborting the operation
-                  setColumns(prevColumns => [...prevColumns]);
-                  return;
-                }
-              } else {
-                // For other forward moves, no child can be behind
-                const destStatusIndexNum = statusOrder.indexOf(destination.droppableId as Status);
-                
-                // Check if any children are in earlier statuses
-                const childrenBehind = childTickets.filter(child => {
-                  const childStatusIndex = statusOrder.indexOf(child.status as Status);
-                  return childStatusIndex < destStatusIndexNum;
-                });
-                
-                if (childrenBehind.length > 0) {
-                  console.error('Cannot move parent ahead of children');
-                  toast.error('Cannot move parent ticket ahead of its children');
-                  
-                  // Revert the UI state
-                  setColumns(prevColumns => [...prevColumns]);
-                  return;
-                }
-              }
-            }
-          }
-          
-          // Update the moved ticket in the database
+          // Validation logic is already handled above, so we can proceed with the update
           // Parent updates will happen automatically in the updateTicket function
           const updatedInDb = await supabaseService.updateTicket(draggableId, {
             status: destination.droppableId as Status

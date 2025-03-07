@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Board } from '@/lib/types';
+import { Board, Status } from '@/lib/types';
 import BoardContainer from './BoardContainer';
 import CreateTicketModal from '@/components/CreateTicketModal';
 
