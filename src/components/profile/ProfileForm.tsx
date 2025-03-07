@@ -52,7 +52,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
   const [uploadLoading, setUploadLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(user.avatar || null);
-  const [displayName, setDisplayName] = useState(user.name || '');
+  const [displayName, setDisplayName] = useState<string>(user.name || '');
   
   // Update the current avatar when the user prop changes
   useEffect(() => {
@@ -71,10 +71,12 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
 
   // Get user initials based on name
   const getUserInitials = (name: string) => {
-    if (!name) return 'U';
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return 'U';
+    }
     
     // Split the name and take the first letter of each part
-    const nameParts = name.split(' ');
+    const nameParts = name.trim().split(' ');
     if (nameParts.length === 1) {
       // If only one name part, take the first two letters or just the first letter
       return name.substring(0, Math.min(2, name.length)).toUpperCase();
@@ -100,7 +102,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
   // Watch for changes in the name field to update initials in real-time
   const watchedName = form.watch('name');
   useEffect(() => {
-    setDisplayName(watchedName || ''); // Ensure we never pass undefined
+    setDisplayName(watchedName || '');
   }, [watchedName]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,6 +152,10 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
   const selectedColor = form.watch('avatarColor');
   const hasAvatar = !!currentAvatar;
   const textColorClass = textColors[selectedColor as keyof typeof textColors] || 'text-gray-700';
+  
+  // Debug the initials generation
+  const initials = getUserInitials(displayName);
+  console.log('Display name:', displayName, 'Initials:', initials);
 
   return (
     <Form {...form}>
@@ -158,7 +164,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
           <Avatar className="h-24 w-24 mb-4 border border-gray-200">
             <AvatarImage src={currentAvatar || ''} alt={displayName} />
             <AvatarFallback className={`${selectedColor} ${textColorClass} text-xl`}>
-              {getUserInitials(displayName || '')}
+              {initials}
             </AvatarFallback>
           </Avatar>
           
@@ -247,7 +253,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
                           className={`h-10 w-10 rounded-full cursor-pointer ring-offset-background transition-colors border border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white ${color} flex items-center justify-center`}
                         >
                           <span className={textColors[color as keyof typeof textColors]}>
-                            {getUserInitials(displayName || '')}
+                            {initials}
                           </span>
                         </label>
                       </div>

@@ -45,10 +45,12 @@ const Navbar = () => {
 
   // Get user initials based on their name
   const getUserInitials = (name: string | undefined) => {
-    if (!name) return 'U';
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return 'U';
+    }
     
     // Split the name and take the first letter of each part
-    const nameParts = name.split(' ');
+    const nameParts = name.trim().split(' ');
     if (nameParts.length === 1) {
       // If only one name part, take the first two letters or just the first letter
       return name.substring(0, Math.min(2, name.length)).toUpperCase();
@@ -57,6 +59,10 @@ const Navbar = () => {
       return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
     }
   };
+
+  // Debug the initials generation
+  const initials = getUserInitials(currentUser?.name);
+  console.log('Current user name:', currentUser?.name, 'Initials:', initials);
 
   return (
     <nav className="border-b">
@@ -79,7 +85,7 @@ const Navbar = () => {
                   <AvatarFallback 
                     className={`bg-${currentUser?.avatarColor || 'purple'}-100 ${getTextColorClass(currentUser?.avatarColor)}`}
                   >
-                    {getUserInitials(currentUser?.name)}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
               </button>
