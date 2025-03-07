@@ -1,7 +1,7 @@
 
 import { useCallback } from 'react';
 import { DropResult } from 'react-beautiful-dnd';
-import { Status, Ticket as TicketType, IssueType } from '@/lib/types';
+import { Status, Ticket as TicketType } from '@/lib/types';
 import { supabaseService } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -53,7 +53,7 @@ export function useDragAndDrop(
       return;
     }
 
-    // Handle same column reordering - THIS IS THE FIX FOR DISAPPEARING CARDS
+    // Handle same column reordering
     if (source.droppableId === destination.droppableId) {
       // Remove from original position
       const [removed] = sourceTickets.splice(source.index, 1);
@@ -100,10 +100,10 @@ export function useDragAndDrop(
             });
             
             if (childrenBehind.length > 0) {
-              console.error('Cannot move parent ahead of children:', 
-                childrenBehind.map(t => `${t.key} (${t.status})`));
+              const childKeys = childrenBehind.map(t => t.key).join(', ');
+              console.error('Cannot move parent ahead of children:', childKeys);
               
-              toast.error('Cannot move parent ticket ahead of its children');
+              toast.error(`Cannot move parent ticket ahead of children: ${childKeys}`);
               return; // Exit without updating
             }
           }

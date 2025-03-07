@@ -26,7 +26,7 @@ export const useTicketOperations = (refetch: () => void) => {
       const destStatusIndex = statusOrder.indexOf(destinationColumn);
       const isMovingForward = destStatusIndex > sourceStatusIndex;
       
-      // Only validate if we're moving a parent ticket forward
+      // Only validate if we're moving a parent ticket (no parentId) forward
       if (isMovingForward && !ticketToMove.parentId) {
         try {
           // Get any child tickets of this ticket

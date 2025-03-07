@@ -23,36 +23,43 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
   
   // Determine if each status should be disabled based on parent/child constraints
   const isStatusDisabled = (statusValue: Status): boolean => {
-    // If parent status exists, child cannot be before parent
+    // If parent status exists, child cannot be before parent in workflow
     if (parentStatus) {
       const parentIndex = statusOrder.indexOf(parentStatus);
       const statusIndex = statusOrder.indexOf(statusValue);
       
       // Don't allow child to be before parent
-      return statusIndex < parentIndex;
+      if (statusIndex < parentIndex) {
+        return true;
+      }
     }
     
-    // If child status exists, parent cannot be after child
+    // If child status exists, parent cannot be after child in workflow
     if (childStatus) {
       const childIndex = statusOrder.indexOf(childStatus);
       const statusIndex = statusOrder.indexOf(statusValue);
       
       // Don't allow parent to be after child
-      return statusIndex > childIndex;
+      if (statusIndex > childIndex) {
+        return true;
+      }
     }
     
     return false;
   };
 
   const handleStatusChange = (newStatus: Status) => {
+    console.log(`Attempting to change status from ${status} to ${newStatus}`);
+    console.log(`Parent status: ${parentStatus}, Child status: ${childStatus}`);
+    
     // If there's a child status and we're trying to move past it, show an error
     if (childStatus) {
       const childIndex = statusOrder.indexOf(childStatus);
       const newStatusIndex = statusOrder.indexOf(newStatus);
       
       if (newStatusIndex > childIndex) {
-        console.log(`Cannot move parent past child status: ${childStatus}`);
-        toast.error(`Cannot move parent past child status: ${childStatus}`);
+        console.error(`Cannot move parent past child status: ${childStatus}`);
+        toast.error(`Cannot move ticket ahead of child tickets (${childStatus})`);
         return;
       }
     }
@@ -63,8 +70,8 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
       const newStatusIndex = statusOrder.indexOf(newStatus);
       
       if (newStatusIndex < parentIndex) {
-        console.log(`Cannot move child before parent status: ${parentStatus}`);
-        toast.error(`Cannot move child before parent status: ${parentStatus}`);
+        console.error(`Cannot move child before parent status: ${parentStatus}`);
+        toast.error(`Cannot move ticket before parent status: ${parentStatus}`);
         return;
       }
     }
@@ -85,11 +92,15 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
           <SelectValue placeholder="Select status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="backlog" disabled={isStatusDisabled('backlog')}>Backlog</SelectItem>
-          <SelectItem value="todo" disabled={isStatusDisabled('todo')}>To Do</SelectItem>
-          <SelectItem value="in-progress" disabled={isStatusDisabled('in-progress')}>In Progress</SelectItem>
-          <SelectItem value="review" disabled={isStatusDisabled('review')}>Review</SelectItem>
-          <SelectItem value="done" disabled={isStatusDisabled('done')}>Done</SelectItem>
+          {statusOrder.map((statusValue) => (
+            <SelectItem 
+              key={statusValue} 
+              value={statusValue} 
+              disabled={isStatusDisabled(statusValue)}
+            >
+              {statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/-/g, ' ')}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
