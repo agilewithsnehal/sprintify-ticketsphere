@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project, Status, Ticket } from '@/lib/types';
@@ -38,7 +37,7 @@ interface ProjectReportsTabProps {
 const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets }) => {
   const [activeTab, setActiveTab] = useState('overview');
   
-  const projectTickets = tickets.filter(ticket => ticket.projectId === project.id);
+  const projectTickets = tickets.filter(ticket => ticket.project.id === project.id);
   
   const ticketsByStatus = projectTickets.reduce((acc, ticket) => {
     const status = ticket.status;
@@ -47,7 +46,6 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
     return acc;
   }, {} as Record<Status, Ticket[]>);
 
-  // Calculate cycle and lead times for completed tickets in this project
   const completedTickets = projectTickets.filter(ticket => ticket.status === 'done');
   
   const avgCycleTime = completedTickets.length > 0
@@ -58,12 +56,10 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
     ? (completedTickets.reduce((sum, ticket) => sum + calculateLeadTime(ticket), 0) / completedTickets.length).toFixed(1)
     : 'N/A';
     
-  // Calculate flow metrics
   const wipCount = calculateWIP(projectTickets);
   const throughput = calculateThroughput(projectTickets, 7); // 7-day throughput
   const flowEfficiency = calculateFlowEfficiency(projectTickets).toFixed(1);
   
-  // Oldest items by status
   const oldestByStatus = Object.entries(ticketsByStatus).reduce((acc, [status, statusTickets]) => {
     if (statusTickets.length === 0 || status === 'done') return acc;
     
@@ -79,7 +75,6 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
     return acc;
   }, {} as Record<Status, { ticket: Ticket, age: number }>);
   
-  // Chart data
   const flowDistribution = calculateFlowDistribution(projectTickets);
   const distributionData = Object.entries(flowDistribution).map(([status, percentage]) => ({
     name: status.replace(/-/g, ' '),
@@ -104,7 +99,6 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
     .sort((a, b) => b.days - a.days)
     .slice(0, 5);
     
-  // Cumulative flow data
   const cumulativeFlowData = calculateCumulativeFlow(projectTickets, 14);
     
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
