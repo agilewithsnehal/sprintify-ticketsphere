@@ -57,6 +57,42 @@ export function useDragAndDrop(
     // Check if we're moving forward in the workflow
     const isMovingForward = destStatusIndex > sourceStatusIndex;
 
+    // If moving a parent ticket forward, validate against child tickets
+    if (isMovingForward && !movedTicket.parentId) {
+      try {
+        // Fetch child tickets to verify if move is allowed
+        const childTickets = await supabaseService.ticket.getChildTickets(draggableId);
+        
+        if (childTickets && childTickets.length > 0) {
+          // For "done" status, all children must be done
+          if (destination.droppableId === 'done') {
+            const pendingChildren = childTickets.filter(child => child.status !== 'done');
+            
+            if (pendingChildren.length > 0) {
+              toast.error('All child tickets must be done before moving parent to done');
+              return; // Exit without updating
+            }
+          }
+          
+          // For any forward move, no child can be behind the new status
+          const childrenBehind = childTickets.filter(child => {
+            const childStatusIndex = statusOrder.indexOf(child.status as Status);
+            return childStatusIndex < destStatusIndex;
+          });
+          
+          if (childrenBehind.length > 0) {
+            console.log('Children behind:', childrenBehind.map(t => `${t.key} (${t.status})`));
+            toast.error('Cannot move parent ticket ahead of its children');
+            return; // Exit without updating
+          }
+        }
+      } catch (error) {
+        console.error('Error validating child tickets:', error);
+        toast.error('Failed to validate child tickets');
+        return;
+      }
+    }
+
     // Update UI first for immediate response
     // Remove from source column
     const newSourceTickets = sourceTickets.filter(t => t.id !== draggableId);

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
@@ -24,8 +25,42 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   selectedIssueType,
   onIssueTypeChange 
 }) => {
+  // Track processed ticket IDs to prevent duplicates
+  const processedTicketIds = useRef(new Set<string>());
+  
   // Local state to track the selectedIssueType from props
   const [selectedIssueTypeState, setSelectedIssueTypeState] = useState<string | null>(selectedIssueType);
+  
+  // Process board data to deduplicate tickets
+  const processedBoard = React.useMemo(() => {
+    if (!board || !board.columns) return board;
+    
+    // Clear the set when board changes
+    processedTicketIds.current.clear();
+    
+    const processedColumns = board.columns.map(column => {
+      // Filter out duplicates from each column
+      const uniqueTickets = column.tickets.filter(ticket => {
+        if (processedTicketIds.current.has(ticket.id)) {
+          console.log(`Filtering out duplicate ticket in ${column.id}: ${ticket.key} (${ticket.id})`);
+          return false;
+        }
+        
+        processedTicketIds.current.add(ticket.id);
+        return true;
+      });
+      
+      return {
+        ...column,
+        tickets: uniqueTickets
+      };
+    });
+    
+    return {
+      ...board,
+      columns: processedColumns
+    };
+  }, [board]);
   
   const {
     columns,
@@ -46,7 +81,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     onDragEnd,
     scrollLeft,
     scrollRight
-  } = useKanbanBoard(board, onTicketMove);
+  } = useKanbanBoard(processedBoard, onTicketMove);
 
   // Update the local state when the prop changes
   useEffect(() => {
@@ -154,20 +189,34 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             className="flex space-x-4 overflow-x-auto pb-4 pt-2 px-10 scrollbar-hide" 
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                tickets={selectedIssueTypeState 
-                  ? column.tickets.filter(t => t.issueType === selectedIssueTypeState)
-                  : column.tickets || []
-                } 
-                onOpenTicket={handleOpenTicket}
-                onAddTicket={handleOpenCreateModal}
-                projectId={board.project.id}
-              />
-            ))}
+            {columns.map((column) => {
+              // Ensure each ticket has a unique key before passing to KanbanColumn
+              const columnTickets = selectedIssueTypeState 
+                ? column.tickets
+                    .filter(t => t.issueType === selectedIssueTypeState)
+                    .map((ticket, index) => ({
+                      ...ticket,
+                      // Add a unique display key to prevent React key issues
+                      _displayKey: `${ticket.id}-${index}`
+                    }))
+                : column.tickets.map((ticket, index) => ({
+                    ...ticket,
+                    // Add a unique display key to prevent React key issues
+                    _displayKey: `${ticket.id}-${index}`
+                  }));
+                
+              return (
+                <KanbanColumn
+                  key={column.id}
+                  id={column.id}
+                  title={column.title}
+                  tickets={columnTickets} 
+                  onOpenTicket={handleOpenTicket}
+                  onAddTicket={handleOpenCreateModal}
+                  projectId={board.project.id}
+                />
+              );
+            })}
           </div>
         </DragDropContext>
       </div>

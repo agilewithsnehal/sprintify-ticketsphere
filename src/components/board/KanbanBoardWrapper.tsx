@@ -19,6 +19,39 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
   selectedIssueType,
   onIssueTypeChange
 }) => {
+  // Track already seen ticket IDs to prevent duplicates in the UI
+  const [processedTicketIds] = useState(new Set<string>());
+  
+  // Deduplicate tickets in the board before passing to KanbanBoard
+  const deduplicatedBoard = React.useMemo(() => {
+    if (!board || !board.columns) return board;
+    
+    const deduplicatedColumns = board.columns.map(column => {
+      // Filter out duplicates for each column
+      const uniqueTickets = column.tickets.filter(ticket => {
+        // If we've seen this ID before, skip it
+        if (processedTicketIds.has(ticket.id)) {
+          console.log(`Filtering out duplicate ticket: ${ticket.key} (${ticket.id})`);
+          return false;
+        }
+        
+        // Mark this ID as seen
+        processedTicketIds.add(ticket.id);
+        return true;
+      });
+      
+      return {
+        ...column,
+        tickets: uniqueTickets
+      };
+    });
+    
+    return {
+      ...board,
+      columns: deduplicatedColumns
+    };
+  }, [board, processedTicketIds]);
+
   useEffect(() => {
     if (board && board.columns) {
       console.log('KanbanBoardWrapper: Rendering board with columns:', 
@@ -78,7 +111,7 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
   };
 
   return <KanbanBoard 
-    board={board} 
+    board={deduplicatedBoard} 
     onTicketMove={handleTicketMove} 
     onRefresh={onRefresh}
     selectedIssueType={selectedIssueType}
