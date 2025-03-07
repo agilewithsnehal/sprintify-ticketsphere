@@ -9,7 +9,8 @@ import {
   calculateThroughput, 
   calculateFlowEfficiency,
   calculateFlowDistribution,
-  calculateWorkItemAge
+  calculateWorkItemAge,
+  calculateCumulativeFlow
 } from '@/lib/metrics';
 import { Clock, Timer, GitPullRequestDraft, BarChart, Workflow } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,7 +25,9 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  AreaChart,
+  Area
 } from 'recharts';
 
 interface ProjectReportsTabProps {
@@ -35,7 +38,9 @@ interface ProjectReportsTabProps {
 const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets }) => {
   const [activeTab, setActiveTab] = useState('overview');
   
-  const ticketsByStatus = tickets.reduce((acc, ticket) => {
+  const projectTickets = tickets.filter(ticket => ticket.projectId === project.id);
+  
+  const ticketsByStatus = projectTickets.reduce((acc, ticket) => {
     const status = ticket.status;
     if (!acc[status]) acc[status] = [];
     acc[status].push(ticket);
@@ -43,7 +48,7 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
   }, {} as Record<Status, Ticket[]>);
 
   // Calculate cycle and lead times for completed tickets in this project
-  const completedTickets = tickets.filter(ticket => ticket.status === 'done');
+  const completedTickets = projectTickets.filter(ticket => ticket.status === 'done');
   
   const avgCycleTime = completedTickets.length > 0
     ? (completedTickets.reduce((sum, ticket) => sum + calculateCycleTime(ticket), 0) / completedTickets.length).toFixed(1)
@@ -54,9 +59,9 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
     : 'N/A';
     
   // Calculate flow metrics
-  const wipCount = calculateWIP(tickets);
-  const throughput = calculateThroughput(tickets, 7); // 7-day throughput
-  const flowEfficiency = calculateFlowEfficiency(tickets).toFixed(1);
+  const wipCount = calculateWIP(projectTickets);
+  const throughput = calculateThroughput(projectTickets, 7); // 7-day throughput
+  const flowEfficiency = calculateFlowEfficiency(projectTickets).toFixed(1);
   
   // Oldest items by status
   const oldestByStatus = Object.entries(ticketsByStatus).reduce((acc, [status, statusTickets]) => {
@@ -75,7 +80,7 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
   }, {} as Record<Status, { ticket: Ticket, age: number }>);
   
   // Chart data
-  const flowDistribution = calculateFlowDistribution(tickets);
+  const flowDistribution = calculateFlowDistribution(projectTickets);
   const distributionData = Object.entries(flowDistribution).map(([status, percentage]) => ({
     name: status.replace(/-/g, ' '),
     value: parseFloat(percentage.toFixed(1))
@@ -99,7 +104,17 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
     .sort((a, b) => b.days - a.days)
     .slice(0, 5);
     
+  // Cumulative flow data
+  const cumulativeFlowData = calculateCumulativeFlow(projectTickets, 14);
+    
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const STATUS_COLORS = {
+    'backlog': '#BBBBBB',
+    'todo': '#0088FE',
+    'in-progress': '#FFBB28',
+    'review': '#00C49F',
+    'done': '#8884d8'
+  };
 
   return (
     <Card>
@@ -114,6 +129,7 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
             <TabsTrigger value="flow">Flow Metrics</TabsTrigger>
             <TabsTrigger value="cycle">Cycle Time</TabsTrigger>
             <TabsTrigger value="lead">Lead Time</TabsTrigger>
+            <TabsTrigger value="cumulative">Cumulative Flow</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview">
@@ -139,9 +155,9 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
                   <CardTitle className="text-base">Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {tickets.length > 0 ? (
+                  {projectTickets.length > 0 ? (
                     <div className="space-y-2">
-                      {tickets
+                      {projectTickets
                         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                         .slice(0, 5)
                         .map(ticket => (
@@ -395,6 +411,77 @@ const ProjectReportsTab: React.FC<ProjectReportsTabProps> = ({ project, tickets 
                         ))}
                       </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="cumulative">
+            <div className="grid grid-cols-1 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart className="h-4 w-4" />
+                    Cumulative Flow Diagram
+                  </CardTitle>
+                  <CardDescription>
+                    Shows how work accumulates in different stages over time
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={cumulativeFlowData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis label={{ value: 'Number of tickets', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip />
+                        <Legend />
+                        <Area 
+                          type="monotone" 
+                          dataKey="backlog" 
+                          stackId="1" 
+                          stroke={STATUS_COLORS.backlog} 
+                          fill={STATUS_COLORS.backlog} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="todo" 
+                          stackId="1" 
+                          stroke={STATUS_COLORS.todo} 
+                          fill={STATUS_COLORS.todo} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="in-progress" 
+                          stackId="1" 
+                          stroke={STATUS_COLORS['in-progress']} 
+                          fill={STATUS_COLORS['in-progress']} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="review" 
+                          stackId="1" 
+                          stroke={STATUS_COLORS.review} 
+                          fill={STATUS_COLORS.review} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="done" 
+                          stackId="1" 
+                          stroke={STATUS_COLORS.done} 
+                          fill={STATUS_COLORS.done} 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-4 text-sm text-muted-foreground">
+                    <p>The cumulative flow diagram shows how work accumulates in different stages of your workflow over time.</p>
+                    <p className="mt-2">Wide bands indicate bottlenecks in your process - work is accumulating at a particular stage.</p>
                   </div>
                 </CardContent>
               </Card>

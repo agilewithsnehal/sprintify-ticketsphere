@@ -70,7 +70,7 @@ export const calculateWorkItemAge = (ticket: Ticket): number => {
   return parseFloat(ageDays.toFixed(1));
 };
 
-// Calculate flow efficiency
+// Calculate flow efficiency - ratio of value-adding time to total time
 export const calculateFlowEfficiency = (tickets: Ticket[]): number => {
   if (tickets.length === 0) return 0;
   
@@ -81,11 +81,25 @@ export const calculateFlowEfficiency = (tickets: Ticket[]): number => {
   const totalLeadTime = completedTickets.reduce((sum, ticket) => sum + calculateLeadTime(ticket), 0);
   
   // Flow efficiency = Value-add time (cycle time) / Total time (lead time)
-  return totalLeadTime > 0 ? (totalCycleTime / totalLeadTime) * 100 : 0;
+  const efficiency = totalLeadTime > 0 ? (totalCycleTime / totalLeadTime) * 100 : 0;
+  
+  // Ensure we return a number between 0-100
+  return Math.min(100, Math.max(0, efficiency));
 };
 
 // Calculate flow distribution (percentage of tickets in each status)
 export const calculateFlowDistribution = (tickets: Ticket[]): Record<Status, number> => {
+  if (tickets.length === 0) {
+    // Return zero values for all statuses if there are no tickets
+    return {
+      'backlog': 0,
+      'todo': 0,
+      'in-progress': 0,
+      'review': 0,
+      'done': 0
+    };
+  }
+  
   const result: Partial<Record<Status, number>> = {};
   const statusCounts = tickets.reduce((acc, ticket) => {
     const status = ticket.status;
@@ -99,4 +113,44 @@ export const calculateFlowDistribution = (tickets: Ticket[]): Record<Status, num
   });
   
   return result as Record<Status, number>;
+};
+
+// Calculate cumulative flow data (useful for cumulative flow diagrams)
+export const calculateCumulativeFlow = (tickets: Ticket[], days: number = 7): any[] => {
+  const now = new Date();
+  const results = [];
+  
+  // Generate data for each day in the period
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+    
+    const dayStr = date.toISOString().split('T')[0];
+    
+    // Count tickets in each status as of this date
+    const statusCounts = {
+      date: dayStr,
+      backlog: 0,
+      todo: 0,
+      'in-progress': 0,
+      review: 0,
+      done: 0
+    };
+    
+    // Count tickets that existed on or before this date
+    tickets.forEach(ticket => {
+      const createdDate = new Date(ticket.createdAt);
+      
+      if (createdDate <= date) {
+        // For this simplified model, we're using the current status
+        // In a real app, we'd need a history of status changes
+        statusCounts[ticket.status] += 1;
+      }
+    });
+    
+    results.push(statusCounts);
+  }
+  
+  return results;
 };
