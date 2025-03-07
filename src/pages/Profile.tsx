@@ -17,6 +17,7 @@ const Profile = () => {
   const { data: user, isLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => await supabaseService.getCurrentUser(),
+    staleTime: 0, // Force refetch every time to ensure we have the latest data
   });
 
   const updateProfile = useMutation({
@@ -27,6 +28,7 @@ const Profile = () => {
     onSuccess: (data) => {
       if (data) {
         queryClient.setQueryData(['currentUser'], data);
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] }); // Ensure all currentUser queries are invalidated
         toast.success('Profile updated successfully');
       }
     },

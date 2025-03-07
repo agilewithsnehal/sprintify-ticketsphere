@@ -52,18 +52,20 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
   const [uploadLoading, setUploadLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(user.avatar || null);
+  const [displayName, setDisplayName] = useState(user.name || '');
   
   // Update the current avatar when the user prop changes
   useEffect(() => {
     setCurrentAvatar(user.avatar || null);
-  }, [user.avatar]);
+    setDisplayName(user.name || '');
+  }, [user.avatar, user.name]);
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user.name || '',
       email: user.email || '',
-      avatarColor: user.avatarColor || 'bg-purple-100',
+      avatarColor: user.avatarColor ? `bg-${user.avatarColor}-100` : 'bg-purple-100',
     },
     // Ensure form values update when user prop changes
     values: {
@@ -73,9 +75,26 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
     },
   });
 
+  // Get user initials based on name
+  const getUserInitials = (name: string) => {
+    if (!name) return 'U';
+    
+    // Split the name and take the first letter of each part
+    const nameParts = name.split(' ');
+    if (nameParts.length === 1) {
+      // If only one name part, take the first two letters or just the first letter
+      return name.substring(0, Math.min(2, name.length)).toUpperCase();
+    } else {
+      // If multiple name parts, take first letter of first and last parts
+      return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    }
+  };
+
   const handleSubmit = (values: ProfileFormValues) => {
     // Convert the color class back to the format expected by the API
     const colorName = values.avatarColor?.replace('bg-', '').replace('-100', '');
+    
+    setDisplayName(values.name); // Update the display name immediately
     
     onSubmit({
       name: values.name,
@@ -83,6 +102,12 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
       avatarColor: colorName,
     });
   };
+
+  // Watch for changes in the name field to update initials in real-time
+  const watchedName = form.watch('name');
+  useEffect(() => {
+    setDisplayName(watchedName);
+  }, [watchedName]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -137,9 +162,9 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="flex flex-col items-center mb-6">
           <Avatar className="h-24 w-24 mb-4 border border-gray-200">
-            <AvatarImage src={currentAvatar || ''} alt={user.name} />
+            <AvatarImage src={currentAvatar || ''} alt={displayName} />
             <AvatarFallback className={`${selectedColor} ${textColorClass} text-xl`}>
-              {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
+              {getUserInitials(displayName)}
             </AvatarFallback>
           </Avatar>
           
@@ -228,7 +253,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
                           className={`h-10 w-10 rounded-full cursor-pointer ring-offset-background transition-colors border border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white ${color} flex items-center justify-center`}
                         >
                           <span className={textColors[color as keyof typeof textColors]}>
-                            {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
+                            {getUserInitials(displayName)}
                           </span>
                         </label>
                       </div>
