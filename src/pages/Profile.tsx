@@ -14,7 +14,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading, refetch } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => await supabaseService.getCurrentUser(),
     staleTime: 0, // Force refetch every time to ensure we have the latest data
@@ -58,7 +58,9 @@ const Profile = () => {
       if (updatedUser) {
         // Update the local user data with the new information
         queryClient.setQueryData(['currentUser'], updatedUser);
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         toast.success('Profile picture updated successfully');
+        refetch(); // Force a refetch to ensure data is fresh
       } else {
         toast.error('Failed to update profile image');
       }

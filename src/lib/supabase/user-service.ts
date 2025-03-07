@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -81,11 +80,6 @@ export const supabaseService = {
 
       console.log('Uploading profile image:', filePath);
 
-      // Check if the avatars bucket exists, and add policies if needed
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
       // Upload the file to Supabase Storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
@@ -111,11 +105,11 @@ export const supabaseService = {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      const newPublicUrl = data.publicUrl;
-      console.log('Public URL:', newPublicUrl);
+      const publicUrl = data.publicUrl;
+      console.log('Public URL:', publicUrl);
 
       // Return the URL, but we'll update the user profile separately
-      return newPublicUrl;
+      return publicUrl;
     } catch (error) {
       console.error('Error in uploadProfileImage:', error);
       return null;

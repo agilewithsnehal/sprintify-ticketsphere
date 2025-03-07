@@ -67,12 +67,6 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
       email: user.email || '',
       avatarColor: user.avatarColor ? `bg-${user.avatarColor}-100` : 'bg-purple-100',
     },
-    // Ensure form values update when user prop changes
-    values: {
-      name: user.name || '',
-      email: user.email || '',
-      avatarColor: user.avatarColor ? `bg-${user.avatarColor}-100` : 'bg-purple-100',
-    },
   });
 
   // Get user initials based on name
@@ -106,7 +100,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
   // Watch for changes in the name field to update initials in real-time
   const watchedName = form.watch('name');
   useEffect(() => {
-    setDisplayName(watchedName);
+    setDisplayName(watchedName || ''); // Ensure we never pass undefined
   }, [watchedName]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,7 +158,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
           <Avatar className="h-24 w-24 mb-4 border border-gray-200">
             <AvatarImage src={currentAvatar || ''} alt={displayName} />
             <AvatarFallback className={`${selectedColor} ${textColorClass} text-xl`}>
-              {getUserInitials(displayName)}
+              {getUserInitials(displayName || '')}
             </AvatarFallback>
           </Avatar>
           
@@ -253,7 +247,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
                           className={`h-10 w-10 rounded-full cursor-pointer ring-offset-background transition-colors border border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white ${color} flex items-center justify-center`}
                         >
                           <span className={textColors[color as keyof typeof textColors]}>
-                            {getUserInitials(displayName)}
+                            {getUserInitials(displayName || '')}
                           </span>
                         </label>
                       </div>
