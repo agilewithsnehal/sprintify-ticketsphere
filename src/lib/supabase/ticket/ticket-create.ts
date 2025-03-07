@@ -26,22 +26,27 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
       return null;
     }
     
+    // Prepare the ticket data for insertion
+    const ticketData = {
+      key: newTicket.key,
+      summary: newTicket.summary,
+      description: newTicket.description,
+      status: newTicket.status,
+      priority: newTicket.priority,
+      issue_type: newTicket.issueType || 'task',
+      assignee_id: newTicket.assignee?.id,
+      reporter_id: newTicket.reporter.id,
+      project_id: newTicket.project.id,
+      parent_id: newTicket.parentId
+    };
+    
+    console.log('Inserting ticket with data:', ticketData);
+    
     // Insert the new ticket
     const { data: insertedTicket, error: insertError } = await supabase
       .from('tickets')
-      .insert({
-        key: newTicket.key,
-        summary: newTicket.summary,
-        description: newTicket.description,
-        status: newTicket.status,
-        priority: newTicket.priority,
-        issue_type: newTicket.issueType || 'task',
-        assignee_id: newTicket.assignee?.id,
-        reporter_id: newTicket.reporter.id,
-        project_id: newTicket.project.id,
-        parent_id: newTicket.parentId
-      })
-      .select()
+      .insert(ticketData)
+      .select('*')
       .single();
 
     if (insertError) {
@@ -53,6 +58,8 @@ export async function createTicket(newTicket: Omit<Ticket, 'id' | 'createdAt' | 
       console.error('No ticket returned after insert');
       return null;
     }
+    
+    console.log('Ticket inserted successfully:', insertedTicket.id);
     
     // Map the database ticket to our application ticket type
     return await mapDbTicketToTicket(insertedTicket);

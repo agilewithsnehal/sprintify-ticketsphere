@@ -16,13 +16,6 @@ export function useTicketCreationOperations(
     try {
       console.log('Handling ticket create:', newTicket.key, 'ID:', newTicket.id);
       
-      // Ensure the ticket has a valid ID
-      if (!newTicket.id) {
-        console.error('New ticket has no valid ID:', newTicket);
-        toast.error('Cannot add ticket: Missing ID');
-        return false; // Return false to indicate failure
-      }
-      
       // Check if the ticket already exists in any column by ID or key
       if (ticketExistsInColumns(newTicket.id, newTicket.key)) {
         console.log('Ticket already exists in board. Skipping duplicate creation.');
@@ -67,6 +60,8 @@ export function useTicketCreationOperations(
               ...updatedColumns[columnIndex],
               tickets: updatedTickets
             };
+            
+            console.log('Added ticket to column:', updatedColumns[columnIndex].id);
           }
         } else {
           console.error(`Column with id ${createdTicket.status} not found`);

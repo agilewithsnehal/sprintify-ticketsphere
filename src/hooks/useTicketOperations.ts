@@ -152,7 +152,9 @@ export const useTicketOperations = (refetch: () => void) => {
         return false;
       }
       
+      // Create the ticket in the database
       const result = await supabaseService.createTicket(ticket);
+      
       if (result) {
         console.log('Ticket created successfully:', result);
         toast.success('Ticket created successfully');
@@ -166,6 +168,7 @@ export const useTicketOperations = (refetch: () => void) => {
           }
         }));
         
+        // Force a refetch to update the board with the new ticket
         refetch();
         return true;
       } else {
