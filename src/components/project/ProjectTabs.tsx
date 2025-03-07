@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListTodo, Users, BarChart3, Settings, GitBranch } from 'lucide-react';
 import BoardContainer from '@/components/board/BoardContainer';
@@ -30,6 +31,7 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
   
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -45,6 +47,10 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     navigate(`/project/${project.id}?tab=${value}`, { replace: true });
+  };
+  
+  const handleIssueTypeChange = (type: string | null) => {
+    setSelectedIssueType(type);
   };
   
   return (
@@ -83,6 +89,8 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
           onCreateTicket={onCreateTicket}
           onTicketMove={onTicketMove}
           onRefresh={onRefresh}
+          selectedIssueType={selectedIssueType}
+          onIssueTypeChange={handleIssueTypeChange}
         />
       </TabsContent>
       

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType, IssueType } from '@/lib/types';
@@ -14,10 +13,18 @@ interface KanbanBoardProps {
   board: BoardType;
   onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status, updateParent?: boolean) => void;
   onRefresh?: () => void;
+  selectedIssueType: string | null;
+  onIssueTypeChange: (type: string | null) => void;
 }
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefresh }) => {
-  const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ 
+  board, 
+  onTicketMove, 
+  onRefresh,
+  selectedIssueType,
+  onIssueTypeChange 
+}) => {
+  const [selectedIssueTypeState, setSelectedIssueTypeState] = useState<string | null>(selectedIssueType);
   
   const {
     columns,
@@ -40,24 +47,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
 
-  // Filter tickets based on selected issue type
   useEffect(() => {
-    if (!selectedIssueType) {
-      // If no issue type is selected, show all tickets
+    setSelectedIssueTypeState(selectedIssueType);
+  }, [selectedIssueType]);
+
+  useEffect(() => {
+    if (!selectedIssueTypeState) {
       setFilteredColumns(columns);
       return;
     }
     
-    // Filter the columns to only include tickets of the selected issue type
     const filtered = columns.map(column => ({
       ...column,
-      tickets: column.tickets.filter(ticket => ticket.issueType === selectedIssueType)
+      tickets: column.tickets.filter(ticket => ticket.issueType === selectedIssueTypeState)
     }));
     
     setFilteredColumns(filtered);
-  }, [selectedIssueType, columns, setFilteredColumns]);
+  }, [selectedIssueTypeState, columns, setFilteredColumns]);
 
-  // Add an effect to log when board data changes
   useEffect(() => {
     if (!board || !board.project) {
       toast.error('Invalid board data');
@@ -69,13 +76,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
     console.log("KanbanBoard: Columns:", columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
   }, [board, columns]);
 
-  // Add an effect to listen for ticket creation and parent update events
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('KanbanBoard: Detected ticket event:', customEvent.detail);
       
-      // Call parent's refresh function for ticket creation events and parent updates
       if ((customEvent.detail?.type === 'created' || event.type === 'ticket-parent-updated') && onRefresh) {
         console.log('KanbanBoard: Triggering refresh after ticket event');
         onRefresh();
@@ -115,7 +120,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
       
       const result = await handleTicketCreate(ticket);
       
-      // If creation was successful and we have a refresh function, call it
       if (result !== false && onRefresh) {
         console.log('Ticket created successfully, triggering board refresh');
         onRefresh();
@@ -147,8 +151,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove, onRefres
                 key={column.id}
                 id={column.id}
                 title={column.title}
-                tickets={selectedIssueType 
-                  ? column.tickets.filter(t => t.issueType === selectedIssueType)
+                tickets={selectedIssueTypeState 
+                  ? column.tickets.filter(t => t.issueType === selectedIssueTypeState)
                   : column.tickets || []
                 } 
                 onOpenTicket={handleOpenTicket}
