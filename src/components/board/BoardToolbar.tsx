@@ -99,8 +99,9 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
         </Button>
         
         <IssueTypeFilter 
-          selectedType={selectedIssueType}
-          onTypeChange={onIssueTypeChange}
+          selectedIssueType={selectedIssueType}
+          onIssueTypeChange={onIssueTypeChange}
+          className="w-40"
         />
         
         <Button 
