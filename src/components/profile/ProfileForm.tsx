@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { User } from '@/lib/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UploadCloud } from 'lucide-react';
+import { Trash, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 
 const avatarColors = [
@@ -34,12 +34,19 @@ interface ProfileFormProps {
   user: User;
   onSubmit: (values: Partial<User>) => void;
   onImageUpload: (file: File) => Promise<void>;
+  onImageDelete?: () => Promise<void>;
   isLoading: boolean;
 }
 
-const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormProps) => {
+const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }: ProfileFormProps) => {
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(user.avatar || null);
+  
+  // Update the current avatar when the user prop changes
+  useEffect(() => {
+    setCurrentAvatar(user.avatar || null);
+  }, [user.avatar]);
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -70,14 +77,29 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
     try {
       setUploadLoading(true);
       await onImageUpload(file);
-      // Update local state to show the avatar immediately
       // The actual URL will be updated by the parent component
-      setCurrentAvatar(URL.createObjectURL(file)); 
+      const previewUrl = URL.createObjectURL(file);
+      setCurrentAvatar(previewUrl);
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload profile picture');
     } finally {
       setUploadLoading(false);
+    }
+  };
+  
+  const handleImageDelete = async () => {
+    if (!onImageDelete) return;
+    
+    try {
+      setDeleteLoading(true);
+      await onImageDelete();
+      setCurrentAvatar(null);
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Failed to delete profile picture');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -95,7 +117,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
             </AvatarFallback>
           </Avatar>
           
-          <div className="mt-2">
+          <div className="flex gap-2 mt-2">
             <label htmlFor="profile-image" className="cursor-pointer">
               <div className="flex items-center gap-2 text-sm text-primary p-2 border border-dashed border-gray-300 rounded-md hover:bg-accent">
                 <UploadCloud size={16} />
@@ -107,9 +129,23 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
                 accept="image/*" 
                 className="hidden" 
                 onChange={handleImageChange}
-                disabled={uploadLoading}
+                disabled={uploadLoading || deleteLoading}
               />
             </label>
+            
+            {hasAvatar && onImageDelete && (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                size="sm"
+                onClick={handleImageDelete}
+                disabled={uploadLoading || deleteLoading}
+                className="flex items-center gap-1 text-sm p-2"
+              >
+                <Trash size={16} />
+                {deleteLoading ? 'Deleting...' : 'Remove'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -175,7 +211,7 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, isLoading }: ProfileFormPr
           />
         )}
 
-        <Button type="submit" disabled={isLoading || uploadLoading}>
+        <Button type="submit" disabled={isLoading || uploadLoading || deleteLoading}>
           {isLoading ? 'Updating...' : 'Update Profile'}
         </Button>
       </form>

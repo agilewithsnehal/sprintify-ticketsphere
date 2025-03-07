@@ -39,22 +39,22 @@ const Profile = () => {
   const uploadProfileImage = useMutation({
     mutationFn: async (file: File) => {
       if (!user) return null;
-      return await supabaseService.uploadProfileImage(file, user.id);
-    },
-    onSuccess: (avatarUrl) => {
+      const avatarUrl = await supabaseService.uploadProfileImage(file, user.id);
+      
+      // If the upload was successful, also update the user profile with the new URL
       if (avatarUrl) {
-        // After successful upload, update the query data directly to show the new avatar
-        // and remove the avatar color since we now have an image
-        queryClient.setQueryData(['currentUser'], (oldData: User) => ({
-          ...oldData,
+        return await supabaseService.updateUserProfile(user.id, {
           avatar: avatarUrl,
-          avatarColor: null
-        }));
-        
+          avatarColor: null // Clear avatar color when setting an image
+        });
+      }
+      return null;
+    },
+    onSuccess: (updatedUser) => {
+      if (updatedUser) {
+        // Update the local user data with the new information
+        queryClient.setQueryData(['currentUser'], updatedUser);
         toast.success('Profile picture updated successfully');
-        
-        // Refetch the user to ensure we have the latest data
-        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       } else {
         toast.error('Failed to update profile image');
       }
@@ -64,6 +64,26 @@ const Profile = () => {
       console.error('Error uploading profile image:', error);
     }
   });
+  
+  const deleteProfileImage = useMutation({
+    mutationFn: async () => {
+      if (!user) return false;
+      return await supabaseService.deleteProfileImage(user.id);
+    },
+    onSuccess: (success) => {
+      if (success) {
+        // Refetch the user data to get the updated profile
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        toast.success('Profile picture removed successfully');
+      } else {
+        toast.error('Failed to remove profile picture');
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to remove profile picture');
+      console.error('Error removing profile image:', error);
+    }
+  });
 
   const handleUpdateProfile = (formData: Partial<User>) => {
     updateProfile.mutate(formData);
@@ -71,6 +91,10 @@ const Profile = () => {
 
   const handleImageUpload = async (file: File) => {
     await uploadProfileImage.mutateAsync(file);
+  };
+  
+  const handleImageDelete = async () => {
+    await deleteProfileImage.mutateAsync();
   };
 
   if (isLoading) {
@@ -104,7 +128,8 @@ const Profile = () => {
                   user={user} 
                   onSubmit={handleUpdateProfile} 
                   onImageUpload={handleImageUpload}
-                  isLoading={updateProfile.isPending || uploadProfileImage.isPending} 
+                  onImageDelete={handleImageDelete}
+                  isLoading={updateProfile.isPending || uploadProfileImage.isPending || deleteProfileImage.isPending} 
                 />
               )}
             </CardContent>
