@@ -29,6 +29,7 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
     try {
       setIsLoading(true);
       
+      console.log('BoardContainer: Fetching board data for project:', projectId);
       const boardData = await supabaseService.createBoard(projectId);
       
       if (boardData) {
@@ -45,10 +46,28 @@ const BoardContainer: React.FC<BoardContainerProps> = ({
     }
   };
   
+  // Initial fetch
   useEffect(() => {
     console.log('BoardContainer: Fetching board for project:', projectId);
     fetchBoard();
   }, [projectId]);
+
+  // Listen for ticket creation events to trigger a refresh
+  useEffect(() => {
+    const handleTicketCreated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.type === 'created') {
+        console.log('BoardContainer: Detected ticket creation, refreshing board data');
+        fetchBoard();
+      }
+    };
+    
+    document.addEventListener('ticket-notification', handleTicketCreated);
+    
+    return () => {
+      document.removeEventListener('ticket-notification', handleTicketCreated);
+    };
+  }, []);
 
   const handleColumnsUpdate = async (updatedColumns: Column[]) => {
     try {

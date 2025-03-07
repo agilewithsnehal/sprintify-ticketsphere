@@ -36,6 +36,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     scrollRight
   } = useKanbanBoard(board, onTicketMove);
 
+  // Add an effect to log when board data changes
   useEffect(() => {
     if (!board || !board.project) {
       toast.error('Invalid board data');
@@ -46,6 +47,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onTicketMove }) => {
     console.log("KanbanBoard: Board loaded:", board.name);
     console.log("KanbanBoard: Columns:", columns.map(c => `${c.title} (${c.tickets.length} tickets)`));
   }, [board, columns]);
+
+  // Add an effect to listen for ticket creation events
+  useEffect(() => {
+    const handleTicketCreated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('KanbanBoard: Detected ticket creation event:', customEvent.detail);
+      // No need to do anything here as the parent component will refetch
+    };
+    
+    document.addEventListener('ticket-notification', handleTicketCreated);
+    
+    return () => {
+      document.removeEventListener('ticket-notification', handleTicketCreated);
+    };
+  }, []);
 
   if (!board || !board.project || !board.columns) {
     return (

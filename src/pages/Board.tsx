@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import BoardNotFound from '@/components/board/BoardNotFound';
@@ -26,6 +26,14 @@ const Board = () => {
     handleTicketMove,
     handleCreateTicket
   } = useTicketOperations(refetch);
+
+  // Add an effect to refetch board data when returning to the board
+  useEffect(() => {
+    if (projectId) {
+      console.log('Board: Refetching data for project:', projectId);
+      refetch();
+    }
+  }, [projectId, refetch]);
 
   if (!projectId || !isValidUuid(projectId)) {
     return (
