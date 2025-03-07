@@ -39,9 +39,11 @@ const Profile = () => {
   const uploadProfileImage = useMutation({
     mutationFn: async (file: File) => {
       if (!user) return null;
+      
+      // Upload the image file
       const avatarUrl = await supabaseService.uploadProfileImage(file, user.id);
       
-      // If the upload was successful, also update the user profile with the new URL
+      // If the upload was successful, update the user profile with the new URL
       if (avatarUrl) {
         return await supabaseService.updateUserProfile(user.id, {
           avatar: avatarUrl,
@@ -62,6 +64,9 @@ const Profile = () => {
     onError: (error) => {
       toast.error('Failed to upload profile image');
       console.error('Error uploading profile image:', error);
+      
+      // Invalidate the query to refresh the user data
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });
   
@@ -82,6 +87,9 @@ const Profile = () => {
     onError: (error) => {
       toast.error('Failed to remove profile picture');
       console.error('Error removing profile image:', error);
+      
+      // Invalidate the query to refresh the user data
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     }
   });
 

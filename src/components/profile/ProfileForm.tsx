@@ -12,11 +12,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Light pastel colors for avatar backgrounds
 const avatarColors = [
-  'red', 'orange', 'amber', 'yellow', 'lime', 'green', 
-  'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 
-  'violet', 'purple', 'fuchsia', 'pink', 'rose'
+  'bg-cyan-100', 'bg-blue-100', 'bg-indigo-100', 
+  'bg-purple-100', 'bg-pink-100', 'bg-rose-100'
 ];
+
+// Text colors that contrast well with the backgrounds
+const textColors = {
+  'bg-cyan-100': 'text-cyan-700',
+  'bg-blue-100': 'text-blue-700',
+  'bg-indigo-100': 'text-indigo-700',
+  'bg-purple-100': 'text-purple-700',
+  'bg-pink-100': 'text-pink-700',
+  'bg-rose-100': 'text-rose-700'
+};
 
 const profileSchema = z.object({
   name: z.string().min(2, {
@@ -53,15 +63,24 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
     defaultValues: {
       name: user.name || '',
       email: user.email || '',
-      avatarColor: user.avatarColor || 'purple',
+      avatarColor: user.avatarColor || 'bg-purple-100',
+    },
+    // Ensure form values update when user prop changes
+    values: {
+      name: user.name || '',
+      email: user.email || '',
+      avatarColor: user.avatarColor ? `bg-${user.avatarColor}-100` : 'bg-purple-100',
     },
   });
 
   const handleSubmit = (values: ProfileFormValues) => {
+    // Convert the color class back to the format expected by the API
+    const colorName = values.avatarColor?.replace('bg-', '').replace('-100', '');
+    
     onSubmit({
       name: values.name,
       email: values.email,
-      avatarColor: values.avatarColor,
+      avatarColor: colorName,
     });
   };
 
@@ -76,13 +95,17 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
 
     try {
       setUploadLoading(true);
-      await onImageUpload(file);
-      // The actual URL will be updated by the parent component
+      // Create a preview URL for the UI
       const previewUrl = URL.createObjectURL(file);
       setCurrentAvatar(previewUrl);
+      
+      // Upload the image
+      await onImageUpload(file);
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload profile picture');
+      // Revert to previous avatar if upload fails
+      setCurrentAvatar(user.avatar);
     } finally {
       setUploadLoading(false);
     }
@@ -93,11 +116,13 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
     
     try {
       setDeleteLoading(true);
+      setCurrentAvatar(null); // Immediately remove from UI
       await onImageDelete();
-      setCurrentAvatar(null);
     } catch (error) {
       console.error('Error deleting image:', error);
       toast.error('Failed to delete profile picture');
+      // Revert to previous avatar if delete fails
+      setCurrentAvatar(user.avatar);
     } finally {
       setDeleteLoading(false);
     }
@@ -105,14 +130,15 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
 
   const selectedColor = form.watch('avatarColor');
   const hasAvatar = !!currentAvatar;
+  const textColorClass = textColors[selectedColor as keyof typeof textColors] || 'text-gray-700';
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="flex flex-col items-center mb-6">
-          <Avatar className="h-24 w-24 mb-4">
+          <Avatar className="h-24 w-24 mb-4 border border-gray-200">
             <AvatarImage src={currentAvatar || ''} alt={user.name} />
-            <AvatarFallback className={`bg-${selectedColor}-500 text-white text-xl`}>
+            <AvatarFallback className={`${selectedColor} ${textColorClass} text-xl`}>
               {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
             </AvatarFallback>
           </Avatar>
@@ -183,12 +209,12 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
             name="avatarColor"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Avatar Color</FormLabel>
+                <FormLabel>Avatar Background</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex flex-wrap gap-2"
+                    className="flex flex-wrap gap-3 py-2"
                   >
                     {avatarColors.map((color) => (
                       <div key={color} className="flex items-center">
@@ -199,8 +225,12 @@ const ProfileForm = ({ user, onSubmit, onImageUpload, onImageDelete, isLoading }
                         />
                         <label
                           htmlFor={`color-${color}`}
-                          className={`h-8 w-8 rounded-full cursor-pointer ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white bg-${color}-500`}
-                        />
+                          className={`h-10 w-10 rounded-full cursor-pointer ring-offset-background transition-colors border border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-black dark:peer-data-[state=checked]:ring-white ${color} flex items-center justify-center`}
+                        >
+                          <span className={textColors[color as keyof typeof textColors]}>
+                            {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
+                          </span>
+                        </label>
                       </div>
                     ))}
                   </RadioGroup>
