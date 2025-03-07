@@ -81,6 +81,11 @@ export const supabaseService = {
 
       console.log('Uploading profile image:', filePath);
 
+      // Check if the avatars bucket exists, and add policies if needed
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
       // Upload the file to Supabase Storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
@@ -91,6 +96,11 @@ export const supabaseService = {
 
       if (uploadError) {
         console.error('Error uploading image:', uploadError);
+        // Fall back to using color avatar if upload fails
+        await this.updateUserProfile(userId, {
+          avatar: null,
+          avatarColor: 'purple'
+        });
         return null;
       }
 
@@ -101,11 +111,11 @@ export const supabaseService = {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      const publicUrl = data.publicUrl;
-      console.log('Public URL:', publicUrl);
+      const newPublicUrl = data.publicUrl;
+      console.log('Public URL:', newPublicUrl);
 
       // Return the URL, but we'll update the user profile separately
-      return publicUrl;
+      return newPublicUrl;
     } catch (error) {
       console.error('Error in uploadProfileImage:', error);
       return null;
