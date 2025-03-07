@@ -35,7 +35,7 @@ export function useKanbanBoard(
     }
   }, [board]);
 
-  // Listen for parent ticket update events to update the UI immediately
+  // Listen for parent ticket update events to update the UI immediately without a full refresh
   useEffect(() => {
     const handleParentTicketUpdated = (event: CustomEvent<{ parentId: string, newStatus: Status }>) => {
       const { parentId, newStatus } = event.detail;
@@ -142,6 +142,7 @@ export function useKanbanBoard(
     }
     
     try {
+      // Special validation for parent tickets moving to done
       if (destinationColumn === 'done' && !ticket.parentId) {
         const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
         
@@ -152,6 +153,31 @@ export function useKanbanBoard(
             console.error('Cannot move parent to done: Some children are not done');
             toast.error('All child tickets must be done before moving parent to done');
             return;
+          }
+        }
+      }
+      
+      // For any forward move of a parent ticket, check if children would be left behind
+      if (sourceColumn !== destinationColumn) {
+        // Get the status indices to determine if moving forward
+        const sourceStatusIndex = ['backlog', 'todo', 'in-progress', 'review', 'done'].indexOf(sourceColumn);
+        const destStatusIndex = ['backlog', 'todo', 'in-progress', 'review', 'done'].indexOf(destinationColumn);
+        
+        if (destStatusIndex > sourceStatusIndex && !ticket.parentId) {
+          const childTickets = await supabaseService.ticket.getChildTickets(ticket.id);
+          
+          if (childTickets && childTickets.length > 0) {
+            // Check if any children would be left behind
+            const childrenBehind = childTickets.filter(child => {
+              const childStatusIndex = ['backlog', 'todo', 'in-progress', 'review', 'done'].indexOf(child.status as Status);
+              return childStatusIndex < destStatusIndex;
+            });
+            
+            if (childrenBehind.length > 0) {
+              console.error('Cannot move parent ahead of children:', childrenBehind.map(t => t.key));
+              toast.error('Cannot move parent ticket ahead of its children');
+              return;
+            }
           }
         }
       }

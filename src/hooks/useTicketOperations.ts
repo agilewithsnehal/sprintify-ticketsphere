@@ -40,8 +40,7 @@ export const useTicketOperations = (refetch: () => void) => {
             if (pendingChildren.length > 0) {
               console.log('Cannot move parent to done, some children are not done:', pendingChildren.map(t => t.key));
               toast.error('All child tickets must be done before moving parent to done');
-              refetch();
-              return;
+              return; // Exit without updating
             }
             
             console.log('All children are done, parent can be moved to done');
@@ -58,8 +57,7 @@ export const useTicketOperations = (refetch: () => void) => {
             if (childrenBehind.length > 0) {
               console.log('Cannot move parent ahead of children:', childrenBehind.map(t => t.key));
               toast.error('Cannot move parent ticket ahead of its children');
-              refetch();
-              return;
+              return; // Exit without updating
             }
           }
         }
@@ -73,7 +71,6 @@ export const useTicketOperations = (refetch: () => void) => {
       
       if (!updatedTicket) {
         toast.error('Failed to update ticket status');
-        refetch();
         return;
       }
       
@@ -88,13 +85,12 @@ export const useTicketOperations = (refetch: () => void) => {
         }
       }));
       
-      // Trigger a refetch to update the UI
-      setTimeout(() => {
-        refetch();
-      }, 500);
+      // Do NOT trigger a refetch for normal ticket movements
+      // This prevents the entire board from refreshing
     } catch (error) {
       console.error('Error moving ticket:', error);
       toast.error('Failed to move ticket');
+      // Only refetch on errors to ensure UI is in sync with database
       refetch();
     }
   };

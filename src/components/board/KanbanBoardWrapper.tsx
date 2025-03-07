@@ -37,15 +37,15 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
     }
   }, [board, selectedIssueType]);
 
-  // Add an effect to listen for any ticket update events
+  // Add an effect to listen for ticket creation events ONLY (not moves)
   useEffect(() => {
     const handleTicketEvent = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('KanbanBoardWrapper: Detected ticket event:', customEvent.detail);
       
-      // Only refresh for created tickets or parent updates, not for moves
+      // Only refresh for created tickets or parent updates, NOT for moves
       if ((customEvent.detail?.type === 'created' || event.type === 'ticket-parent-updated') && onRefresh) {
-        console.log('KanbanBoardWrapper: Triggering refresh after ticket event');
+        console.log('KanbanBoardWrapper: Triggering refresh after ticket creation or parent update');
         // Add a small delay to ensure database has updated
         setTimeout(() => onRefresh(), 100);
       }
