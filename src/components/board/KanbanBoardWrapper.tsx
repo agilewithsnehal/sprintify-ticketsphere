@@ -8,16 +8,16 @@ interface KanbanBoardWrapperProps {
   board: Board;
   onTicketMove: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
-  selectedIssueType: string | null;
-  onIssueTypeChange: (type: string | null) => void;
+  selectedIssueTypes: string[];
+  onIssueTypesChange: (types: string[]) => void;
 }
 
 const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({ 
   board, 
   onTicketMove, 
   onRefresh,
-  selectedIssueType,
-  onIssueTypeChange
+  selectedIssueTypes,
+  onIssueTypesChange
 }) => {
   // Use a persistent Set to track seen ticket IDs
   const [seenTicketIds] = useState(() => new Set<string>());
@@ -71,13 +71,13 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
       console.log(`KanbanBoardWrapper: After deduplication: ${deduplicatedTickets} tickets`);
       
       // If filtering is active, also log filtered tickets count
-      if (selectedIssueType) {
+      if (selectedIssueTypes.length > 0) {
         const filteredTickets = board.columns.reduce((sum, col) => 
-          sum + col.tickets.filter(t => t.issueType === selectedIssueType).length, 0);
-        console.log(`KanbanBoardWrapper: Filtered tickets (${selectedIssueType}): ${filteredTickets}`);
+          sum + col.tickets.filter(t => selectedIssueTypes.includes(t.issueType)).length, 0);
+        console.log(`KanbanBoardWrapper: Filtered tickets: ${filteredTickets} (types: ${selectedIssueTypes.join(', ')})`);
       }
     }
-  }, [board, selectedIssueType, deduplicatedBoard]);
+  }, [board, selectedIssueTypes, deduplicatedBoard]);
 
   // Listen for ticket events that should trigger a refresh
   useEffect(() => {
@@ -123,8 +123,8 @@ const KanbanBoardWrapper: React.FC<KanbanBoardWrapperProps> = ({
     board={deduplicatedBoard} 
     onTicketMove={handleTicketMove} 
     onRefresh={onRefresh}
-    selectedIssueType={selectedIssueType}
-    onIssueTypeChange={onIssueTypeChange}
+    selectedIssueTypes={selectedIssueTypes}
+    onIssueTypesChange={onIssueTypesChange}
   />;
 };
 

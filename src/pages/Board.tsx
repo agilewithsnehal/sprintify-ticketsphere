@@ -11,7 +11,7 @@ import { useTicketOperations } from '@/hooks/useTicketOperations';
 
 const Board = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
+  const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
   
   const {
     board,
@@ -61,8 +61,8 @@ const Board = () => {
     };
   }, [projectId, refetch, debouncedRefetch]);
 
-  const handleIssueTypeChange = (type: string | null) => {
-    setSelectedIssueType(type);
+  const handleIssueTypesChange = (types: string[]) => {
+    setSelectedIssueTypes(types);
   };
 
   if (!projectId || !isValidUuid(projectId)) {
@@ -98,8 +98,8 @@ const Board = () => {
         onCreateTicket={handleCreateTicket}
         isCreateModalOpen={isCreateModalOpen}
         onCloseCreateModal={() => setIsCreateModalOpen(false)}
-        selectedIssueType={selectedIssueType}
-        onIssueTypeChange={handleIssueTypeChange}
+        selectedIssueTypes={selectedIssueTypes}
+        onIssueTypesChange={handleIssueTypesChange}
       />
     </Layout>
   );

@@ -17,8 +17,8 @@ interface BoardToolbarProps {
   onCreateTicket: () => void;
   onFilterClick: () => void;
   onGroupClick: () => void;
-  onIssueTypeChange: (type: string | null) => void;
-  selectedIssueType: string | null;
+  onIssueTypesChange: (types: string[]) => void;
+  selectedIssueTypes: string[];
 }
 
 const BoardToolbar: React.FC<BoardToolbarProps> = ({ 
@@ -29,8 +29,8 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
   onCreateTicket,
   onFilterClick,
   onGroupClick,
-  onIssueTypeChange,
-  selectedIssueType
+  onIssueTypesChange,
+  selectedIssueTypes
 }) => {
   const [configureColumnsOpen, setConfigureColumnsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -99,8 +99,8 @@ const BoardToolbar: React.FC<BoardToolbarProps> = ({
         </Button>
         
         <IssueTypeFilter 
-          selectedIssueType={selectedIssueType}
-          onIssueTypeChange={onIssueTypeChange}
+          selectedIssueTypes={selectedIssueTypes}
+          onIssueTypesChange={onIssueTypesChange}
           className="w-40"
         />
         

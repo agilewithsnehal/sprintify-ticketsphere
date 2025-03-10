@@ -31,7 +31,7 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedIssueType, setSelectedIssueType] = useState<string | null>(null);
+  const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
   
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -49,8 +49,8 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
     navigate(`/project/${project.id}?tab=${value}`, { replace: true });
   };
   
-  const handleIssueTypeChange = (type: string | null) => {
-    setSelectedIssueType(type);
+  const handleIssueTypesChange = (types: string[]) => {
+    setSelectedIssueTypes(types);
   };
   
   return (
@@ -89,8 +89,8 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({
           onCreateTicket={onCreateTicket}
           onTicketMove={onTicketMove}
           onRefresh={onRefresh}
-          selectedIssueType={selectedIssueType}
-          onIssueTypeChange={handleIssueTypeChange}
+          selectedIssueTypes={selectedIssueTypes}
+          onIssueTypesChange={handleIssueTypesChange}
         />
       </TabsContent>
       

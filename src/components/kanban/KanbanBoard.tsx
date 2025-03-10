@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { Board as BoardType, Status, Ticket as TicketType } from '@/lib/types';
@@ -12,22 +13,22 @@ interface KanbanBoardProps {
   board: BoardType;
   onTicketMove?: (ticketId: string, sourceColumn: Status, destinationColumn: Status) => void;
   onRefresh?: () => void;
-  selectedIssueType: string | null;
-  onIssueTypeChange: (type: string | null) => void;
+  selectedIssueTypes: string[];
+  onIssueTypesChange: (types: string[]) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ 
   board, 
   onTicketMove, 
   onRefresh,
-  selectedIssueType,
-  onIssueTypeChange 
+  selectedIssueTypes,
+  onIssueTypesChange 
 }) => {
   // Keep a map of ticket IDs to ensure uniqueness
   const processedTickets = useRef(new Map<string, TicketType>());
   
-  // Local state to track the selectedIssueType from props
-  const [selectedIssueTypeState, setSelectedIssueTypeState] = useState<string | null>(selectedIssueType);
+  // Local state to track the selectedIssueTypes from props
+  const [selectedIssueTypesState, setSelectedIssueTypesState] = useState<string[]>(selectedIssueTypes);
   
   // Ensure board data is processed to remove duplicate tickets
   const processedBoard = React.useMemo(() => {
@@ -90,28 +91,32 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   // Update the local state when the prop changes
   useEffect(() => {
-    setSelectedIssueTypeState(selectedIssueType);
-  }, [selectedIssueType]);
+    setSelectedIssueTypesState(selectedIssueTypes);
+  }, [selectedIssueTypes]);
 
-  // Apply filter when selectedIssueType or columns change
+  // Apply filter when selectedIssueTypes or columns change
   useEffect(() => {
-    if (!selectedIssueTypeState) {
+    if (selectedIssueTypesState.length === 0) {
+      // If no filters selected, show all tickets
       setFilteredColumns(columns);
       return;
     }
     
+    // Filter tickets that match any of the selected issue types
     const filtered = columns.map(column => ({
       ...column,
-      tickets: column.tickets.filter(ticket => ticket.issueType === selectedIssueTypeState)
+      tickets: column.tickets.filter(ticket => 
+        selectedIssueTypesState.includes(ticket.issueType)
+      )
     }));
     
     setFilteredColumns(filtered);
-  }, [selectedIssueTypeState, columns, setFilteredColumns]);
+  }, [selectedIssueTypesState, columns, setFilteredColumns]);
 
   // Handle issue type changes locally and propagate to parent
-  const handleIssueTypeChange = (type: string | null) => {
-    setSelectedIssueTypeState(type);
-    onIssueTypeChange(type);
+  const handleIssueTypesChange = (types: string[]) => {
+    setSelectedIssueTypesState(types);
+    onIssueTypesChange(types);
   };
 
   useEffect(() => {
@@ -180,11 +185,11 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Apply issue type filtering if a filter is selected
+  // Apply issue type filtering if any filters are selected
   const filteredColumns = columns.map(column => {
-    const columnTickets = selectedIssueTypeState 
-      ? column.tickets.filter(t => t.issueType === selectedIssueTypeState)
-      : column.tickets;
+    const columnTickets = selectedIssueTypesState.length === 0
+      ? column.tickets  // No filtering
+      : column.tickets.filter(t => selectedIssueTypesState.includes(t.issueType)); // Filter by selected types
     
     return {
       ...column,
